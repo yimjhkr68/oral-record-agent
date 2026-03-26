@@ -2,6 +2,7 @@
 // 에이전트가 사용할 수 있는 모든 툴을 등록하고 관리하는 레지스트리
 
 import 'tool_interface.dart';
+import 'tool_services.dart';
 import 'tools.dart';
 
 /// 파일 확장자 → 필요한 전처리 툴 이름 매핑
@@ -45,6 +46,20 @@ class ToolRegistry {
         SearchTool(),
         ExportTool(),
         GenerateDocTool(),
+      ]);
+
+  /// 프로덕션용 — v1 실제 서비스 주입
+  factory ToolRegistry.withServices(ToolServices services) => ToolRegistry([
+        TranscribeTool(services),
+        ExtractPdfTool(services),
+        ExtractDocxTool(services),
+        SummarizeTool(services),
+        TagTool(services),
+        LinkPersonTool(services),
+        SaveRecordTool(services),
+        SearchTool(services),
+        ExportTool(services),
+        GenerateDocTool(services),
       ]);
 
   /// 테스트용 — 원하는 툴만 주입

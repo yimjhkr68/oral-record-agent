@@ -1,25 +1,31 @@
 // lib/agents/tools/tools.dart
-// v1 서비스들을 AgentTool 인터페이스로 래핑한 8개 툴 구현체
+// v1 서비스들을 AgentTool 인터페이스로 래핑한 10개 툴 구현체
 //
-// 각 툴은 v1 서비스를 직접 수정하지 않고 '감싸는' 어댑터 패턴 사용.
-// v1 서비스가 없는 환경에서도 컴파일되도록 TODO 주석으로 import 처리.
+// 각 툴은 ToolServices를 선택적으로 받음.
+// services == null (또는 해당 필드 null) → 스텁 모드 (테스트/미리보기용)
+// services 주입 시 → v1 실제 서비스 호출
 
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:http/http.dart' as http;
+
+import '../../src/data/models/record.dart';
+import '../../src/data/models/narrator.dart';
+import '../../src/data/models/search_filters.dart';
+import '../../src/data/services/local_transcription_service.dart';
+import '../../src/data/services/document_extraction_service.dart';
+import '../../src/data/services/import_export_service.dart';
 import 'tool_interface.dart';
-
-// TODO: v1 서비스 import (Phase 1 후반 — 서비스 파일 경로 확인 후 활성화)
-// import '../../src/services/whisper_service.dart';
-// import '../../src/services/claude_api_service.dart';
-// import '../../src/services/hive_service.dart';
-// import '../../src/services/python_bridge.dart';
+import 'tool_services.dart';
 
 // ═══════════════════════════════════════════════════════
 // 1. TranscribeTool — 음성/영상 → 텍스트 전사
-//    v1 연결: WhisperService.transcribe()
+//    v1 연결: LocalTranscriptionService.transcribeFile()
 // ═══════════════════════════════════════════════════════
 class TranscribeTool extends AgentTool {
-  // final WhisperService _whisper; // TODO 활성화
-  // TranscribeTool(this._whisper);
-  TranscribeTool();
+  final ToolServices? _services;
+  TranscribeTool([this._services]);
 
   @override
   String get name => 'transcribe';
@@ -47,31 +53,45 @@ class TranscribeTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    // TODO: 실제 WhisperService 호출로 교체
-    // final result = await _whisper.transcribe(
-    //   filePath: input['filePath'],
-    //   language: input['language'] ?? 'ko',
-    // );
-    // return ToolResult.ok({'transcript': result.text, 'duration': result.durationSeconds}, elapsed);
+    final filePath = input['filePath'] as String;
+    final language = input['language'] as String? ?? 'ko';
 
-    await Future.delayed(const Duration(milliseconds: 200));
-    return ToolResult(
-      success: true,
-      output: {
+    if (_services == null) {
+      return ToolResult(success: true, output: {
         'transcript': '[전사 결과] 안녕하세요. 오늘 면담을 시작하겠습니다...',
         'duration': 3600,
-        'language': input['language'] ?? 'ko',
-        'filePath': input['filePath'],
-      },
+        'language': language,
+        'filePath': filePath,
+      });
+    }
+
+    final result = await LocalTranscriptionService.transcribeFile(
+      filePath: filePath,
+      pythonPath: _services!.pythonPath,
+      language: language,
     );
+
+    if (!result.success) {
+      return ToolResult(success: false, errorMessage: result.error ?? '전사 실패');
+    }
+
+    return ToolResult(success: true, output: {
+      'transcript': result.text,
+      'language': language,
+      'filePath': filePath,
+      'segments': result.segments,
+    });
   }
 }
 
 // ═══════════════════════════════════════════════════════
 // 2. ExtractPdfTool — PDF → 텍스트 추출
-//    v1 연결: PythonBridge.runScript('extract_pdf.py')
+//    v1 연결: DocumentExtractionService.extractText()
 // ═══════════════════════════════════════════════════════
 class ExtractPdfTool extends AgentTool {
+  final ToolServices? _services;
+  ExtractPdfTool([this._services]);
+
   @override
   String get name => 'extract_pdf';
 
@@ -90,21 +110,40 @@ class ExtractPdfTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    // TODO: await PythonBridge.run('extract_pdf.py', [input['filePath']]);
-    await Future.delayed(const Duration(milliseconds: 100));
+    final filePath = input['filePath'] as String;
+
+    if (_services == null) {
+      return ToolResult(success: true, output: {
+        'transcript': '[PDF 추출] 문서 내용...',
+        'pageCount': 10,
+        'filePath': filePath,
+      });
+    }
+
+    final result = await DocumentExtractionService.extractText(
+      filePath: filePath,
+      pythonPath: _services!.pythonPath,
+    );
+
+    if (!result.success) {
+      return ToolResult(success: false, errorMessage: result.error ?? 'PDF 추출 실패');
+    }
+
     return ToolResult(success: true, output: {
-      'transcript': '[PDF 추출] 문서 내용...',
-      'pageCount': 10,
-      'filePath': input['filePath'],
+      'transcript': result.text,
+      'filePath': filePath,
     });
   }
 }
 
 // ═══════════════════════════════════════════════════════
 // 3. ExtractDocxTool — DOCX → 텍스트 추출
-//    v1 연결: PythonBridge.runScript('extract_docx.py')
+//    v1 연결: DocumentExtractionService.extractText()
 // ═══════════════════════════════════════════════════════
 class ExtractDocxTool extends AgentTool {
+  final ToolServices? _services;
+  ExtractDocxTool([this._services]);
+
   @override
   String get name => 'extract_docx';
 
@@ -123,23 +162,38 @@ class ExtractDocxTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    // TODO: await PythonBridge.run('extract_docx.py', [input['filePath']]);
-    await Future.delayed(const Duration(milliseconds: 100));
+    final filePath = input['filePath'] as String;
+
+    if (_services == null) {
+      return ToolResult(success: true, output: {
+        'transcript': '[DOCX 추출] 문서 내용...',
+        'filePath': filePath,
+      });
+    }
+
+    final result = await DocumentExtractionService.extractText(
+      filePath: filePath,
+      pythonPath: _services!.pythonPath,
+    );
+
+    if (!result.success) {
+      return ToolResult(success: false, errorMessage: result.error ?? 'DOCX 추출 실패');
+    }
+
     return ToolResult(success: true, output: {
-      'transcript': '[DOCX 추출] 문서 내용...',
-      'filePath': input['filePath'],
+      'transcript': result.text,
+      'filePath': filePath,
     });
   }
 }
 
 // ═══════════════════════════════════════════════════════
 // 4. SummarizeTool — 텍스트 → AI 요약
-//    v1 연결: ClaudeApiService.summarize()
+//    v1 연결: Claude API 직접 HTTP 호출
 // ═══════════════════════════════════════════════════════
 class SummarizeTool extends AgentTool {
-  // final ClaudeApiService _claude; // TODO 활성화
-  // SummarizeTool(this._claude);
-  SummarizeTool();
+  final ToolServices? _services;
+  SummarizeTool([this._services]);
 
   @override
   String get name => 'summarize';
@@ -167,25 +221,90 @@ class SummarizeTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    // TODO: 실제 ClaudeApiService 호출로 교체
-    // final result = await _claude.summarize(
-    //   text: input['text'],
-    //   type: input['summaryType'] ?? 'brief',
-    // );
-    await Future.delayed(const Duration(milliseconds: 300));
-    return const ToolResult(success: true, output: {
-      'summary': '[AI 요약] 이 기록은 구술자의 생애 초기 경험에 관한 내용입니다.',
-      'keywords': ['생애사', '유년기', '가족'],
-      'period': '1950년대',
-    });
+    final text = input['text'] as String? ?? '';
+    final summaryType = input['summaryType'] as String? ?? 'brief';
+    final apiKey = _services?.claudeApiKey;
+
+    if (apiKey == null || apiKey.isEmpty) {
+      return const ToolResult(success: true, output: {
+        'summary': '[AI 요약] 이 기록은 구술자의 생애 초기 경험에 관한 내용입니다.',
+        'keywords': ['생애사', '유년기', '가족'],
+        'period': '1950년대',
+      });
+    }
+
+    try {
+      const systemPrompt =
+          '당신은 구술기록 전문 요약가입니다. 주어진 텍스트를 분석하여 '
+          'JSON 형식으로만 응답하세요 (설명 없이):\n'
+          '{"summary": "핵심 내용 요약", "keywords": ["키워드1", "키워드2"], "period": "시대적 맥락"}';
+
+      final userContent = summaryType == 'detailed'
+          ? '다음 구술 텍스트를 상세히 요약해주세요:\n\n$text'
+          : summaryType == 'academic'
+              ? '다음 구술 텍스트를 학술적으로 분석·요약해주세요:\n\n$text'
+              : '다음 구술 텍스트를 간결하게 요약해주세요:\n\n$text';
+
+      final response = await http
+          .post(
+            Uri.parse('https://api.anthropic.com/v1/messages'),
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: jsonEncode({
+              'model': 'claude-haiku-4-5-20251001',
+              'max_tokens': 512,
+              'system': systemPrompt,
+              'messages': [
+                {'role': 'user', 'content': userContent},
+              ],
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        return ToolResult(
+            success: false,
+            errorMessage: 'Claude API 오류: ${response.statusCode}');
+      }
+
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final responseText =
+          (body['content'] as List).first['text'] as String;
+
+      final start = responseText.indexOf('{');
+      final end = responseText.lastIndexOf('}');
+      if (start == -1 || end == -1) {
+        return const ToolResult(success: false, errorMessage: '요약 응답 파싱 실패');
+      }
+
+      final parsed =
+          jsonDecode(responseText.substring(start, end + 1)) as Map<String, dynamic>;
+
+      return ToolResult(success: true, output: {
+        'summary': parsed['summary'] as String? ?? '',
+        'keywords': (parsed['keywords'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
+        'period': parsed['period'] as String? ?? '',
+      });
+    } catch (e) {
+      return ToolResult(success: false, errorMessage: '요약 실패: $e');
+    }
   }
 }
 
 // ═══════════════════════════════════════════════════════
 // 5. TagTool — 텍스트/요약 → 자동 태그 생성
-//    v1 연결: ClaudeApiService.generateTags()
+//    v1 연결: Claude API 직접 HTTP 호출
 // ═══════════════════════════════════════════════════════
 class TagTool extends AgentTool {
+  final ToolServices? _services;
+  TagTool([this._services]);
+
   @override
   String get name => 'tag';
 
@@ -206,19 +325,79 @@ class TagTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    // TODO: ClaudeApiService.generateTags(input['text'])
-    await Future.delayed(const Duration(milliseconds: 200));
-    return const ToolResult(success: true, output: {
-      'tags': ['생애사', '구술', '면담', '1950년대'],
-    });
+    final text = input['text'] as String? ?? '';
+    final apiKey = _services?.claudeApiKey;
+
+    if (apiKey == null || apiKey.isEmpty) {
+      return const ToolResult(success: true, output: {
+        'tags': ['생애사', '구술', '면담', '1950년대'],
+      });
+    }
+
+    try {
+      const systemPrompt =
+          '당신은 구술기록 분류 전문가입니다. '
+          '텍스트를 분석하여 JSON 형식으로만 응답하세요 (설명 없이):\n'
+          '{"tags": ["태그1", "태그2", "태그3"]}';
+
+      final response = await http
+          .post(
+            Uri.parse('https://api.anthropic.com/v1/messages'),
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: jsonEncode({
+              'model': 'claude-haiku-4-5-20251001',
+              'max_tokens': 256,
+              'system': systemPrompt,
+              'messages': [
+                {'role': 'user', 'content': '다음 텍스트에 태그를 붙여주세요:\n\n$text'},
+              ],
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
+
+      if (response.statusCode != 200) {
+        return ToolResult(
+            success: false,
+            errorMessage: 'Claude API 오류: ${response.statusCode}');
+      }
+
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final responseText =
+          (body['content'] as List).first['text'] as String;
+
+      final start = responseText.indexOf('{');
+      final end = responseText.lastIndexOf('}');
+      if (start == -1 || end == -1) {
+        return const ToolResult(success: false, errorMessage: '태그 응답 파싱 실패');
+      }
+
+      final parsed =
+          jsonDecode(responseText.substring(start, end + 1)) as Map<String, dynamic>;
+
+      return ToolResult(success: true, output: {
+        'tags': (parsed['tags'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [],
+      });
+    } catch (e) {
+      return ToolResult(success: false, errorMessage: '태그 생성 실패: $e');
+    }
   }
 }
 
 // ═══════════════════════════════════════════════════════
 // 6. LinkPersonTool — 텍스트에서 인물 추출 → 인물사전 연결
-//    v1 연결: HiveService.findOrCreatePerson()
+//    v1 연결: NarratorRepository.getAllNarrators() + 이름 매칭
 // ═══════════════════════════════════════════════════════
 class LinkPersonTool extends AgentTool {
+  final ToolServices? _services;
+  LinkPersonTool([this._services]);
+
   @override
   String get name => 'link_person';
 
@@ -239,20 +418,54 @@ class LinkPersonTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    // TODO: HiveService.findOrCreatePerson(extractedNames)
-    await Future.delayed(const Duration(milliseconds: 150));
-    return const ToolResult(success: true, output: {
-      'linkedPersonIds': <String>[],
-      'newPersons': <Map<String, dynamic>>[],
+    final narratorRepo = _services?.narratorRepo;
+
+    if (narratorRepo == null) {
+      return const ToolResult(success: true, output: {
+        'linkedPersonIds': <String>[],
+        'newPersons': <Map<String, dynamic>>[],
+      });
+    }
+
+    final text = input['text'] as String? ?? '';
+
+    // 한국어 이름 패턴으로 후보 추출 (2~4글자 한국어)
+    final namePattern = RegExp(r'[가-힣]{2,4}');
+    final candidates = namePattern
+        .allMatches(text)
+        .map((m) => m.group(0)!)
+        .toSet()
+        .toList();
+
+    final allNarrators = await narratorRepo.getAllNarrators();
+    final narratorByName = <String, Narrator>{
+      for (final n in allNarrators) n.name: n,
+    };
+
+    final linkedIds = <String>[];
+    final newPersons = <Map<String, dynamic>>[];
+
+    for (final name in candidates) {
+      if (narratorByName.containsKey(name)) {
+        linkedIds.add(narratorByName[name]!.id);
+      }
+    }
+
+    return ToolResult(success: true, output: {
+      'linkedPersonIds': linkedIds,
+      'newPersons': newPersons,
     });
   }
 }
 
 // ═══════════════════════════════════════════════════════
 // 7. SaveRecordTool — 처리된 기록 → Hive DB 저장
-//    v1 연결: HiveService.saveRecord()
+//    v1 연결: RecordRepository.createRecord()
 // ═══════════════════════════════════════════════════════
 class SaveRecordTool extends AgentTool {
+  final ToolServices? _services;
+  SaveRecordTool([this._services]);
+
   @override
   String get name => 'save_record';
 
@@ -292,31 +505,91 @@ class SaveRecordTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    // TODO: HiveService.saveRecord(OralRecord.fromMap(input))
     final now = DateTime.now();
-    final recordId =
-        'REC-${now.year}${now.month.toString().padLeft(2, '0')}-'
-        '${now.millisecondsSinceEpoch.toString().substring(8)}';
 
-    await Future.delayed(const Duration(milliseconds: 100));
-    return ToolResult(success: true, output: {
-      'recordId': recordId,
-      'savedAt': now.toIso8601String(),
-    });
+    if (_services?.recordRepo == null) {
+      final recordId =
+          'REC-${now.year}${now.month.toString().padLeft(2, '0')}-'
+          '${now.millisecondsSinceEpoch.toString().substring(8)}';
+      return ToolResult(success: true, output: {
+        'recordId': recordId,
+        'savedAt': now.toIso8601String(),
+      });
+    }
+
+    final filePath = input['filePath'] as String?;
+    final inputType = _inputTypeFromPath(filePath);
+    final transcript = input['transcript'] as String? ?? '';
+    final summary = input['summary'] as String?;
+    final rawTags = input['tags'];
+    final tags = rawTags is List
+        ? rawTags.map((e) => e.toString()).toList()
+        : <String>[];
+    final narratorId = input['narratorId'] as String? ?? 'unknown';
+    final sessionId =
+        'agent-session-${now.millisecondsSinceEpoch}';
+
+    final title = _buildTitle(filePath, narratorId, now);
+
+    final record = Record(
+      title: title,
+      content: transcript,
+      inputType: inputType,
+      sessionId: sessionId,
+      narratorId: narratorId,
+      mainCategory: '기타',
+      visibility: 'public',
+      recordedBy: 'agent',
+      summary: summary,
+      tags: tags,
+      originalFileName:
+          filePath?.split(Platform.pathSeparator).last,
+    );
+
+    try {
+      final id = await _services!.recordRepo!.createRecord(record);
+      return ToolResult(success: true, output: {
+        'recordId': id,
+        'savedAt': now.toIso8601String(),
+      });
+    } catch (e) {
+      return ToolResult(success: false, errorMessage: '기록 저장 실패: $e');
+    }
+  }
+
+  String _inputTypeFromPath(String? path) {
+    if (path == null) return 'text';
+    final ext = path.split('.').last.toLowerCase();
+    if (['mp3', 'wav', 'm4a', 'webm'].contains(ext)) return 'audio';
+    if (['mp4', 'mov'].contains(ext)) return 'video';
+    if (['pdf', 'docx', 'txt'].contains(ext)) return 'document';
+    return 'text';
+  }
+
+  String _buildTitle(String? filePath, String narratorId, DateTime now) {
+    if (filePath != null) {
+      final fileName = filePath.split(Platform.pathSeparator).last;
+      final dotIdx = fileName.lastIndexOf('.');
+      if (dotIdx > 0) return fileName.substring(0, dotIdx);
+      return fileName;
+    }
+    return '에이전트 기록 ${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 }
 
 // ═══════════════════════════════════════════════════════
 // 8. SearchTool — Hive DB 기록 검색
-//    v1 연결: HiveService.searchRecords()
+//    v1 연결: RecordRepository.searchRecords()
 // ═══════════════════════════════════════════════════════
 class SearchTool extends AgentTool {
+  final ToolServices? _services;
+  SearchTool([this._services]);
+
   @override
   String get name => 'search';
 
   @override
-  String get description =>
-      '구술 기록을 키워드·인물·날짜·태그로 검색합니다.';
+  String get description => '구술 기록을 키워드·인물·날짜·태그로 검색합니다.';
 
   @override
   List<ToolParam> get params => [
@@ -342,27 +615,60 @@ class SearchTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    // TODO: HiveService.searchRecords(query: input['query'], ...)
-    await Future.delayed(const Duration(milliseconds: 100));
-    return ToolResult(success: true, output: {
-      'results': <Map<String, dynamic>>[],
-      'total': 0,
-      'query': input['query'],
-    });
+    final query = input['query'] as String? ?? '';
+
+    if (_services?.recordRepo == null) {
+      return ToolResult(success: true, output: {
+        'results': <Map<String, dynamic>>[],
+        'total': 0,
+        'query': query,
+      });
+    }
+
+    final limit = (input['limit'] as num?)?.toInt() ?? 20;
+
+    try {
+      final filters = SearchFilters(query: query, limit: limit);
+      final records =
+          await _services!.recordRepo!.searchRecords(filters);
+
+      final results = records
+          .map((r) => {
+                'id': r.id,
+                'displayId': r.displayId,
+                'title': r.title,
+                'summary': r.summary,
+                'inputType': r.inputType,
+                'mainCategory': r.mainCategory,
+                'narratorId': r.narratorId,
+                'createdAt': r.createdAt.toIso8601String(),
+              })
+          .toList();
+
+      return ToolResult(success: true, output: {
+        'results': results,
+        'total': results.length,
+        'query': query,
+      });
+    } catch (e) {
+      return ToolResult(success: false, errorMessage: '검색 실패: $e');
+    }
   }
 }
 
 // ═══════════════════════════════════════════════════════
 // 9. ExportTool — 기록 → CSV/JSON 내보내기
-//    v1 연결: ExportService.export()
+//    v1 연결: ImportExportService.exportAllJson() / exportRecordsCsv()
 // ═══════════════════════════════════════════════════════
 class ExportTool extends AgentTool {
+  final ToolServices? _services;
+  ExportTool([this._services]);
+
   @override
   String get name => 'export';
 
   @override
-  String get description =>
-      '선택한 기록들을 CSV 또는 JSON 형식으로 내보냅니다.';
+  String get description => '선택한 기록들을 CSV 또는 JSON 형식으로 내보냅니다.';
 
   @override
   List<ToolParam> get params => [
@@ -382,27 +688,79 @@ class ExportTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    // TODO: ExportService.export(format: input['format'], ids: input['recordIds'])
-    final format = input['format'] ?? 'csv';
+    final format = input['format'] as String? ?? 'csv';
     final now = DateTime.now();
     final fileName =
         'export_${now.year}${now.month.toString().padLeft(2, '0')}'
         '${now.day.toString().padLeft(2, '0')}.$format';
 
-    await Future.delayed(const Duration(milliseconds: 150));
-    return ToolResult(success: true, output: {
-      'filePath': 'C:\\Users\\OralRecordAgent\\exports\\$fileName',
-      'recordCount': 0,
-      'format': format,
-    });
+    if (_services?.recordRepo == null) {
+      return ToolResult(success: true, output: {
+        'filePath':
+            'C:\\Users\\OralRecordAgent\\exports\\$fileName',
+        'recordCount': 0,
+        'format': format,
+      });
+    }
+
+    try {
+      final allFilters = SearchFilters(limit: 999999);
+      final records =
+          await _services!.recordRepo!.searchRecords(allFilters);
+
+      final rawIds = input['recordIds'];
+      final filterIds = rawIds is List
+          ? rawIds.map((e) => e.toString()).toSet()
+          : null;
+      final targetRecords = filterIds != null
+          ? records.where((r) => filterIds.contains(r.id)).toList()
+          : records;
+
+      String content;
+      if (format == 'json') {
+        final narrators = await (_services?.narratorRepo
+                ?.getAllNarrators() ??
+            Future.value(<Narrator>[]));
+        content = ImportExportService.exportAllJson(
+            targetRecords, narrators, [], []);
+      } else {
+        content = ImportExportService.exportRecordsCsv(
+          targetRecords,
+          {},
+          {},
+          {},
+          includeContent: false,
+          includeSummary: true,
+        );
+      }
+
+      // 내보내기 디렉터리에 파일 저장
+      final exportDir = Directory(
+          '${Directory.current.path}${Platform.pathSeparator}exports');
+      await exportDir.create(recursive: true);
+      final filePath =
+          '${exportDir.path}${Platform.pathSeparator}$fileName';
+      await File(filePath).writeAsString(content, flush: true);
+
+      return ToolResult(success: true, output: {
+        'filePath': filePath,
+        'recordCount': targetRecords.length,
+        'format': format,
+      });
+    } catch (e) {
+      return ToolResult(success: false, errorMessage: '내보내기 실패: $e');
+    }
   }
 }
 
 // ═══════════════════════════════════════════════════════
 // 10. GenerateDocTool — 기록 → 책/보고서 자동 생성
-//     v1 연결: PythonBridge.runScript('create_docx.py')
+//     v1 연결: Process.run(python, ['scripts/create_docx.py', ...])
 // ═══════════════════════════════════════════════════════
 class GenerateDocTool extends AgentTool {
+  final ToolServices? _services;
+  GenerateDocTool([this._services]);
+
   @override
   String get name => 'generate_doc';
 
@@ -433,16 +791,88 @@ class GenerateDocTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    // TODO: PythonBridge.run('create_docx.py', [input['docType'], ...])
-    final docType = input['docType'] ?? 'report';
-    final title = input['title'] ?? '구술기록 $docType';
+    final docType = input['docType'] as String? ?? 'report';
+    final title = input['title'] as String? ?? '구술기록 $docType';
 
-    await Future.delayed(const Duration(milliseconds: 500));
-    return ToolResult(success: true, output: {
-      'filePath':
-          'C:\\Users\\OralRecordAgent\\outputs\\$title.docx',
+    if (_services == null) {
+      return ToolResult(success: true, output: {
+        'filePath':
+            'C:\\Users\\OralRecordAgent\\outputs\\$title.docx',
+        'docType': docType,
+        'pageCount': 0,
+      });
+    }
+
+    final rawIds = input['recordIds'];
+    final recordIds = rawIds is List
+        ? rawIds.map((e) => e.toString()).toList()
+        : <String>[];
+
+    // 기록 데이터 수집
+    final records = <Record>[];
+    if (_services?.recordRepo != null) {
+      for (final id in recordIds) {
+        final r = await _services!.recordRepo!.getRecord(id);
+        if (r != null) records.add(r);
+      }
+    }
+
+    // 임시 JSON 파일 생성 후 create_docx.py 호출
+    final now = DateTime.now();
+    final safeTitle = title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+    final outputDir = Directory(
+        '${Directory.current.path}${Platform.pathSeparator}outputs');
+    await outputDir.create(recursive: true);
+    final outputPath =
+        '${outputDir.path}${Platform.pathSeparator}$safeTitle.docx';
+
+    final jsonData = jsonEncode({
       'docType': docType,
-      'pageCount': 0,
+      'title': title,
+      'generatedAt': now.toIso8601String(),
+      'records': records
+          .map((r) => {
+                'id': r.id,
+                'title': r.title,
+                'content': r.content,
+                'summary': r.summary,
+                'tags': r.tags,
+              })
+          .toList(),
     });
+
+    final tmpFile = File(
+        '${outputDir.path}${Platform.pathSeparator}tmp_${now.millisecondsSinceEpoch}.json');
+    await tmpFile.writeAsString(jsonData);
+
+    try {
+      final scriptDir = Directory.current.path;
+      final scriptPath =
+          '$scriptDir${Platform.pathSeparator}scripts${Platform.pathSeparator}create_docx.py';
+
+      final result = await Process.run(
+        _services!.pythonPath,
+        [scriptPath, tmpFile.path, outputPath],
+        runInShell: Platform.isWindows,
+      ).timeout(const Duration(minutes: 5));
+
+      try { await tmpFile.delete(); } catch (_) {}
+
+      if (result.exitCode != 0) {
+        return ToolResult(
+          success: false,
+          errorMessage: '문서 생성 실패: ${result.stderr}',
+        );
+      }
+
+      return ToolResult(success: true, output: {
+        'filePath': outputPath,
+        'docType': docType,
+        'pageCount': records.length,
+      });
+    } catch (e) {
+      try { await tmpFile.delete(); } catch (_) {}
+      return ToolResult(success: false, errorMessage: '문서 생성 실패: $e');
+    }
   }
 }
