@@ -11,6 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../agents/core/agent_core.dart';
 import '../../../agents/core/agent_result.dart';
 import '../../../agents/core/intent_parser.dart';
+import '../../../agents/core/multi_step_task.dart';
+import '../../../agents/core/task_planner.dart';
 import '../../../agents/tools/tool_registry.dart';
 import '../../../agents/tools/tool_services.dart';
 import '../../data/repositories/record_repository.dart';
@@ -68,6 +70,12 @@ class AgentState {
   /// 에러 메시지
   final String? errorMessage;
 
+  /// 현재 진행 중인 멀티스텝 태스크
+  final MultiStepTask? currentMultiTask;
+
+  /// 완료된 태스크 히스토리 (최대 10개)
+  final List<MultiStepTask> taskHistory;
+
   const AgentState({
     this.status = AgentProcessStatus.idle,
     this.currentTask,
@@ -78,6 +86,8 @@ class AgentState {
     this.lastResult,
     this.pendingReview,
     this.errorMessage,
+    this.currentMultiTask,
+    this.taskHistory = const [],
   });
 
   AgentState copyWith({
@@ -90,9 +100,12 @@ class AgentState {
     AgentResult? lastResult,
     AgentResult? pendingReview,
     String? errorMessage,
+    MultiStepTask? currentMultiTask,
+    List<MultiStepTask>? taskHistory,
     bool clearPendingReview = false,
     bool clearCurrentTask = false,
     bool clearErrorMessage = false,
+    bool clearCurrentMultiTask = false,
   }) {
     return AgentState(
       status: status ?? this.status,
@@ -104,6 +117,8 @@ class AgentState {
       lastResult: lastResult ?? this.lastResult,
       pendingReview: clearPendingReview ? null : (pendingReview ?? this.pendingReview),
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
+      currentMultiTask: clearCurrentMultiTask ? null : (currentMultiTask ?? this.currentMultiTask),
+      taskHistory: taskHistory ?? this.taskHistory,
     );
   }
 }
@@ -187,6 +202,135 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         clearCurrentTask: true,
       );
     }
+  }
+
+  /// TaskPlanner로 단일/멀티 판단 후 적절한 경로로 실행
+  /// 기존 handle()과 달리 멀티스텝도 처리 가능
+  Future<void> handleInput(String userInput) async {
+    state = state.copyWith(
+      status: AgentProcessStatus.thinking,
+      clearCurrentTask: true,
+      clearErrorMessage: true,
+      clearCurrentMultiTask: true,
+      agentLog: [],
+    );
+
+    try {
+      final settings = _ref.read(settingsProvider);
+      final apiKey = settings.apiKey.isEmpty ? null : settings.apiKey;
+
+      RecordRepository? recordRepo;
+      NarratorRepository? narratorRepo;
+      try {
+        recordRepo = await _ref.read(recordRepositoryProvider.future);
+        narratorRepo = await _ref.read(narratorRepositoryProvider.future);
+      } catch (_) {}
+
+      // 1단계: TaskPlanner로 단일/멀티 판단
+      final planner = TaskPlanner(claudeApiKey: apiKey, recordRepo: recordRepo);
+      final task = await planner.plan(userInput);
+
+      if (task.steps.length > 1) {
+        _addLog('분석', '멀티스텝 태스크: ${task.steps.length}개 단계 — ${task.title}');
+      } else {
+        final intent = task.steps.first.intent;
+        _addLog('분석', '의도: ${intent.typeLabel} (${(intent.confidence * 100).toInt()}%)');
+      }
+
+      // 2단계: ToolRegistry 구성
+      final ToolRegistry toolRegistry;
+      if (recordRepo == null && narratorRepo == null) {
+        toolRegistry = ToolRegistry.standard();
+      } else {
+        final services = ToolServices(
+          claudeApiKey: apiKey,
+          pythonPath: settings.pythonPath,
+          recordRepo: recordRepo,
+          narratorRepo: narratorRepo,
+        );
+        toolRegistry = ToolRegistry.withServices(services);
+      }
+
+      final core = AgentCore(
+        claudeApiKey: settings.apiKey,
+        toolRegistry: toolRegistry,
+        onProgress: (step, detail) {
+          _addLog(step, detail);
+          state = state.copyWith(
+            status: AgentProcessStatus.executing,
+            currentStep: step,
+            currentTask: detail,
+          );
+        },
+      );
+
+      if (task.steps.length == 1) {
+        // 단일 스텝: 기존 경로 (이미 파싱된 intent 재사용)
+        final result = await core.handle(task.steps.first.intent);
+        _applyResult(result);
+      } else {
+        // 멀티스텝 경로
+        state = state.copyWith(
+          currentMultiTask: task,
+          status: AgentProcessStatus.executing,
+        );
+
+        await core.handleMultiStep(
+          task,
+          onStepComplete: (updatedTask) {
+            state = state.copyWith(
+              currentMultiTask: updatedTask,
+              status: AgentProcessStatus.executing,
+            );
+          },
+        );
+
+        final done = task.completedCount;
+        final total = task.totalCount;
+        final failCount = task.failedSteps.length;
+        _addLog('완료',
+            '멀티스텝 완료: $done/$total 성공${failCount > 0 ? ', $failCount 실패' : ''}');
+
+        final history = [...state.taskHistory, task];
+        final trimmed =
+            history.length > 10 ? history.sublist(history.length - 10) : history;
+
+        state = state.copyWith(
+          status: task.hasFailed ? AgentProcessStatus.error : AgentProcessStatus.idle,
+          taskHistory: trimmed,
+          clearCurrentTask: true,
+          clearCurrentMultiTask: true,
+          errorMessage: task.hasFailed ? '${task.failedSteps.length}개 단계 실패' : null,
+        );
+      }
+    } catch (e) {
+      _addLog('오류', '$e', isError: true);
+      state = state.copyWith(
+        status: AgentProcessStatus.error,
+        errorMessage: '$e',
+        clearCurrentTask: true,
+        clearCurrentMultiTask: true,
+      );
+    }
+  }
+
+  /// 진행 중인 멀티스텝 태스크 취소
+  void cancelTask() {
+    final task = state.currentMultiTask;
+    if (task == null) return;
+    task.cancel();
+    _addLog('취소', '태스크 취소됨 (${task.completedCount}/${task.totalCount} 완료)');
+
+    final history = [...state.taskHistory, task];
+    final trimmed =
+        history.length > 10 ? history.sublist(history.length - 10) : history;
+
+    state = state.copyWith(
+      status: AgentProcessStatus.idle,
+      clearCurrentMultiTask: true,
+      clearCurrentTask: true,
+      taskHistory: trimmed,
+    );
   }
 
   /// pendingReview 승인 → idle로 전환 (결과 보존)
@@ -278,4 +422,9 @@ final agentLogProvider = Provider<List<AgentLogEntry>>(
 /// 검토 대기 여부 bool Provider
 final isPendingReviewProvider = Provider<bool>(
   (ref) => ref.watch(agentStateProvider).status == AgentProcessStatus.pendingReview,
+);
+
+/// 현재 진행 중인 멀티스텝 태스크 Provider
+final currentMultiTaskProvider = Provider<MultiStepTask?>(
+  (ref) => ref.watch(agentStateProvider).currentMultiTask,
 );

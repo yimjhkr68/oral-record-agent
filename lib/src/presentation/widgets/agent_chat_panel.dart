@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/agent_state_provider.dart';
 import '../theme/app_theme.dart';
+import 'multi_step_progress.dart';
 import 'review_dialog.dart';
 
 // ── 메인 패널 ──────────────────────────────────────────
@@ -78,6 +79,7 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
     return Column(
       children: [
         _StatusBar(state: agentState, pulseController: _pulseController),
+        const MultiStepProgressWidget(),
         Expanded(
           child: _LogPanel(
             logs: logs,
@@ -97,7 +99,7 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
   void _handleSubmit() {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
-    ref.read(agentStateProvider.notifier).handle(text);
+    ref.read(agentStateProvider.notifier).handleInput(text);
     _textController.clear();
   }
 

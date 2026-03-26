@@ -4,6 +4,7 @@
 import 'agent_intent.dart';
 import 'agent_result.dart';
 import 'agent_memory.dart';
+import 'multi_step_task.dart';
 import '../tools/tool_registry.dart';
 import '../tools/tool_interface.dart';
 
@@ -66,6 +67,65 @@ class AgentCore {
 
   void clearSession() => _memory.clearSession();
   double getSuccessRate(IntentType type) => _memory.successRate(type);
+
+  /// 멀티스텝 태스크 순차 실행
+  ///
+  /// [stopOnFirstFailure]: true이면 첫 실패 단계에서 이후 단계 건너뜀
+  /// [onStepComplete]: 각 단계 완료(done/failed/skipped) 직후 호출되는 콜백
+  Future<MultiStepTask> handleMultiStep(
+    MultiStepTask task, {
+    bool stopOnFirstFailure = false,
+    void Function(MultiStepTask)? onStepComplete,
+  }) async {
+    for (int i = 0; i < task.steps.length; i++) {
+      if (task.isCancelled) break;
+
+      final step = task.steps[i];
+      if (step.status != StepStatus.pending) continue;
+
+      // 의존 단계가 아직 완료되지 않았으면 건너뜀
+      final depsOk = step.dependsOn.every(
+        (depIdx) => task.steps[depIdx].status == StepStatus.done,
+      );
+      if (!depsOk) {
+        step.status = StepStatus.skipped;
+        onStepComplete?.call(task);
+        continue;
+      }
+
+      step.status = StepStatus.running;
+      _notify('실행', '[${i + 1}/${task.steps.length}] ${step.intent.typeLabel}');
+      onStepComplete?.call(task);
+
+      try {
+        final result = await handle(step.intent);
+        step.result = result;
+        step.status = result.isSuccess ? StepStatus.done : StepStatus.failed;
+      } catch (e) {
+        step.result = AgentResult.failed('$e');
+        step.status = StepStatus.failed;
+      }
+
+      onStepComplete?.call(task);
+
+      if (step.status == StepStatus.failed && stopOnFirstFailure) break;
+
+      // 단계 사이 딜레이 (API 호출 폭주 방지)
+      if (i < task.steps.length - 1 && !task.isCancelled) {
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+    }
+
+    // 남은 pending 단계 → skipped
+    for (final step in task.steps) {
+      if (step.status == StepStatus.pending) {
+        step.status = StepStatus.skipped;
+      }
+    }
+
+    task.completedAt ??= DateTime.now();
+    return task;
+  }
 
   // ─── [D] Do ──────────────────────────────────────────
 

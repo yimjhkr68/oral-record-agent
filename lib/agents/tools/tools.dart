@@ -19,6 +19,51 @@ import '../../src/data/services/import_export_service.dart';
 import 'tool_interface.dart';
 import 'tool_services.dart';
 
+// ─── 경로 보조 ───────────────────────────────────────────
+/// 상대 경로를 절대 경로로 변환한다.
+/// 이미 절대 경로이면 그대로 반환.
+/// 상대 경로이면 순서대로 후보를 탐색:
+///   1. 홈 디렉터리 (USERPROFILE / HOME)
+///   2. 현재 작업 디렉터리
+/// 첫 번째로 파일이 실제 존재하는 후보를 반환하고,
+/// 없으면 홈 디렉터리 기준 경로를 반환한다 (오류는 서비스에서 처리).
+String _resolveFilePath(String path) {
+  if (path.isEmpty) return path;
+  // 이미 절대 경로
+  if (File(path).isAbsolute) return path;
+
+  final homeDir = Platform.environment['USERPROFILE'] ??
+      Platform.environment['HOME'] ??
+      '';
+  final sep = Platform.pathSeparator;
+
+  // 한국어 폴더명 → 영어 실제 폴더명 매핑 (Windows 셸 표시명 ≠ 실제 경로)
+  const korFolderMap = <String, String>{
+    '다운로드': 'Downloads',
+    '문서': 'Documents',
+    '바탕 화면': 'Desktop',
+    '바탕화면': 'Desktop',
+    '사진': 'Pictures',
+    '음악': 'Music',
+    '동영상': 'Videos',
+  };
+  String normPath = path;
+  for (final entry in korFolderMap.entries) {
+    normPath = normPath.replaceFirst(entry.key, entry.value);
+  }
+
+  final candidates = [
+    if (homeDir.isNotEmpty && normPath != path) '$homeDir$sep$normPath',
+    if (homeDir.isNotEmpty) '$homeDir$sep$path',
+    '${Directory.current.path}$sep$path',
+  ];
+  for (final c in candidates) {
+    if (File(c).existsSync()) return c;
+  }
+  // 기본: 홈 디렉터리 기준 (파일 없어도 서비스에서 에러 처리)
+  return candidates.isNotEmpty ? candidates.first : path;
+}
+
 // ═══════════════════════════════════════════════════════
 // 1. TranscribeTool — 음성/영상 → 텍스트 전사
 //    v1 연결: LocalTranscriptionService.transcribeFile()
@@ -53,7 +98,7 @@ class TranscribeTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    final filePath = input['filePath'] as String;
+    final filePath = _resolveFilePath(input['filePath'] as String);
     final language = input['language'] as String? ?? 'ko';
 
     if (_services == null) {
@@ -110,7 +155,7 @@ class ExtractPdfTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    final filePath = input['filePath'] as String;
+    final filePath = _resolveFilePath(input['filePath'] as String);
 
     if (_services == null) {
       return ToolResult(success: true, output: {
@@ -162,7 +207,7 @@ class ExtractDocxTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    final filePath = input['filePath'] as String;
+    final filePath = _resolveFilePath(input['filePath'] as String);
 
     if (_services == null) {
       return ToolResult(success: true, output: {
