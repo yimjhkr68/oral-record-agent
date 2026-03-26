@@ -7,6 +7,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 
 import 'package:http/http.dart' as http;
 
@@ -562,6 +563,7 @@ class SaveRecordTool extends AgentTool {
       final recordId =
           'REC-${now.year}${now.month.toString().padLeft(2, '0')}-'
           '${now.millisecondsSinceEpoch.toString().substring(8)}';
+      debugPrint('[SaveRecord] stub 모드 (recordRepo null) — 가짜 ID: $recordId');
       return ToolResult(success: true, output: {
         'recordId': recordId,
         'savedAt': now.toIso8601String(),
@@ -599,11 +601,13 @@ class SaveRecordTool extends AgentTool {
 
     try {
       final id = await _services!.recordRepo!.createRecord(record);
+      debugPrint('[SaveRecord] 저장 완료: $id (title: ${record.title})');
       return ToolResult(success: true, output: {
         'recordId': id,
         'savedAt': now.toIso8601String(),
       });
     } catch (e) {
+      debugPrint('[SaveRecord] 저장 실패: $e');
       return ToolResult(success: false, errorMessage: '기록 저장 실패: $e');
     }
   }

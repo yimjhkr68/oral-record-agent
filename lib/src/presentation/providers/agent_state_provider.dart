@@ -19,6 +19,7 @@ import '../../data/repositories/record_repository.dart';
 import '../../data/repositories/narrator_repository.dart';
 import '../../data/repositories/repository_provider.dart';
 import 'settings_provider.dart';
+import 'record_provider.dart';
 
 // ─── 로그 항목 ────────────────────────────────────────
 
@@ -306,6 +307,11 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           clearCurrentMultiTask: true,
           errorMessage: task.hasFailed ? '${task.failedSteps.length}개 단계 실패' : null,
         );
+        // 멀티스텝에서 저장 성공이 있으면 목록 갱신
+        final hasSave = task.steps.any(
+          (s) => s.status == StepStatus.done && s.result?.savedRecordId != null,
+        );
+        if (hasSave) _invalidateRecordProviders();
       }
     } catch (e) {
       _addLog('오류', '$e', isError: true);
@@ -374,6 +380,13 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
 
   // ── 내부 헬퍼 ─────────────────────────────────
 
+  /// 기록 저장 후 목록/최근기록 Provider 강제 갱신
+  void _invalidateRecordProviders() {
+    _ref.invalidate(recordListProvider);
+    _ref.invalidate(recentRecordsProvider);
+    debugPrint('[Agent] recordListProvider 갱신 완료');
+  }
+
   void _addLog(String step, String detail, {bool isError = false}) {
     final entry = AgentLogEntry(step: step, detail: detail, isError: isError);
     state = state.copyWith(agentLog: [...state.agentLog, entry]);
@@ -406,6 +419,10 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           clearCurrentTask: true,
           clearErrorMessage: true,
         );
+        // 기록 저장이 포함된 경우 목록 Provider 갱신
+        if (result.savedRecordId != null) {
+          _invalidateRecordProviders();
+        }
     }
   }
 }
