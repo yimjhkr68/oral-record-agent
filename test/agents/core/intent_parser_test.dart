@@ -67,6 +67,23 @@ void main() {
       expect(intent.params['filePath'], contains('record.mp3'));
     });
 
+    test('공백 포함 Windows 경로 추출', () async {
+      final intent = await parser.parse(
+          'C:\\Users\\samsung\\Documents\\소리 녹음\\어린시절 놀이.m4a 등록해줘');
+
+      expect(intent.params['filePath'],
+          equals('C:\\Users\\samsung\\Documents\\소리 녹음\\어린시절 놀이.m4a'));
+    });
+
+    test('공백 포함 경로 → registerRecord, transcribe 대상', () async {
+      final intent = await parser.parse(
+          'C:\\Users\\samsung\\Documents\\내 인터뷰 파일\\interview 01.mp3 등록해줘');
+
+      expect(intent.type, equals(IntentType.registerRecord));
+      expect(intent.params['filePath'],
+          endsWith('interview 01.mp3'));
+    });
+
     test('확장자 파일명 추출', () async {
       final intent = await parser.parse('document.pdf 등록해줘');
 

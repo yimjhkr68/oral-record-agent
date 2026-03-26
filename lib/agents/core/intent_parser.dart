@@ -174,7 +174,17 @@ class IntentParser {
 
   /// 파일 경로 패턴 감지
   String? _extractFilePath(String input) {
-    // Windows 경로: C:\, D:\, E:\ 등
+    // Windows 경로: C:\, D:\, E:\ 등 (공백 포함 경로 지원)
+    // 파일 확장자로 경로 끝을 판별하여 공백이 있는 경로도 올바르게 추출
+    const exts = r'mp3|mp4|wav|m4a|webm|mov|pdf|docx|txt';
+    final winPathWithExt = RegExp(
+      r'[A-Za-z]:\\[^\n"]*?\.(' + exts + r')(?=\s|$)',
+      caseSensitive: false,
+    );
+    final winMatchWithExt = winPathWithExt.firstMatch(input);
+    if (winMatchWithExt != null) return winMatchWithExt.group(0);
+
+    // 확장자 없는 경로 폴백: 공백 전까지
     final winPath = RegExp(r'[A-Za-z]:\\[^\s]+');
     final winMatch = winPath.firstMatch(input);
     if (winMatch != null) return winMatch.group(0);
