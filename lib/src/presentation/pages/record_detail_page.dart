@@ -267,6 +267,8 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       }
 
       ref.invalidate(recordDetailProvider(widget.recordId));
+      ref.invalidate(recordListProvider);
+      ref.invalidate(recentRecordsProvider);
       if (!mounted) return;
       _clearEditState();
       ScaffoldMessenger.of(context).showSnackBar(

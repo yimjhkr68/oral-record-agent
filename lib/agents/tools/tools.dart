@@ -829,13 +829,15 @@ class GenerateDocTool extends AgentTool {
           name: 'docType',
           type: 'string',
           description: '생성 유형: report(보고서) | book(생애사 책) | summary(요약집)',
-          required: true,
+          required: false,
+          defaultValue: 'report',
         ),
         const ToolParam(
           name: 'recordIds',
           type: 'list',
           description: '포함할 기록 ID 목록',
-          required: true,
+          required: false,
+          defaultValue: <String>[],
         ),
         const ToolParam(
           name: 'title',

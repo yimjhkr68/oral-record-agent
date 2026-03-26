@@ -296,7 +296,10 @@ class AgentCore {
       case IntentType.searchRecord:
         return _ExecutionPlan([_PlanStep('search', Map.from(intent.params))]);
       case IntentType.generateContent:
-        return _ExecutionPlan([_PlanStep('generate_doc', Map.from(intent.params))]);
+        final genParams = Map<String, dynamic>.from(intent.params);
+        genParams['docType'] ??= 'report';
+        genParams['recordIds'] ??= <String>[];
+        return _ExecutionPlan([_PlanStep('generate_doc', genParams)]);
       case IntentType.exportData:
         return _ExecutionPlan([_PlanStep('export', Map.from(intent.params))]);
       case IntentType.analyzeRecord:

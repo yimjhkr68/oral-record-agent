@@ -169,6 +169,9 @@ class IntentParser {
     // 검색 쿼리: 인물명 있으면 쿼리에도 포함
     if (personName != null) params['query'] = personName;
 
+    // 문서 유형 감지 (generateContent 인텐트용)
+    params['docType'] = _extractDocType(lower);
+
     return params;
   }
 
@@ -241,6 +244,22 @@ class IntentParser {
     if (lower.contains('pdf')) return 'pdf';
     if (lower.contains('txt') || lower.contains('텍스트')) return 'txt';
     return null;
+  }
+
+  /// 문서 생성 유형 감지 (generateContent 인텐트용)
+  /// 기본값: 'report'
+  String _extractDocType(String lower) {
+    if (lower.contains('책') ||
+        lower.contains('생애사') ||
+        lower.contains('생애')) {
+      return 'book';
+    }
+    if (lower.contains('요약') ||
+        lower.contains('정리') ||
+        lower.contains('요약집')) {
+      return 'summary';
+    }
+    return 'report'; // 보고서가 기본값
   }
 
   // ─── Claude API fallback ──────────────────────────────
