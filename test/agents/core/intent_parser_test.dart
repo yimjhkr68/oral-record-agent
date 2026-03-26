@@ -84,6 +84,28 @@ void main() {
           endsWith('interview 01.mp3'));
     });
 
+    test('한글 폴더명 경로 추출 (공백 없음)', () async {
+      final intent = await parser.parse(
+          'C:\\Users\\samsung\\다운로드\\면담녹음.wav 등록해줘');
+
+      expect(intent.params['filePath'],
+          equals('C:\\Users\\samsung\\다운로드\\면담녹음.wav'));
+    });
+
+    test('공백 포함 PDF 경로 추출', () async {
+      final intent = await parser.parse(
+          'C:\\Users\\samsung\\Desktop\\구술자료 최종본.pdf 등록해줘');
+
+      expect(intent.params['filePath'],
+          equals('C:\\Users\\samsung\\Desktop\\구술자료 최종본.pdf'));
+    });
+
+    test('경로 없는 일반 입력 → filePath null', () async {
+      final intent = await parser.parse('김철수 기록 찾아줘');
+
+      expect(intent.params.containsKey('filePath'), isFalse);
+    });
+
     test('확장자 파일명 추출', () async {
       final intent = await parser.parse('document.pdf 등록해줘');
 

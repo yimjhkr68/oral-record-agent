@@ -138,10 +138,15 @@ class AgentCore {
       // 툴이 등록돼 있지 않으면 건너뜀 (optional 단계)
       if (!_tools.has(step.toolName)) {
         if (step.required) {
+          // 미지원 파일 형식 전용 에러 메시지
+          final errMsg = step.toolName == '_unsupported_type'
+              ? '지원하지 않는 파일 형식입니다: .${step.params['ext']}\n'
+                '지원 형식: mp3, mp4, wav, m4a, webm, mov, pdf, docx, txt'
+              : '등록되지 않은 툴: ${step.toolName}';
           results.add(ToolCallResult(
             toolName: step.toolName,
             success: false,
-            errorMessage: '등록되지 않은 툴: ${step.toolName}',
+            errorMessage: errMsg,
           ));
           break;
         }
@@ -173,10 +178,15 @@ class AgentCore {
     final failed = results.where((r) => !r.success).toList();
 
     if (failed.isNotEmpty) {
+      // 미지원 파일 형식은 사람 검토 불필요 → 즉시 실패
+      final unsupported = failed.any((r) => r.toolName == '_unsupported_type');
+      final reason = failed
+          .map((r) => r.errorMessage ?? '${r.toolName} 실패')
+          .join('; ');
       return _CheckResult(
         passed: false,
-        reason: '${failed.map((r) => r.toolName).join(', ')} 단계 실패',
-        needsHumanReview: true,
+        reason: reason,
+        needsHumanReview: !unsupported,
       );
     }
 
@@ -303,6 +313,22 @@ class AgentCore {
     final filePath = params['filePath'] as String? ?? '';
     final preprocessTool = _tools.preprocessToolFor(filePath);
     final steps = <_PlanStep>[];
+
+    // 파일 경로가 있는데 지원하지 않는 형식이면 즉시 실패
+    if (filePath.isNotEmpty && preprocessTool == null) {
+      final ext = filePath.contains('.') ? filePath.split('.').last.toLowerCase() : '';
+      final isText = params.containsKey('text') && (params['text'] as String?)?.isNotEmpty == true;
+      // 알 수 없는 확장자(2~5자 알파벳/숫자)이고 텍스트 입력도 없는 경우 → 미지원 형식
+      final hasUnknownExt = ext.length >= 2 && ext.length <= 5 &&
+          RegExp(r'^[a-z0-9]+$').hasMatch(ext);
+      if (hasUnknownExt && !isText) {
+        return _ExecutionPlan([
+          _PlanStep('_unsupported_type',
+              {'ext': ext, 'filePath': filePath},
+              required: true),
+        ]);
+      }
+    }
 
     if (preprocessTool != null) {
       steps.add(_PlanStep(preprocessTool, {'filePath': filePath}, required: true));

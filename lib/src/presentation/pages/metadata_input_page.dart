@@ -15,8 +15,6 @@ import '../../data/models/interviewer.dart';
 import '../../data/models/interview_session.dart';
 import '../../data/models/record.dart';
 import '../../data/repositories/repository_provider.dart';
-import '../../data/models/search_filters.dart';
-import '../../data/services/display_id_service.dart';
 
 class MetadataInputPage extends ConsumerStatefulWidget {
   const MetadataInputPage({super.key});
