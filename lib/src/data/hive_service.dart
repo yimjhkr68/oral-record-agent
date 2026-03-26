@@ -156,6 +156,15 @@ class HiveService {
     await _openFileBytesBox();
     await _openAccountsBox();
     await _openAuthPrefsBox();
+    await _openAgentHistoryBox();
+  }
+
+  /// 에이전트 실행 이력 박스 오픈 (JSON 문자열 직렬화)
+  static Future<Box<String>> _openAgentHistoryBox() async {
+    if (!Hive.isBoxOpen('agent_history')) {
+      return await Hive.openBox<String>('agent_history');
+    }
+    return Hive.box<String>('agent_history');
   }
 
   /// 파일 바이트(base64) 박스 오픈 (FileStorageService 사용)

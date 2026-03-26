@@ -20,6 +20,8 @@ import '../../data/repositories/narrator_repository.dart';
 import '../../data/repositories/repository_provider.dart';
 import 'settings_provider.dart';
 import 'record_provider.dart';
+import 'agent_history_provider.dart';
+import '../../../agents/core/agent_history.dart';
 
 // ─── 로그 항목 ────────────────────────────────────────
 
@@ -197,6 +199,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
 
       // 4단계: 결과 반영
       _applyResult(result);
+      _saveHistory(userInput, result);
     } catch (e) {
       _addLog('오류', '$e', isError: true);
       state = state.copyWith(
@@ -273,6 +276,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         // 단일 스텝: 기존 경로 (이미 파싱된 intent 재사용)
         final result = await core.handle(task.steps.first.intent);
         _applyResult(result);
+        _saveHistory(userInput, result);
       } else {
         // 멀티스텝 경로
         state = state.copyWith(
@@ -379,6 +383,28 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
   void setStateForTest(AgentState newState) => state = newState;
 
   // ── 내부 헬퍼 ─────────────────────────────────
+
+  /// 에이전트 이력 저장 (비동기, 오류 무시)
+  void _saveHistory(String inputText, AgentResult result) {
+    final status = result.isSuccess
+        ? AgentHistoryStatus.success
+        : AgentHistoryStatus.failed;
+    final steps = state.agentLog
+        .map((l) => HistoryLogItem(
+              step: l.step,
+              detail: l.detail,
+              isError: l.isError,
+              timestamp: l.timestamp,
+            ))
+        .toList();
+    final entry = AgentHistoryEntry.create(
+      inputText: inputText,
+      status: status,
+      steps: steps,
+      savedRecordId: result.savedRecordId,
+    );
+    _ref.read(agentHistoryProvider.notifier).addEntry(entry).ignore();
+  }
 
   /// 기록 저장 후 목록/최근기록 Provider 강제 갱신
   void _invalidateRecordProviders() {

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'theme/app_theme.dart';
-import 'pages/home_page.dart';
+import 'screens/home_screen.dart';
 import 'pages/record_input_pages.dart';
 import 'pages/metadata_input_page.dart';
 import 'pages/record_list_page.dart';
@@ -116,7 +116,7 @@ final goRouter = GoRouter(
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const HomePage(),
+          builder: (context, state) => const HomeScreen(),
         ),
         GoRoute(
           path: '/people',
