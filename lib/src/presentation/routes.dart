@@ -16,6 +16,7 @@ import 'pages/add_edit_narrator_page.dart';
 import 'pages/add_edit_interviewer_page.dart';
 import 'pages/search_page.dart';
 import 'pages/account_management_page.dart';
+import 'screens/agent_screen.dart';
 
 // ── 공통 하단 네비게이션 바 ────────────────────────────────────
 class AppBottomNavBar extends StatelessWidget {
@@ -25,7 +26,7 @@ class AppBottomNavBar extends StatelessWidget {
 
   const AppBottomNavBar({super.key, this.currentIndex = -1});
 
-  static const _routes = ['/', '/people', '/records', '/search', '/settings'];
+  static const _routes = ['/', '/people', '/records', '/search', '/settings', '/agent'];
 
   @override
   Widget build(BuildContext context) {
@@ -69,6 +70,11 @@ class AppBottomNavBar extends StatelessWidget {
           activeIcon: Icon(Icons.settings),
           label: '설정',
         ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.smart_toy_outlined),
+          activeIcon: Icon(Icons.smart_toy),
+          label: '에이전트',
+        ),
       ],
     );
   }
@@ -85,6 +91,7 @@ class _AppShell extends StatelessWidget {
     if (location.startsWith('/records')) return 2;
     if (location.startsWith('/search')) return 3;
     if (location.startsWith('/settings')) return 4;
+    if (location.startsWith('/agent')) return 5;
     return 0;
   }
 
@@ -126,6 +133,10 @@ final goRouter = GoRouter(
         GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsPage(),
+        ),
+        GoRoute(
+          path: '/agent',
+          builder: (context, state) => const AgentScreen(),
         ),
       ],
     ),
