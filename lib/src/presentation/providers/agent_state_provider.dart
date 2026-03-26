@@ -171,6 +171,8 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         final services = ToolServices(
           claudeApiKey: apiKey,
           pythonPath: settings.pythonPath,
+          whisperModel: settings.whisperModel,
+          transcriptionLanguage: settings.transcriptionLanguage,
           recordRepo: recordRepo,
           narratorRepo: narratorRepo,
         );
@@ -245,6 +247,8 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         final services = ToolServices(
           claudeApiKey: apiKey,
           pythonPath: settings.pythonPath,
+          whisperModel: settings.whisperModel,
+          transcriptionLanguage: settings.transcriptionLanguage,
           recordRepo: recordRepo,
           narratorRepo: narratorRepo,
         );

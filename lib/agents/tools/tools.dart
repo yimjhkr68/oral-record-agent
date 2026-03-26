@@ -113,7 +113,8 @@ class TranscribeTool extends AgentTool {
     final result = await LocalTranscriptionService.transcribeFile(
       filePath: filePath,
       pythonPath: _services!.pythonPath,
-      language: language,
+      model: _services!.whisperModel,
+      language: language.isEmpty ? _services!.transcriptionLanguage : language,
     );
 
     if (!result.success) {

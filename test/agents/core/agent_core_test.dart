@@ -80,6 +80,35 @@ void main() {
       expect(result.status, equals(AgentStatus.needsClarification));
     });
 
+    test('음성 파일 등록 - transcript가 save_record에 전달됨', () async {
+      // Bug #1 회귀 방지: transcribe → save_record transcript 체이닝
+      final core = AgentCore(
+        claudeApiKey: '',
+        toolRegistry: null, // standard() 스텁 사용
+      );
+
+      const intent = AgentIntent(
+        type: IntentType.registerRecord,
+        rawInput: 'interview.mp3 파일 등록해줘',
+        params: {'filePath': '/uploads/interview.mp3'},
+        confidence: 0.95,
+      );
+
+      final result = await core.handle(intent);
+      expect(result.isSuccess, isTrue);
+
+      // 전사 단계 결과 확인
+      final transcribeResult = result.toolCallResults
+          .firstWhere((r) => r.toolName == 'transcribe');
+      expect(transcribeResult.success, isTrue);
+      expect(transcribeResult.output?['transcript'], isNotEmpty);
+
+      // save_record가 실행됐는지 확인
+      final saveResult = result.toolCallResults
+          .firstWhere((r) => r.toolName == 'save_record');
+      expect(saveResult.success, isTrue);
+    });
+
     test('검색 의도 처리', () async {
       const intent = AgentIntent(
         type: IntentType.searchRecord,

@@ -14,6 +14,12 @@ class ToolServices {
   /// Python 실행 경로 (Transcribe/Extract/GenerateDoc 용)
   final String pythonPath;
 
+  /// Whisper 모델 크기 (tiny/base/small/medium/large)
+  final String whisperModel;
+
+  /// 전사 언어 코드 (TranscribeTool 기본값)
+  final String transcriptionLanguage;
+
   /// 기록 저장소 (SaveRecordTool, SearchTool, ExportTool 용)
   final RecordRepository? recordRepo;
 
@@ -23,6 +29,8 @@ class ToolServices {
   const ToolServices({
     this.claudeApiKey,
     this.pythonPath = 'python',
+    this.whisperModel = 'base',
+    this.transcriptionLanguage = 'ko',
     this.recordRepo,
     this.narratorRepo,
   });

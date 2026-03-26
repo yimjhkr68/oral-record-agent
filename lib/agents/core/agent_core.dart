@@ -230,14 +230,19 @@ class AgentCore {
   void _chain(_PlanStep step, ToolResult result, _ExecutionPlan plan) {
     final out = result.output;
     for (final next in plan.steps) {
-      if (step.toolName == 'transcribe' && next.toolName == 'summarize') {
+      // 전처리 툴(전사/추출) → summarize 로 텍스트 전달
+      if ((step.toolName == 'transcribe' ||
+              step.toolName == 'extract_pdf' ||
+              step.toolName == 'extract_docx') &&
+          next.toolName == 'summarize') {
         next.params['text'] = out['transcript'];
       }
-      if (step.toolName == 'extract_pdf' && next.toolName == 'summarize') {
-        next.params['text'] = out['transcript'];
-      }
-      if (step.toolName == 'extract_docx' && next.toolName == 'summarize') {
-        next.params['text'] = out['transcript'];
+      // 전처리 툴 → save_record 로 transcript 전달 (기록 본문 보존)
+      if ((step.toolName == 'transcribe' ||
+              step.toolName == 'extract_pdf' ||
+              step.toolName == 'extract_docx') &&
+          next.toolName == 'save_record') {
+        next.params['transcript'] = out['transcript'];
       }
       if (step.toolName == 'summarize') {
         if (next.toolName == 'tag') next.params['text'] = out['summary'];
