@@ -160,7 +160,8 @@ class ExtractPdfTool extends AgentTool {
     if (_services == null) {
       return ToolResult(success: true, output: {
         'transcript': '[PDF 추출] 문서 내용...',
-        'pageCount': 10,
+        'extractionMethod': 'text_layer',
+        'charCount': 20,
         'filePath': filePath,
       });
     }
@@ -174,8 +175,12 @@ class ExtractPdfTool extends AgentTool {
       return ToolResult(success: false, errorMessage: result.error ?? 'PDF 추출 실패');
     }
 
+    final method = result.extractionMethod;
+    final charCount = result.charCount;
     return ToolResult(success: true, output: {
       'transcript': result.text,
+      'extractionMethod': method,
+      'charCount': charCount,
       'filePath': filePath,
     });
   }

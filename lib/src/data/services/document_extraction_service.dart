@@ -11,11 +11,15 @@ class DocumentExtractionResult {
   final String text;
   final bool success;
   final String? error;
+  final String extractionMethod;
+  final int charCount;
 
   const DocumentExtractionResult({
     required this.text,
     required this.success,
     this.error,
+    this.extractionMethod = 'text_layer',
+    this.charCount = 0,
   });
 }
 
@@ -141,8 +145,15 @@ class DocumentExtractionService {
       }
 
       final text = (json['text'] as String?) ?? '';
-      debugPrint('[문서추출 완료] ${text.length}자');
-      return DocumentExtractionResult(text: text, success: true);
+      final extractionMethod = (json['extraction_method'] as String?) ?? 'text_layer';
+      final charCount = (json['char_count'] as int?) ?? text.length;
+      debugPrint('[문서추출 완료] ${text.length}자 (method: $extractionMethod)');
+      return DocumentExtractionResult(
+        text: text,
+        success: true,
+        extractionMethod: extractionMethod,
+        charCount: charCount,
+      );
     } on ProcessException catch (e) {
       return DocumentExtractionResult(
         text: '',
