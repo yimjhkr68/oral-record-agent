@@ -1,0 +1,77 @@
+# Flutter/Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.iml
+
+# Android
+android/.gradle
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/**/GeneratedPluginRegistrant.java
+
+# iOS
+ios/.generated/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Flutter/app.flx
+ios/Flutter/app.zip
+ios/Flutter/flutter_assets/
+ios/ServiceDefinitions.json
+ios/Runner/GeneratedPluginRegistrant.*
+
+# macOS
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Windows
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+
+# Linux
+linux/flutter/generated_plugin_registrant.cc
+linux/flutter/generated_plugin_registrant.h
+linux/flutter/generated_plugins.cmake
+
+# Web
+lib/generated_plugin_registrant.dart
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Dart 자동 생성 파일
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Windows 생성 파일
+/windows/flutter/generated_plugin_registrant.dart
+
+# 환경 변수 파일 (절대 커밋 금지 - API 키 포함)
+.env
+.env.*
+!.env.example
+클로드\ API.txt
+
+# 로그 및 임시 파일
+flutter_run.log
+*.log
+*.wav
+*.mp3
+*.mp4
+
+# Claude Code 내부 디렉터리
+.claude/

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="oral_record_agent">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>구술기록관리</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- PDF 텍스트 추출 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- DOCX 텍스트 추출 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script>
+    // pdf.js 워커 설정
+    if (typeof pdfjsLib !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    // PDF 텍스트 추출 함수 (Uint8Array → string)
+    async function extractPdfText(bytes) {
+      console.log('[텍스트 추출 중...] pdf.js 호출 (' + bytes.length + ' bytes)');
+      try {
+        const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+        let text = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          text += content.items.map(function(item) { return item.str; }).join(' ') + '\n';
+        }
+        console.log('[텍스트 추출 완료] PDF: ' + text.length + '자 (' + pdf.numPages + '페이지)');
+        return text;
+      } catch (e) {
+        console.error('[텍스트 추출 오류] PDF:', e);
+        return '';
+      }
+    }
+
+    // DOCX 텍스트 추출 함수 (ArrayBuffer → string)
+    async function extractDocxText(bytes) {
+      console.log('[텍스트 추출 중...] mammoth.js 호출 (' + bytes.length + ' bytes)');
+      try {
+        const result = await mammoth.extractRawText({ arrayBuffer: bytes.buffer });
+        console.log('[텍스트 추출 완료] DOCX: ' + result.value.length + '자');
+        return result.value;
+      } catch (e) {
+        console.error('[텍스트 추출 오류] DOCX:', e);
+        return '';
+      }
+    }
+  </script>
+</head>
+<body>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
