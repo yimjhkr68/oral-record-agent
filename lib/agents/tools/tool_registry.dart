@@ -4,6 +4,7 @@
 import 'tool_interface.dart';
 import 'tool_services.dart';
 import 'tools.dart';
+import 'smart_search_tool.dart';
 
 /// 파일 확장자 → 필요한 전처리 툴 이름 매핑
 const Map<String, String> _extToTool = {
@@ -34,7 +35,7 @@ class ToolRegistry {
   ToolRegistry(List<AgentTool> tools)
       : _tools = {for (final t in tools) t.name: t};
 
-  /// 프로덕션용 — 10개 툴 전부 등록
+  /// 프로덕션용 — 11개 툴 전부 등록
   factory ToolRegistry.standard() => ToolRegistry([
         TranscribeTool(),
         ExtractPdfTool(),
@@ -44,6 +45,7 @@ class ToolRegistry {
         LinkPersonTool(),
         SaveRecordTool(),
         SearchTool(),
+        SmartSearchTool(),
         ExportTool(),
         GenerateDocTool(),
       ]);
@@ -58,6 +60,7 @@ class ToolRegistry {
         LinkPersonTool(services),
         SaveRecordTool(services),
         SearchTool(services),
+        SmartSearchTool(services),
         ExportTool(services),
         GenerateDocTool(services),
       ]);

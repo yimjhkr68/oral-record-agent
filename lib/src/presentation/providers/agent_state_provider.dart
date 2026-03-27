@@ -9,12 +9,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../agents/core/agent_core.dart';
+import '../../../agents/core/agent_intent.dart';
 import '../../../agents/core/agent_result.dart';
 import '../../../agents/core/intent_parser.dart';
 import '../../../agents/core/multi_step_task.dart';
 import '../../../agents/core/task_planner.dart';
 import '../../../agents/tools/tool_registry.dart';
 import '../../../agents/tools/tool_services.dart';
+import '../../../agents/tools/tool_interface.dart';
 import '../../data/repositories/record_repository.dart';
 import '../../data/repositories/narrator_repository.dart';
 import '../../data/repositories/repository_provider.dart';
@@ -22,6 +24,9 @@ import 'settings_provider.dart';
 import 'record_provider.dart';
 import 'agent_history_provider.dart';
 import '../../../agents/core/agent_history.dart';
+import 'agent_output_provider.dart';
+import '../../../agents/core/agent_output.dart';
+import 'auth_provider.dart';
 
 // ─── 로그 항목 ────────────────────────────────────────
 
@@ -30,18 +35,65 @@ class AgentLogEntry {
   final String detail;
   final DateTime timestamp;
   final bool isError;
+  /// HistoryLogType.name 문자열 (nullable — 기존 로그 호환)
+  final String? logType;
 
   AgentLogEntry({
     required this.step,
     required this.detail,
     DateTime? timestamp,
     this.isError = false,
+    this.logType,
   }) : timestamp = timestamp ?? DateTime.now();
 }
 
 // ─── 에이전트 처리 상태 (agent_result.dart의 AgentStatus와 구분) ──
 
-enum AgentProcessStatus { idle, thinking, executing, pendingReview, error }
+enum AgentProcessStatus {
+  idle,
+  thinking,
+  executing,
+  pendingReview,
+  pendingSearchConfirm, // 검색 결과 컨펌 대기
+  error,
+}
+
+// ─── 검색 결과 컨펌 데이터 ─────────────────────────────
+
+class SearchResultRecord {
+  final String recordId;
+  final String title;
+  final String narratorName;
+  final String date;
+  final String summaryPreview;
+  final double relevanceScore;
+  bool isSelected;
+
+  SearchResultRecord({
+    required this.recordId,
+    required this.title,
+    required this.narratorName,
+    required this.date,
+    required this.summaryPreview,
+    required this.relevanceScore,
+    bool? isSelected,
+  }) : isSelected = isSelected ?? relevanceScore >= 0.7;
+}
+
+class SearchConfirmData {
+  final String originalPrompt;
+  final String enhancedPrompt;
+  final List<SearchResultRecord> records;
+  /// 'analyze' | 'generate_report' | 'generate_book' | 'generate_summary'
+  final String nextAction;
+
+  const SearchConfirmData({
+    required this.originalPrompt,
+    required this.enhancedPrompt,
+    required this.records,
+    required this.nextAction,
+  });
+}
 
 // ─── 상태 클래스 ──────────────────────────────────────
 
@@ -70,6 +122,9 @@ class AgentState {
   /// 사용자 검토 대기 중인 결과
   final AgentResult? pendingReview;
 
+  /// 검색 결과 컨펌 대기 중인 데이터
+  final SearchConfirmData? pendingSearchResult;
+
   /// 에러 메시지
   final String? errorMessage;
 
@@ -88,6 +143,7 @@ class AgentState {
     this.agentLog = const [],
     this.lastResult,
     this.pendingReview,
+    this.pendingSearchResult,
     this.errorMessage,
     this.currentMultiTask,
     this.taskHistory = const [],
@@ -102,10 +158,12 @@ class AgentState {
     List<AgentLogEntry>? agentLog,
     AgentResult? lastResult,
     AgentResult? pendingReview,
+    SearchConfirmData? pendingSearchResult,
     String? errorMessage,
     MultiStepTask? currentMultiTask,
     List<MultiStepTask>? taskHistory,
     bool clearPendingReview = false,
+    bool clearPendingSearch = false,
     bool clearCurrentTask = false,
     bool clearErrorMessage = false,
     bool clearCurrentMultiTask = false,
@@ -119,6 +177,7 @@ class AgentState {
       agentLog: agentLog ?? this.agentLog,
       lastResult: lastResult ?? this.lastResult,
       pendingReview: clearPendingReview ? null : (pendingReview ?? this.pendingReview),
+      pendingSearchResult: clearPendingSearch ? null : (pendingSearchResult ?? this.pendingSearchResult),
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       currentMultiTask: clearCurrentMultiTask ? null : (currentMultiTask ?? this.currentMultiTask),
       taskHistory: taskHistory ?? this.taskHistory,
@@ -131,13 +190,30 @@ class AgentState {
 class AgentStateNotifier extends StateNotifier<AgentState> {
   final Ref _ref;
 
+  /// 현재 처리 중인 원본 입력 (산출물 기록용)
+  String _lastInput = '';
+  /// 개선된 프롬프트 (산출물 기록용, 없으면 원본과 동일)
+  String _lastEnhancedPrompt = '';
+
   AgentStateNotifier(this._ref) : super(const AgentState());
 
+  /// SmartSearch 결과 후 confirmSearch() 에서 사용할 저장 상태
+  ToolRegistry? _pendingToolRegistry;
+  RecordRepository? _pendingRecordRepo;
+
   // ── 공개 API ─────────────────────────────────────
+
+  /// 프롬프트 컨텍스트 저장 (PromptEnhancer 결과 전달용)
+  void setPromptContext(String original, String enhanced) {
+    _lastInput = original;
+    _lastEnhancedPrompt = enhanced;
+  }
 
   /// 사용자 자연어 입력 처리
   /// IntentParser → AgentCore 순서로 실행
   Future<void> handle(String userInput) async {
+    _lastInput = userInput;
+    _lastEnhancedPrompt = userInput;
     state = state.copyWith(
       status: AgentProcessStatus.thinking,
       clearCurrentTask: true,
@@ -213,6 +289,10 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
   /// TaskPlanner로 단일/멀티 판단 후 적절한 경로로 실행
   /// 기존 handle()과 달리 멀티스텝도 처리 가능
   Future<void> handleInput(String userInput) async {
+    if (_lastInput.isEmpty) {
+      _lastInput = userInput;
+      _lastEnhancedPrompt = userInput;
+    }
     state = state.copyWith(
       status: AgentProcessStatus.thinking,
       clearCurrentTask: true,
@@ -273,8 +353,22 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
       );
 
       if (task.steps.length == 1) {
+        final intent = task.steps.first.intent;
+
+        // analyzeRecord / generateContent → SmartSearch 선처리
+        if (intent.type == IntentType.analyzeRecord ||
+            intent.type == IntentType.generateContent) {
+          final intercepted = await _runSmartSearchIntercept(
+            userInput: userInput,
+            intent: intent,
+            toolRegistry: toolRegistry,
+            recordRepo: recordRepo,
+          );
+          if (intercepted) return; // 컨펌 대기 중 or 결과 없음 → 여기서 종료
+        }
+
         // 단일 스텝: 기존 경로 (이미 파싱된 intent 재사용)
-        final result = await core.handle(task.steps.first.intent);
+        final result = await core.handle(intent);
         _applyResult(result);
         _saveHistory(userInput, result);
       } else {
@@ -367,6 +461,104 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
     );
   }
 
+  /// 검색 결과 컨펌 → 선택된 기록으로 다음 단계 실행
+  Future<void> confirmSearch(List<String> selectedRecordIds) async {
+    final pending = state.pendingSearchResult;
+    if (pending == null) return;
+
+    final selectedTitles = pending.records
+        .where((r) => selectedRecordIds.contains(r.recordId))
+        .map((r) => r.title)
+        .join(', ');
+
+    state = state.copyWith(
+      status: AgentProcessStatus.executing,
+      clearPendingSearch: true,
+    );
+    _addLog('선택', '선택된 기록: $selectedTitles',
+        logType: HistoryLogType.searchConfirmed.name);
+
+    try {
+      final toolRegistry = _pendingToolRegistry;
+      if (toolRegistry == null) {
+        _addLog('오류', '도구 레지스트리 없음', isError: true);
+        state = state.copyWith(
+            status: AgentProcessStatus.error, errorMessage: '내부 오류');
+        return;
+      }
+
+      // 선택된 기록 텍스트 결합
+      final combinedText = await _buildCombinedText(selectedRecordIds);
+
+      if (pending.nextAction == 'analyze') {
+        _addLog('실행', 'summarize 실행 중...',
+            logType: HistoryLogType.toolStart.name);
+        final result = await toolRegistry.run('summarize', {
+          'text': combinedText.isEmpty ? '(내용 없음)' : combinedText,
+          'summaryType': 'detailed',
+        });
+        if (result.success) {
+          final summary = result.output['summary'] as String? ?? '분석 완료';
+          _addLog('완료', summary, logType: HistoryLogType.agentComplete.name);
+          state = state.copyWith(
+              status: AgentProcessStatus.idle, clearCurrentTask: true);
+        } else {
+          _addLog('오류', result.errorMessage ?? '분석 실패',
+              isError: true, logType: HistoryLogType.toolError.name);
+          state = state.copyWith(
+              status: AgentProcessStatus.error,
+              errorMessage: result.errorMessage);
+        }
+      } else {
+        // generate_report / generate_book / generate_summary
+        final docType = pending.nextAction.startsWith('generate_')
+            ? pending.nextAction.substring('generate_'.length)
+            : 'report';
+        _addLog('실행', 'generate_doc ($docType) 실행 중...',
+            logType: HistoryLogType.toolStart.name);
+        final result = await toolRegistry.run('generate_doc', {
+          'docType': docType,
+          'recordIds': selectedRecordIds,
+          'title': '구술기록 ${_docTypeLabel(docType)}',
+        });
+        if (result.success) {
+          _addLog('완료', '${_docTypeLabel(docType)} 생성 완료',
+              logType: HistoryLogType.agentComplete.name);
+          _saveOutputIfPresentFromResult(result);
+          state = state.copyWith(
+              status: AgentProcessStatus.idle, clearCurrentTask: true);
+        } else {
+          _addLog('오류', result.errorMessage ?? '생성 실패',
+              isError: true, logType: HistoryLogType.toolError.name);
+          state = state.copyWith(
+              status: AgentProcessStatus.error,
+              errorMessage: result.errorMessage);
+        }
+      }
+
+      _saveHistory(
+        pending.originalPrompt,
+        AgentResult.success(toolCallResults: [], summary: '완료'),
+      );
+    } catch (e) {
+      _addLog('오류', '$e', isError: true);
+      state = state.copyWith(
+          status: AgentProcessStatus.error,
+          clearCurrentTask: true,
+          errorMessage: '$e');
+    }
+  }
+
+  /// 검색 결과 거부 → idle로 전환
+  void rejectSearch() {
+    _addLog('취소', '검색 결과 거부 — 새 입력을 기다립니다');
+    state = state.copyWith(
+      status: AgentProcessStatus.idle,
+      clearPendingSearch: true,
+      clearCurrentTask: true,
+    );
+  }
+
   /// 로그 초기화
   void clearLog() {
     state = state.copyWith(agentLog: []);
@@ -384,6 +576,163 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
 
   // ── 내부 헬퍼 ─────────────────────────────────
 
+  /// SmartSearch 선처리 — true면 컨펌 대기 또는 결과 없음으로 종료
+  Future<bool> _runSmartSearchIntercept({
+    required String userInput,
+    required AgentIntent intent,
+    required ToolRegistry toolRegistry,
+    required RecordRepository? recordRepo,
+  }) async {
+    _addLog('검색', '관련 기록 검색 중...',
+        logType: HistoryLogType.searchQuery.name);
+    state = state.copyWith(
+        status: AgentProcessStatus.executing, currentTask: '기록 검색 중...');
+
+    final searchResult = await toolRegistry.run('smart_search', {
+      'query': userInput,
+      'maxResults': 10,
+    });
+
+    if (!searchResult.success) {
+      _addLog('오류', '검색 실패: ${searchResult.errorMessage}',
+          isError: true, logType: HistoryLogType.toolError.name);
+      state = state.copyWith(
+          status: AgentProcessStatus.error,
+          errorMessage: searchResult.errorMessage);
+      return true;
+    }
+
+    final records = (searchResult.output['records'] as List? ?? [])
+        .cast<Map<String, dynamic>>();
+    final hasResults = searchResult.output['hasResults'] as bool? ?? false;
+    final strategy =
+        searchResult.output['searchStrategy'] as String? ?? '';
+    final total = searchResult.output['totalFound'] as int? ?? 0;
+
+    _addLog('검색', '$total건 발견 ($strategy)',
+        logType: HistoryLogType.searchResult.name);
+
+    if (!hasResults) {
+      _addLog(
+        '검색',
+        '[검색 실패] "${intent.params['query'] ?? userInput}"에 해당하는 기록을 찾지 못했어요.\n'
+        '힌트: 구술자 이름, 날짜, 주제어로 다시 시도해보세요.',
+        logType: HistoryLogType.searchResult.name,
+      );
+      _saveHistory(userInput, AgentResult.failed('검색 결과 없음'));
+      state = state.copyWith(
+          status: AgentProcessStatus.idle, clearCurrentTask: true);
+      return true;
+    }
+
+    final resultRecords = records.map((m) {
+      return SearchResultRecord(
+        recordId: m['recordId'] as String? ?? '',
+        title: m['title'] as String? ?? '',
+        narratorName: m['narratorName'] as String? ?? '',
+        date: m['date'] as String? ?? '',
+        summaryPreview: m['summaryPreview'] as String? ?? '',
+        relevanceScore: (m['relevanceScore'] as num?)?.toDouble() ?? 0.5,
+      );
+    }).toList();
+
+    final docType = intent.params['docType'] as String? ?? 'report';
+    final nextAction = intent.type == IntentType.analyzeRecord
+        ? 'analyze'
+        : 'generate_$docType';
+
+    _pendingToolRegistry = toolRegistry;
+    _pendingRecordRepo = recordRepo;
+
+    state = state.copyWith(
+      status: AgentProcessStatus.pendingSearchConfirm,
+      clearCurrentTask: true,
+      pendingSearchResult: SearchConfirmData(
+        originalPrompt: _lastInput,
+        enhancedPrompt: _lastEnhancedPrompt,
+        records: resultRecords,
+        nextAction: nextAction,
+      ),
+    );
+    return true;
+  }
+
+  /// 선택된 기록들의 transcript + summary 결합
+  Future<String> _buildCombinedText(List<String> recordIds) async {
+    final repo = _pendingRecordRepo;
+    if (repo == null) return '';
+    final parts = <String>[];
+    for (final id in recordIds) {
+      try {
+        final record = await repo.getRecord(id);
+        if (record == null) continue;
+        parts.add('=== ${record.title} ===');
+        if (record.content.isNotEmpty) parts.add(record.content);
+        if (record.summary?.isNotEmpty == true) {
+          parts.add('[요약] ${record.summary}');
+        }
+      } catch (_) {}
+    }
+    return parts.join('\n\n');
+  }
+
+  /// ToolResult 직접 전달 버전 산출물 기록
+  void _saveOutputIfPresentFromResult(ToolResult result) {
+    final filePath = result.output['filePath'] as String?;
+    if (filePath == null || filePath.isEmpty) return;
+    final outputTypeKey = result.output['outputType'] as String? ?? 'report';
+    final username =
+        _ref.read(authProvider).currentUser?.username ?? 'anonymous';
+    final output = AgentOutput.create(
+      userAccount: username,
+      userPrompt: _lastInput,
+      enhancedPrompt: _lastEnhancedPrompt,
+      outputTypeKey: outputTypeKey,
+      filePath: filePath,
+    );
+    _ref.read(agentOutputProvider.notifier).addOutput(output).ignore();
+    _lastInput = '';
+    _lastEnhancedPrompt = '';
+  }
+
+  String _docTypeLabel(String docType) {
+    switch (docType) {
+      case 'book': return '생애사 책';
+      case 'summary': return '요약집';
+      default: return '보고서';
+    }
+  }
+
+  /// 산출물 파일 자동 기록 (filePath 출력이 있는 경우)
+  void _saveOutputIfPresent(AgentResult result) {
+    final filePath = result.toolCallResults
+        .where((r) => r.success && r.output != null)
+        .map((r) => r.output!['filePath'] as String?)
+        .firstWhere((p) => p != null && p.isNotEmpty, orElse: () => null);
+    if (filePath == null) return;
+
+    final outputTypeKey = result.toolCallResults
+            .where((r) => r.success && r.output?['outputType'] != null)
+            .map((r) => r.output!['outputType'] as String)
+            .firstOrNull ??
+        'report';
+
+    final username =
+        _ref.read(authProvider).currentUser?.username ?? 'anonymous';
+
+    final output = AgentOutput.create(
+      userAccount: username,
+      userPrompt: _lastInput,
+      enhancedPrompt: _lastEnhancedPrompt,
+      outputTypeKey: outputTypeKey,
+      filePath: filePath,
+    );
+
+    _ref.read(agentOutputProvider.notifier).addOutput(output).ignore();
+    _lastInput = '';
+    _lastEnhancedPrompt = '';
+  }
+
   /// 에이전트 이력 저장 (비동기, 오류 무시)
   void _saveHistory(String inputText, AgentResult result) {
     final status = result.isSuccess
@@ -395,6 +744,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
               detail: l.detail,
               isError: l.isError,
               timestamp: l.timestamp,
+              logType: l.logType,
             ))
         .toList();
     final entry = AgentHistoryEntry.create(
@@ -413,8 +763,10 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
     debugPrint('[Agent] recordListProvider 갱신 완료');
   }
 
-  void _addLog(String step, String detail, {bool isError = false}) {
-    final entry = AgentLogEntry(step: step, detail: detail, isError: isError);
+  void _addLog(String step, String detail,
+      {bool isError = false, String? logType}) {
+    final entry = AgentLogEntry(
+        step: step, detail: detail, isError: isError, logType: logType);
     state = state.copyWith(agentLog: [...state.agentLog, entry]);
   }
 
@@ -449,6 +801,8 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         if (result.savedRecordId != null) {
           _invalidateRecordProviders();
         }
+        // 파일 산출물이 있으면 자동 기록
+        _saveOutputIfPresent(result);
     }
   }
 }

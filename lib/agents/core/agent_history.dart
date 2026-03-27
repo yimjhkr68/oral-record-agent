@@ -3,19 +3,36 @@
 
 import 'dart:convert';
 
-enum AgentHistoryStatus { success, failed, cancelled }
+enum AgentHistoryStatus { success, failed, cancelled, noResults }
+
+/// 로그 항목 유형 — AgentLogEntry.logType 및 HistoryLogItem.logType과 공유
+enum HistoryLogType {
+  promptOriginal,   // 사용자 원본 프롬프트
+  promptEnhanced,   // AI 개선 프롬프트
+  promptExecuted,   // 실제 실행된 프롬프트
+  searchQuery,      // 검색어
+  searchResult,     // 검색 결과 요약
+  searchConfirmed,  // 사용자가 선택한 기록 목록
+  toolStart,
+  toolSuccess,
+  toolError,
+  agentPlan,
+  agentComplete,
+}
 
 class HistoryLogItem {
   final String step;
   final String detail;
   final bool isError;
   final DateTime timestamp;
+  final String? logType; // HistoryLogType.name
 
   const HistoryLogItem({
     required this.step,
     required this.detail,
     this.isError = false,
     required this.timestamp,
+    this.logType,
   });
 
   Map<String, dynamic> toMap() => {
@@ -23,14 +40,15 @@ class HistoryLogItem {
         'detail': detail,
         'isError': isError,
         'ts': timestamp.millisecondsSinceEpoch,
+        if (logType != null) 'logType': logType,
       };
 
   factory HistoryLogItem.fromMap(Map<String, dynamic> m) => HistoryLogItem(
         step: m['step'] as String? ?? '',
         detail: m['detail'] as String? ?? '',
         isError: m['isError'] as bool? ?? false,
-        timestamp:
-            DateTime.fromMillisecondsSinceEpoch(m['ts'] as int? ?? 0),
+        timestamp: DateTime.fromMillisecondsSinceEpoch(m['ts'] as int? ?? 0),
+        logType: m['logType'] as String?,
       );
 }
 

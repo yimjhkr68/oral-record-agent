@@ -6,9 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/agent_state_provider.dart';
+import '../providers/settings_provider.dart';
 import '../theme/app_theme.dart';
 import 'multi_step_progress.dart';
 import 'review_dialog.dart';
+import 'prompt_enhance_card.dart';
+import 'search_confirm_dialog.dart';
+import '../../../agents/core/prompt_enhancer.dart';
 
 // ── 메인 패널 ──────────────────────────────────────────
 
@@ -25,6 +29,11 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
   final _scrollController = ScrollController();
   late final AnimationController _pulseController;
   bool _reviewDialogShown = false;
+  bool _searchDialogShown = false;
+
+  // ── 프롬프트 개선 상태 ──────────────────────────────
+  EnhancedPrompt? _pendingEnhance;
+  bool _isEnhancing = false;
 
   @override
   void initState() {
@@ -73,8 +82,24 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
       }
     });
 
+    // pendingSearchConfirm 시 검색 결과 컨펌 다이얼로그 표시
+    ref.listen(agentStateProvider, (prev, next) {
+      if (next.status == AgentProcessStatus.pendingSearchConfirm &&
+          next.pendingSearchResult != null &&
+          !_searchDialogShown) {
+        _searchDialogShown = true;
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) =>
+              SearchConfirmDialog(data: next.pendingSearchResult!),
+        ).then((_) => _searchDialogShown = false);
+      }
+    });
+
     final isBusy = agentState.status == AgentProcessStatus.thinking ||
-        agentState.status == AgentProcessStatus.executing;
+        agentState.status == AgentProcessStatus.executing ||
+        agentState.status == AgentProcessStatus.pendingSearchConfirm;
 
     return Column(
       children: [
@@ -86,9 +111,33 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
             scrollController: _scrollController,
           ),
         ),
+        // 프롬프트 개선 로딩
+        if (_isEnhancing)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 8),
+                Text('프롬프트 분석 중...', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+        // 프롬프트 개선 카드
+        if (_pendingEnhance != null)
+          PromptEnhanceCard(
+            enhanced: _pendingEnhance!,
+            onUseEnhanced: _submitWithEnhanced,
+            onUseOriginal: _submitWithOriginal,
+            onCancel: () => setState(() => _pendingEnhance = null),
+          ),
         _InputArea(
           controller: _textController,
-          isBusy: isBusy,
+          isBusy: isBusy || _isEnhancing,
           onSubmit: _handleSubmit,
           onFileDrop: _handleFileDrop,
         ),
@@ -96,11 +145,52 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
     );
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
-    ref.read(agentStateProvider.notifier).handleInput(text);
-    _textController.clear();
+
+    // 프롬프트 개선 대상 여부 확인
+    if (PromptEnhancer.shouldEnhance(text)) {
+      final apiKey = ref.read(settingsProvider).apiKey;
+      setState(() => _isEnhancing = true);
+      _textController.clear();
+      try {
+        final enhanced = await PromptEnhancer(apiKey: apiKey.isEmpty ? null : apiKey)
+            .enhance(text);
+        if (!mounted) return;
+        if (enhanced.isImproved) {
+          setState(() {
+            _pendingEnhance = enhanced;
+            _isEnhancing = false;
+          });
+          return;
+        }
+      } catch (_) {
+        // 개선 실패 시 원본으로 진행
+      }
+      if (!mounted) return;
+      setState(() => _isEnhancing = false);
+      ref.read(agentStateProvider.notifier).handleInput(text);
+    } else {
+      ref.read(agentStateProvider.notifier).handleInput(text);
+      _textController.clear();
+    }
+  }
+
+  void _submitWithEnhanced() {
+    final enhanced = _pendingEnhance;
+    setState(() => _pendingEnhance = null);
+    if (enhanced == null) return;
+    ref.read(agentStateProvider.notifier)
+      ..setPromptContext(enhanced.original, enhanced.enhanced)
+      ..handleInput(enhanced.enhanced);
+  }
+
+  void _submitWithOriginal() {
+    final enhanced = _pendingEnhance;
+    setState(() => _pendingEnhance = null);
+    if (enhanced == null) return;
+    ref.read(agentStateProvider.notifier).handleInput(enhanced.original);
   }
 
   void _handleFileDrop(String filePath) {
@@ -194,6 +284,13 @@ class _StatusBar extends StatelessWidget {
           Icons.rate_review_outlined,
           false,
         );
+      case AgentProcessStatus.pendingSearchConfirm:
+        return (
+          '검색 결과 확인 — 진행할 기록을 선택해주세요',
+          AppTheme.primaryLight,
+          Icons.fact_check_outlined,
+          false,
+        );
       case AgentProcessStatus.error:
         return (
           state.errorMessage != null
@@ -263,6 +360,7 @@ class _LogBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, color) = _stepStyle();
+    final prefix = _logPrefix();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -301,7 +399,7 @@ class _LogBubble extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        entry.step,
+                        prefix.isNotEmpty ? prefix : entry.step,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -337,13 +435,50 @@ class _LogBubble extends StatelessWidget {
     );
   }
 
+  /// logType 기반 말풍선 헤더 접두어
+  String _logPrefix() {
+    switch (entry.logType) {
+      case 'promptOriginal': return '📝 원본';
+      case 'promptEnhanced': return '✨ 개선';
+      case 'promptExecuted': return '▶ 실행';
+      case 'searchQuery':    return '🔍 검색';
+      case 'searchResult':   return '📋 결과';
+      case 'searchConfirmed':return '✅ 선택';
+      case 'agentComplete':  return '🎉 완료';
+      case 'toolError':      return '❌ 오류';
+      default: return '';
+    }
+  }
+
   (IconData, Color) _stepStyle() {
     if (entry.isError) return (Icons.error_outline, AppTheme.error);
+    // logType 우선
+    switch (entry.logType) {
+      case 'promptOriginal':
+      case 'promptEnhanced':
+      case 'promptExecuted':
+        return (Icons.edit_note_outlined, AppTheme.primaryLight);
+      case 'searchQuery':
+        return (Icons.search, AppTheme.primaryLight);
+      case 'searchResult':
+        return (Icons.list_alt_outlined, AppTheme.primaryLight);
+      case 'searchConfirmed':
+        return (Icons.check_circle_outline, Colors.green.shade600);
+      case 'agentComplete':
+        return (Icons.done_all, Colors.green.shade600);
+      case 'toolError':
+        return (Icons.error_outline, AppTheme.error);
+    }
+    // step 이름 기반 폴백
     switch (entry.step) {
       case '계획':
         return (Icons.assignment_outlined, AppTheme.primaryLight);
       case '분석':
         return (Icons.psychology_outlined, AppTheme.primaryLight);
+      case '검색':
+        return (Icons.search, AppTheme.primaryLight);
+      case '선택':
+        return (Icons.check_circle_outline, Colors.green.shade600);
       case '실행':
         return (Icons.settings_outlined, AppTheme.primaryLight);
       case '검증':

@@ -83,6 +83,7 @@ class _HistoryTile extends StatelessWidget {
       AgentHistoryStatus.success => const Color(0xFF4CAF50),
       AgentHistoryStatus.failed => const Color(0xFFF44336),
       AgentHistoryStatus.cancelled => const Color(0xFFFF9800),
+      AgentHistoryStatus.noResults => const Color(0xFF78909C),
     };
 
     return Theme(
