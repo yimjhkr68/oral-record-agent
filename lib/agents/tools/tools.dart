@@ -5,6 +5,7 @@
 // services == null (또는 해당 필드 null) → 스텁 모드 (테스트/미리보기용)
 // services 주입 시 → v1 실제 서비스 호출
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
@@ -139,6 +140,7 @@ class TranscribeTool extends AgentTool {
       pythonPath: _services!.pythonPath,
       model: _services!.whisperModel,
       language: language.isEmpty ? _services!.transcriptionLanguage : language,
+      timeoutMinutes: _services!.transcribeTimeoutMinutes,
     );
 
     if (!result.success) {
@@ -1167,6 +1169,159 @@ class GenerateDocTool extends AgentTool {
     await outputDir.create(recursive: true);
     final outputPath = '${outputDir.path}${Platform.pathSeparator}$fileName';
 
+    // ── 2단계 AI 분석 챕터 생성 ─────────────────────────
+    String? aiAnalysisChapter;
+    final apiKey = _services?.claudeApiKey;
+    final timeoutMin = _services?.generateDocTimeoutMinutes ?? 3;
+    final httpTimeout = Duration(seconds: timeoutMin * 60);
+
+    if (apiKey != null && apiKey.isNotEmpty && records.isNotEmpty) {
+      // 입력 텍스트 수집 (기록당 최대 2000자, 전체 최대 8000자)
+      var combinedText = records
+          .where((r) => r.content.isNotEmpty || r.summary?.isNotEmpty == true)
+          .map((r) {
+            final parts = <String>['[${r.title}]'];
+            if (r.summary?.isNotEmpty == true) parts.add(r.summary!);
+            if (r.content.isNotEmpty) {
+              final preview = r.content.length > 2000
+                  ? r.content.substring(0, 2000)
+                  : r.content;
+              parts.add(preview);
+            }
+            return parts.join('\n');
+          })
+          .join('\n\n---\n\n');
+
+      // 전체 8000자 초과 시 앞 8000자만 사용
+      if (combinedText.length > 8000) {
+        combinedText = combinedText.substring(0, 8000);
+        _services?.onProgress?.call('안내', '텍스트가 길어 앞 8000자만 분석에 사용합니다.');
+      }
+
+      if (combinedText.isNotEmpty) {
+        try {
+          const systemPrompt =
+              '당신은 구술기록 전문 연구원이자 전문 편집자입니다.\n'
+              '구술 기록을 바탕으로 학술적이고 읽기 쉬운 보고서를 작성합니다.\n\n'
+              '작성 원칙:\n'
+              '1. 주어와 서술어가 명확히 호응하는 완전한 문장 작성\n'
+              '2. 피동형 남용 금지 ("~되어지다" → "~되다" 또는 능동형으로)\n'
+              '3. 구술자의 말을 직접 인용할 때는 반드시 따옴표 사용\n'
+              '4. 원래 의미를 왜곡하지 않는 범위에서 표현 다듬기\n'
+              '5. 서론/본론/결론 구조 유지\n\n'
+              '금지 사항:\n'
+              '- "~인 것 같다", "~일 수도 있다" 같은 불필요한 추측 표현\n'
+              '- 같은 단어/표현 3회 이상 연속 반복\n'
+              '- 원본에 없는 내용 창작';
+
+          final reqText = requirements != null && requirements.isNotEmpty
+              ? '분석 요구사항: $requirements\n\n'
+              : '';
+          final userContent =
+              '${reqText}다음 구술 기록들을 바탕으로 분석 보고서를 작성하세요:\n\n$combinedText';
+
+          // ── 1단계: 초안 생성 ────────────────────────────
+          _services?.onProgress?.call('실행', '1/2단계: 보고서 초안 생성 중...');
+          final draftStopwatch = Stopwatch()..start();
+          Timer? draftProgressTimer;
+          Timer? draftWarnTimer;
+
+          draftProgressTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+            final s = draftStopwatch.elapsed.inSeconds;
+            _services?.onProgress?.call('실행', '1/2단계: 초안 생성 중... ($s초 경과)');
+          });
+          if (timeoutMin > 1) {
+            draftWarnTimer = Timer(const Duration(minutes: 1), () {
+              _services?.onProgress?.call('실행',
+                  '⚠️ 1분 경과 — 보고서 생성 중 (최대 $timeoutMin분)\n'
+                  '응답이 없으면 설정에서 대기 시간을 늘려보세요.');
+            });
+          }
+
+          http.Response? draftResponse;
+          try {
+            draftResponse = await http
+                .post(
+                  Uri.parse('https://api.anthropic.com/v1/messages'),
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                  },
+                  body: jsonEncode({
+                    'model': 'claude-haiku-4-5-20251001',
+                    'max_tokens': 2048,
+                    'system': systemPrompt,
+                    'messages': [
+                      {'role': 'user', 'content': userContent},
+                    ],
+                  }),
+                )
+                .timeout(httpTimeout);
+          } finally {
+            draftProgressTimer.cancel();
+            draftWarnTimer?.cancel();
+          }
+
+          if (draftResponse.statusCode == 200) {
+            final body =
+                jsonDecode(draftResponse.body) as Map<String, dynamic>;
+            final draft =
+                (body['content'] as List).first['text'] as String;
+
+            // ── 2단계: 교정 ──────────────────────────────
+            _services?.onProgress?.call('실행', '2/2단계: 문장 품질 검토 및 수정 중...');
+            const reviewSystem = '당신은 전문 교정 편집자입니다. '
+                '비문 수정, 어색한 표현 개선, 용어 일관성 확인을 수행합니다.';
+            final reviewPrompt = '다음 보고서 초안을 검토하여 비문·어색한 표현을 수정하고 '
+                '최종본만 출력하세요:\n\n$draft';
+
+            http.Response? reviewResponse;
+            try {
+              reviewResponse = await http
+                  .post(
+                    Uri.parse('https://api.anthropic.com/v1/messages'),
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'x-api-key': apiKey,
+                      'anthropic-version': '2023-06-01',
+                    },
+                    body: jsonEncode({
+                      'model': 'claude-haiku-4-5-20251001',
+                      'max_tokens': 2048,
+                      'system': reviewSystem,
+                      'messages': [
+                        {'role': 'user', 'content': reviewPrompt},
+                      ],
+                    }),
+                  )
+                  .timeout(httpTimeout);
+            } catch (_) {
+              // 교정 실패 → 초안 그대로 사용
+              reviewResponse = null;
+            }
+
+            if (reviewResponse != null && reviewResponse.statusCode == 200) {
+              final rb =
+                  jsonDecode(reviewResponse.body) as Map<String, dynamic>;
+              aiAnalysisChapter =
+                  (rb['content'] as List).first['text'] as String;
+            } else {
+              aiAnalysisChapter = draft;
+            }
+          }
+        } on TimeoutException {
+          _services?.onProgress?.call('안내',
+              '⚠️ 보고서 생성 시간이 초과됐어요 ($timeoutMin분).\n'
+              '설정 > 에이전트 설정에서 대기 시간을 늘리거나\n'
+              '더 적은 기록으로 다시 시도해주세요.');
+          // AI 챕터 없이 계속 진행 (기본 구조로 폴백)
+        } catch (_) {
+          // 기타 AI 생성 실패 → 기본 구조로 폴백
+        }
+      }
+    }
+
     // create_docx.py 가 기대하는 chapters 구조로 변환
     final dateStr =
         '${now.year}년 ${now.month}월 ${now.day}일';
@@ -1203,6 +1358,15 @@ class GenerateDocTool extends AgentTool {
       'content': overviewParts.join('\n\n'),
       'type': 'chapter',
     });
+
+    // AI 분석 챕터 (2단계 생성 성공 시)
+    if (aiAnalysisChapter != null && aiAnalysisChapter.isNotEmpty) {
+      chapters.add({
+        'title': '2. AI 분석',
+        'content': aiAnalysisChapter,
+        'type': 'chapter',
+      });
+    }
 
     // 기록별 챕터
     for (int i = 0; i < records.length; i++) {

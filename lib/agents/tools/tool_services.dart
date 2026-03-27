@@ -26,6 +26,15 @@ class ToolServices {
   /// 구술자 저장소 (LinkPersonTool 용)
   final NarratorRepository? narratorRepo;
 
+  /// 산출물 생성(generate_doc) 최대 대기 시간 (분, 기본값: 3)
+  final int generateDocTimeoutMinutes;
+
+  /// 전사(Whisper) 최대 대기 시간 (분, 기본값: 15)
+  final int transcribeTimeoutMinutes;
+
+  /// 툴 내부 진행 상황 콜백 (중간 단계 로그용)
+  final void Function(String step, String detail)? onProgress;
+
   const ToolServices({
     this.claudeApiKey,
     this.pythonPath = 'python',
@@ -33,5 +42,8 @@ class ToolServices {
     this.transcriptionLanguage = 'ko',
     this.recordRepo,
     this.narratorRepo,
+    this.generateDocTimeoutMinutes = 3,
+    this.transcribeTimeoutMinutes = 15,
+    this.onProgress,
   });
 }

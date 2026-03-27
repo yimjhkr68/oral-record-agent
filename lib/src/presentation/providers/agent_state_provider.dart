@@ -180,6 +180,12 @@ class AgentState {
   /// 마지막으로 실행한 프롬프트 원문 (취소 시 입력창 복원용)
   final String lastUserInput;
 
+  /// 실제로 실행된 프롬프트 (개선된 버전 or 원본)
+  final String lastExecutedPrompt;
+
+  /// 이력 상세창 "재실행" 시 입력창에 복원할 프롬프트 (소비 후 null)
+  final String? pendingInputRestore;
+
   const AgentState({
     this.status = AgentProcessStatus.idle,
     this.currentTask,
@@ -196,6 +202,8 @@ class AgentState {
     this.taskHistory = const [],
     this.pendingDuplicateInfo,
     this.lastUserInput = '',
+    this.lastExecutedPrompt = '',
+    this.pendingInputRestore,
   });
 
   AgentState copyWith({
@@ -214,6 +222,8 @@ class AgentState {
     List<MultiStepTask>? taskHistory,
     DuplicateFileInfo? pendingDuplicateInfo,
     String? lastUserInput,
+    String? lastExecutedPrompt,
+    String? pendingInputRestore,
     bool clearPendingReview = false,
     bool clearPendingSearch = false,
     bool clearPendingEnhance = false,
@@ -222,6 +232,8 @@ class AgentState {
     bool clearErrorMessage = false,
     bool clearCurrentMultiTask = false,
     bool clearLastUserInput = false,
+    bool clearLastExecutedPrompt = false,
+    bool clearPendingInputRestore = false,
   }) {
     return AgentState(
       status: status ?? this.status,
@@ -239,6 +251,8 @@ class AgentState {
       taskHistory: taskHistory ?? this.taskHistory,
       pendingDuplicateInfo: clearPendingDuplicate ? null : (pendingDuplicateInfo ?? this.pendingDuplicateInfo),
       lastUserInput: clearLastUserInput ? '' : (lastUserInput ?? this.lastUserInput),
+      lastExecutedPrompt: clearLastExecutedPrompt ? '' : (lastExecutedPrompt ?? this.lastExecutedPrompt),
+      pendingInputRestore: clearPendingInputRestore ? null : (pendingInputRestore ?? this.pendingInputRestore),
     );
   }
 }
@@ -312,6 +326,16 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           transcriptionLanguage: settings.transcriptionLanguage,
           recordRepo: recordRepo,
           narratorRepo: narratorRepo,
+          generateDocTimeoutMinutes: settings.generateDocTimeoutMinutes,
+          transcribeTimeoutMinutes: settings.transcribeTimeoutMinutes,
+          onProgress: (step, detail) {
+            _addLog(step, detail);
+            state = state.copyWith(
+              status: AgentProcessStatus.executing,
+              currentStep: step,
+              currentTask: detail,
+            );
+          },
         );
         toolRegistry = ToolRegistry.withServices(services);
       }
@@ -474,6 +498,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
   Future<void> _executeInput(String userInput) async {
     state = state.copyWith(
       status: AgentProcessStatus.thinking,
+      lastExecutedPrompt: userInput,
     );
 
     try {
@@ -510,6 +535,16 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           transcriptionLanguage: settings.transcriptionLanguage,
           recordRepo: recordRepo,
           narratorRepo: narratorRepo,
+          generateDocTimeoutMinutes: settings.generateDocTimeoutMinutes,
+          transcribeTimeoutMinutes: settings.transcribeTimeoutMinutes,
+          onProgress: (step, detail) {
+            _addLog(step, detail);
+            state = state.copyWith(
+              status: AgentProcessStatus.executing,
+              currentStep: step,
+              currentTask: detail,
+            );
+          },
         );
         toolRegistry = ToolRegistry.withServices(services);
       }
@@ -743,6 +778,16 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
       clearPendingSearch: true,
       clearCurrentTask: true,
     );
+  }
+
+  /// 이력 상세창 "재실행" 버튼 → 입력창에 프롬프트 복원 요청
+  void requestInputRestore(String prompt) {
+    state = state.copyWith(pendingInputRestore: prompt);
+  }
+
+  /// pendingInputRestore 소비 후 초기화
+  void clearInputRestore() {
+    state = state.copyWith(clearPendingInputRestore: true);
   }
 
   /// 로그 초기화
@@ -1050,6 +1095,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           clearCurrentTask: true,
           clearErrorMessage: true,
           clearLastUserInput: true,
+          clearLastExecutedPrompt: true,
         );
         // 기록 저장이 포함된 경우 목록 Provider 갱신
         if (result.savedRecordId != null) {
@@ -1149,6 +1195,16 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           transcriptionLanguage: settings.transcriptionLanguage,
           recordRepo: recordRepo,
           narratorRepo: narratorRepo,
+          generateDocTimeoutMinutes: settings.generateDocTimeoutMinutes,
+          transcribeTimeoutMinutes: settings.transcribeTimeoutMinutes,
+          onProgress: (step, detail) {
+            _addLog(step, detail);
+            state = state.copyWith(
+              status: AgentProcessStatus.executing,
+              currentStep: step,
+              currentTask: detail,
+            );
+          },
         );
         toolRegistry = ToolRegistry.withServices(services);
       }

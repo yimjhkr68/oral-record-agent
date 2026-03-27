@@ -39,6 +39,7 @@ class LocalTranscriptionService {
     String model = 'base',
     String language = 'ko',
     String? scriptDir,
+    int timeoutMinutes = 15,
   }) async {
     // scripts/transcribe.py 경로 결정
     final String scriptPath;
@@ -91,8 +92,8 @@ class LocalTranscriptionService {
         runInShell: Platform.isWindows,
         environment: env,
       ).timeout(
-        const Duration(minutes: 10),
-        onTimeout: () => ProcessResult(-1, 1, '', '타임아웃: 전사에 10분 이상 소요됩니다.'),
+        Duration(minutes: timeoutMinutes),
+        onTimeout: () => ProcessResult(-1, 1, '', '타임아웃: 전사에 $timeoutMinutes분 이상 소요됩니다. 설정에서 대기 시간을 늘려보세요.'),
       );
 
       debugPrint('[로컬전사] exitCode: ${result.exitCode}');

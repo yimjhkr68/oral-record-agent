@@ -15,6 +15,8 @@ class AppSettingsState {
   final String whisperModel;      // 로컬 Whisper 모델 크기 (tiny/base/small/medium/large)
   final String pythonPath;        // Python 실행파일 경로
   final String transcriptionLanguage; // 전사 언어 코드 (ko, en 등)
+  final int generateDocTimeoutMinutes; // 산출물 생성 최대 대기 시간 (분)
+  final int transcribeTimeoutMinutes;  // 전사 최대 대기 시간 (분)
 
   AppSettingsState({
     this.autoTranscribe = true,
@@ -27,6 +29,8 @@ class AppSettingsState {
     this.whisperModel = 'base',
     this.pythonPath = 'python',
     this.transcriptionLanguage = 'ko',
+    this.generateDocTimeoutMinutes = 3,
+    this.transcribeTimeoutMinutes = 15,
   });
 
   AppSettingsState copyWith({
@@ -40,6 +44,8 @@ class AppSettingsState {
     String? whisperModel,
     String? pythonPath,
     String? transcriptionLanguage,
+    int? generateDocTimeoutMinutes,
+    int? transcribeTimeoutMinutes,
   }) {
     return AppSettingsState(
       autoTranscribe: autoTranscribe ?? this.autoTranscribe,
@@ -52,6 +58,8 @@ class AppSettingsState {
       whisperModel: whisperModel ?? this.whisperModel,
       pythonPath: pythonPath ?? this.pythonPath,
       transcriptionLanguage: transcriptionLanguage ?? this.transcriptionLanguage,
+      generateDocTimeoutMinutes: generateDocTimeoutMinutes ?? this.generateDocTimeoutMinutes,
+      transcribeTimeoutMinutes: transcribeTimeoutMinutes ?? this.transcribeTimeoutMinutes,
     );
   }
 }
@@ -99,6 +107,14 @@ class SettingsNotifier extends StateNotifier<AppSettingsState> {
 
   void setTranscriptionLanguage(String lang) {
     state = state.copyWith(transcriptionLanguage: lang);
+  }
+
+  void setGenerateDocTimeout(int minutes) {
+    state = state.copyWith(generateDocTimeoutMinutes: minutes);
+  }
+
+  void setTranscribeTimeout(int minutes) {
+    state = state.copyWith(transcribeTimeoutMinutes: minutes);
   }
 }
 
