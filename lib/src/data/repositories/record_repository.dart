@@ -3,6 +3,7 @@
 import 'package:oral_record_agent/src/data/models/record.dart';
 import 'package:oral_record_agent/src/data/models/narrator.dart';
 import 'package:oral_record_agent/src/data/models/search_filters.dart';
+import 'package:oral_record_agent/src/data/services/display_id_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 abstract class RecordRepository {
@@ -26,6 +27,9 @@ abstract class RecordRepository {
 
   /// 최근 N개 기록 조회
   Future<List<Record>> getRecentRecords(int limit);
+
+  /// 파일 해시로 기존 기록 조회 (중복 감지)
+  Future<Record?> findByFileHash(String hash);
 }
 
 class HiveRecordRepository implements RecordRepository {
@@ -37,12 +41,22 @@ class HiveRecordRepository implements RecordRepository {
   @override
   Future<String> createRecord(Record record) async {
     try {
-      await _recordBox.put(record.id, record);
-      // 또는: await _recordBox.put(record.id, record);
-      return record.id;
+      final recordToSave = record.displayId == null
+          ? record.copyWith(displayId: _generateDisplayId(record.createdAt))
+          : record;
+      await _recordBox.put(recordToSave.id, recordToSave);
+      return recordToSave.id;
     } catch (e) {
       throw Exception('Failed to create record: $e');
     }
+  }
+
+  String _generateDisplayId(DateTime date) {
+    final existingIds = _recordBox.values
+        .map((r) => r.displayId)
+        .whereType<String>()
+        .toList();
+    return DisplayIdService.generateRecordId(date, existingIds);
   }
 
   @override
@@ -145,5 +159,12 @@ class HiveRecordRepository implements RecordRepository {
     } catch (e) {
       throw Exception('Failed to get recent records: $e');
     }
+  }
+
+  @override
+  Future<Record?> findByFileHash(String hash) async {
+    return _recordBox.values
+        .where((r) => r.fileHash == hash)
+        .firstOrNull;
   }
 }

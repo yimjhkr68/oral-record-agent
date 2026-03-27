@@ -7,6 +7,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:http/http.dart' as http;
@@ -702,10 +703,30 @@ class SaveRecordTool extends AgentTool {
         ? rawTags.map((e) => e.toString()).toList()
         : <String>[];
     final narratorId = input['narratorId'] as String? ?? 'unknown';
-    final sessionId =
-        'agent-session-${now.millisecondsSinceEpoch}';
-
+    final sessionId = 'agent-session-${now.millisecondsSinceEpoch}';
     final title = _buildTitle(filePath, narratorId, now);
+
+    // 중복 파일 감지: 파일 해시 계산 후 기존 기록 조회
+    String? fileHash;
+    if (filePath != null) {
+      try {
+        fileHash = await _calculateFileHash(filePath);
+        final existing = await _services!.recordRepo!.findByFileHash(fileHash);
+        if (existing != null) {
+          debugPrint('[SaveRecord] 중복 파일 감지: ${existing.title}');
+          return ToolResult(success: false, output: {
+            'isDuplicate': true,
+            'existingRecordId': existing.id,
+            'existingTitle': existing.title,
+            'existingDisplayId': existing.displayId,
+            'fileHash': fileHash,
+          }, errorMessage:
+              '중복 파일: 이미 "${existing.title}" (${existing.displayId ?? existing.id})로 등록된 파일입니다.');
+        }
+      } catch (_) {
+        // 해시 계산 실패 시 중복 체크 건너뜀
+      }
+    }
 
     final record = Record(
       title: title,
@@ -718,8 +739,8 @@ class SaveRecordTool extends AgentTool {
       recordedBy: 'agent',
       summary: summary,
       tags: tags,
-      originalFileName:
-          filePath?.split(Platform.pathSeparator).last,
+      originalFileName: filePath?.split(Platform.pathSeparator).last,
+      fileHash: fileHash,
     );
 
     try {
@@ -733,6 +754,11 @@ class SaveRecordTool extends AgentTool {
       debugPrint('[SaveRecord] 저장 실패: $e');
       return ToolResult(success: false, errorMessage: '기록 저장 실패: $e');
     }
+  }
+
+  Future<String> _calculateFileHash(String filePath) async {
+    final bytes = await File(filePath).readAsBytes();
+    return sha256.convert(bytes).toString();
   }
 
   String _inputTypeFromPath(String? path) {

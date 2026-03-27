@@ -57,6 +57,9 @@ dependencies:
   # 파일 경로 처리 (basename, basenameWithoutExtension)
   path: ^1.9.0
 
+  # SHA-256 해시 (중복 파일 감지)
+  crypto: ^3.0.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

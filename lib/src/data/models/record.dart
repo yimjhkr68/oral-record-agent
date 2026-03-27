@@ -48,6 +48,9 @@ class Record {
   /// MIME 타입 (예: 'application/pdf', 'audio/mpeg')
   final String? mimeType;
 
+  /// SHA-256 파일 해시 (중복 파일 감지용, 선택)
+  final String? fileHash;
+
   // ==================== 메타데이터 필드 (필수) ====================
 
   /// 면담 세션 ID (필수, InterviewSession 참조)
@@ -120,6 +123,7 @@ class Record {
     this.duration,
     this.mimeType,
     this.displayId,
+    this.fileHash,
     required this.sessionId,
     required this.narratorId,
     required this.mainCategory,
@@ -167,6 +171,7 @@ class Record {
     DateTime? updatedAt,
     int? duration,
     String? displayId,
+    String? fileHash,
   }) {
     return Record(
       id: id,
@@ -180,6 +185,7 @@ class Record {
       duration: duration ?? this.duration,
       mimeType: mimeType,
       displayId: displayId ?? this.displayId,
+      fileHash: fileHash ?? this.fileHash,
       sessionId: sessionId,
       narratorId: narratorId ?? this.narratorId,
       mainCategory: mainCategory ?? this.mainCategory,

@@ -142,6 +142,8 @@ class _AgentStatusRow extends StatelessWidget {
         ('검토 대기', const Color(0xFFFFEB3B)),
       AgentProcessStatus.pendingSearchConfirm =>
         ('검색 확인', const Color(0xFF29B6F6)),
+      AgentProcessStatus.pendingDuplicate =>
+        ('중복 감지', const Color(0xFFFF9800)),
       AgentProcessStatus.error => ('오류', const Color(0xFFF44336)),
     };
 

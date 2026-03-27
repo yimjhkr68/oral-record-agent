@@ -12,6 +12,7 @@ import 'multi_step_progress.dart';
 import 'review_dialog.dart';
 import 'prompt_enhance_card.dart';
 import 'search_confirm_dialog.dart';
+import 'log_full_screen_dialog.dart';
 
 // ── 메인 패널 ──────────────────────────────────────────
 
@@ -89,6 +90,48 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
           builder: (_) =>
               SearchConfirmDialog(data: next.pendingSearchResult!),
         ).then((_) => _searchDialogShown = false);
+      }
+
+      // pendingDuplicate 시 중복 파일 다이얼로그 표시
+      if (next.status == AgentProcessStatus.pendingDuplicate &&
+          next.pendingDuplicateInfo != null &&
+          prev?.status != AgentProcessStatus.pendingDuplicate) {
+        final info = next.pendingDuplicateInfo!;
+        showDialog<void>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('이미 등록된 파일이에요'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('기존 기록: ${info.existingTitle}'),
+                if (info.existingDisplayId != null)
+                  Text('식별자: ${info.existingDisplayId}'),
+                const SizedBox(height: 8),
+                const Text(
+                  '같은 파일을 다시 등록하려면 기존 기록을 삭제 후 진행하세요.',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  ref.read(agentStateProvider.notifier).dismissDuplicate();
+                },
+                child: const Text('확인'),
+              ),
+            ],
+          ),
+        );
       }
     });
 
@@ -275,6 +318,13 @@ class _StatusBar extends StatelessWidget {
           Icons.fact_check_outlined,
           false,
         );
+      case AgentProcessStatus.pendingDuplicate:
+        return (
+          '중복 파일 감지',
+          Colors.orange,
+          Icons.warning_amber_rounded,
+          false,
+        );
       case AgentProcessStatus.error:
         return (
           state.errorMessage != null
@@ -296,8 +346,35 @@ class _LogPanel extends StatelessWidget {
 
   const _LogPanel({required this.logs, required this.scrollController});
 
+  void _openFullScreen(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => const LogFullScreenDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // 확장 버튼 (로그가 있을 때만)
+    final expandButton = logs.isNotEmpty
+        ? Positioned(
+            top: 4,
+            right: 8,
+            child: Tooltip(
+              message: '전체화면 보기',
+              child: InkWell(
+                onTap: () => _openFullScreen(context),
+                borderRadius: BorderRadius.circular(4),
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.open_in_full,
+                      size: 14, color: AppTheme.textDisabled),
+                ),
+              ),
+            ),
+          )
+        : null;
+
     if (logs.isEmpty) {
       return Center(
         child: Column(
@@ -326,11 +403,16 @@ class _LogPanel extends StatelessWidget {
       );
     }
 
-    return ListView.builder(
-      controller: scrollController,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      itemCount: logs.length,
-      itemBuilder: (context, i) => _LogBubble(entry: logs[i]),
+    return Stack(
+      children: [
+        ListView.builder(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          itemCount: logs.length,
+          itemBuilder: (context, i) => _LogBubble(entry: logs[i]),
+        ),
+        if (expandButton != null) expandButton,
+      ],
     );
   }
 }

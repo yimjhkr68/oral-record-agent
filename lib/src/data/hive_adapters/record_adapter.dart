@@ -56,6 +56,7 @@ class RecordAdapter extends TypeAdapter<Record> {
       createdAt: fields[17] as DateTime,
       updatedAt: fields[18] as DateTime,
       displayId: fields[23] as String?,
+      fileHash: fields[24] as String?,
     );
   }
 
@@ -63,7 +64,7 @@ class RecordAdapter extends TypeAdapter<Record> {
   @override
   void write(BinaryWriter writer, Record obj) {
     writer
-      ..writeByte(24)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -111,6 +112,8 @@ class RecordAdapter extends TypeAdapter<Record> {
       ..writeByte(22)
       ..write(obj.duration)
       ..writeByte(23)
-      ..write(obj.displayId);
+      ..write(obj.displayId)
+      ..writeByte(24)
+      ..write(obj.fileHash);
   }
 }

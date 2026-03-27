@@ -62,7 +62,23 @@ enum AgentProcessStatus {
   executing,
   pendingReview,
   pendingSearchConfirm, // 검색 결과 컨펌 대기
+  pendingDuplicate,     // 중복 파일 감지 다이얼로그 대기
   error,
+}
+
+// ─── 중복 파일 정보 ─────────────────────────────────
+class DuplicateFileInfo {
+  final String existingRecordId;
+  final String existingTitle;
+  final String? existingDisplayId;
+  final String fileHash;
+
+  const DuplicateFileInfo({
+    required this.existingRecordId,
+    required this.existingTitle,
+    this.existingDisplayId,
+    required this.fileHash,
+  });
 }
 
 // ─── 검색 결과 컨펌 데이터 ─────────────────────────────
@@ -93,12 +109,15 @@ class SearchConfirmData {
   final List<SearchResultRecord> records;
   /// 'analyze' | 'generate_report' | 'generate_book' | 'generate_summary'
   final String nextAction;
+  /// 사용자가 명시한 분석 방법론/관점 (예: "비교문화적 관점")
+  final String? requirements;
 
   const SearchConfirmData({
     required this.originalPrompt,
     required this.enhancedPrompt,
     required this.records,
     required this.nextAction,
+    this.requirements,
   });
 }
 
@@ -144,6 +163,9 @@ class AgentState {
   /// 완료된 태스크 히스토리 (최대 10개)
   final List<MultiStepTask> taskHistory;
 
+  /// 중복 파일 감지 정보 (pendingDuplicate 상태일 때)
+  final DuplicateFileInfo? pendingDuplicateInfo;
+
   const AgentState({
     this.status = AgentProcessStatus.idle,
     this.currentTask,
@@ -158,6 +180,7 @@ class AgentState {
     this.errorMessage,
     this.currentMultiTask,
     this.taskHistory = const [],
+    this.pendingDuplicateInfo,
   });
 
   AgentState copyWith({
@@ -174,9 +197,11 @@ class AgentState {
     String? errorMessage,
     MultiStepTask? currentMultiTask,
     List<MultiStepTask>? taskHistory,
+    DuplicateFileInfo? pendingDuplicateInfo,
     bool clearPendingReview = false,
     bool clearPendingSearch = false,
     bool clearPendingEnhance = false,
+    bool clearPendingDuplicate = false,
     bool clearCurrentTask = false,
     bool clearErrorMessage = false,
     bool clearCurrentMultiTask = false,
@@ -195,6 +220,7 @@ class AgentState {
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       currentMultiTask: clearCurrentMultiTask ? null : (currentMultiTask ?? this.currentMultiTask),
       taskHistory: taskHistory ?? this.taskHistory,
+      pendingDuplicateInfo: clearPendingDuplicate ? null : (pendingDuplicateInfo ?? this.pendingDuplicateInfo),
     );
   }
 }
@@ -311,6 +337,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
       clearCurrentTask: true,
       clearErrorMessage: true,
       clearCurrentMultiTask: true,
+      clearPendingDuplicate: true,
       agentLog: [],
     );
 
@@ -649,6 +676,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           'docType': docType,
           'recordIds': selectedRecordIds,
           'title': '구술기록 ${_docTypeLabel(docType)}',
+          if (pending.requirements != null) 'requirements': pending.requirements!,
         });
         if (result.success) {
           _addFileCompletionLog(result.output);
@@ -780,6 +808,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         enhancedPrompt: _lastEnhancedPrompt,
         records: resultRecords,
         nextAction: nextAction,
+        requirements: intent.params['requirements'] as String?,
       ),
     );
     return true;
@@ -932,6 +961,27 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           clearCurrentTask: true,
         );
       case AgentStatus.failed:
+        // 중복 파일 감지 처리
+        final dupStep = result.toolCallResults
+            .where((tr) => tr.toolName == 'save_record' &&
+                (tr.output as Map<String, dynamic>?)?['isDuplicate'] == true)
+            .firstOrNull;
+        if (dupStep != null) {
+          final out = dupStep.output as Map<String, dynamic>;
+          _addLog('중복', '이미 등록된 파일: ${out['existingTitle']}', isError: false);
+          state = state.copyWith(
+            status: AgentProcessStatus.pendingDuplicate,
+            pendingDuplicateInfo: DuplicateFileInfo(
+              existingRecordId: out['existingRecordId'] as String,
+              existingTitle: out['existingTitle'] as String,
+              existingDisplayId: out['existingDisplayId'] as String?,
+              fileHash: out['fileHash'] as String,
+            ),
+            lastResult: result,
+            clearCurrentTask: true,
+          );
+          return;
+        }
         _addLog('실패', result.errorMessage ?? '처리 실패', isError: true);
         state = state.copyWith(
           status: AgentProcessStatus.error,
@@ -962,6 +1012,14 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         // 파일 산출물이 있으면 자동 기록
         _saveOutputIfPresent(result);
     }
+  }
+
+  /// 중복 파일 다이얼로그 닫기 → idle 상태로 복귀
+  void dismissDuplicate() {
+    state = state.copyWith(
+      status: AgentProcessStatus.idle,
+      clearPendingDuplicate: true,
+    );
   }
 }
 
