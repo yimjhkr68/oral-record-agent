@@ -7,13 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/agent_state_provider.dart';
-import '../providers/settings_provider.dart';
 import '../theme/app_theme.dart';
 import 'multi_step_progress.dart';
 import 'review_dialog.dart';
 import 'prompt_enhance_card.dart';
 import 'search_confirm_dialog.dart';
-import '../../../agents/core/prompt_enhancer.dart';
 
 // ── 메인 패널 ──────────────────────────────────────────
 
@@ -31,10 +29,6 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
   late final AnimationController _pulseController;
   bool _reviewDialogShown = false;
   bool _searchDialogShown = false;
-
-  // ── 프롬프트 개선 상태 ──────────────────────────────
-  EnhancedPrompt? _pendingEnhance;
-  bool _isEnhancing = false;
 
   @override
   void initState() {
@@ -98,9 +92,16 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
       }
     });
 
+    final isEnhancing =
+        agentState.status == AgentProcessStatus.enhancingPrompt;
+    final isWaitingChoice =
+        agentState.status == AgentProcessStatus.waitingPromptChoice &&
+            agentState.pendingEnhancedPrompt != null;
+
     final isBusy = agentState.status == AgentProcessStatus.thinking ||
         agentState.status == AgentProcessStatus.executing ||
-        agentState.status == AgentProcessStatus.pendingSearchConfirm;
+        agentState.status == AgentProcessStatus.pendingSearchConfirm ||
+        agentState.status == AgentProcessStatus.enhancingPrompt;
 
     return Column(
       children: [
@@ -113,7 +114,7 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
           ),
         ),
         // 프롬프트 개선 로딩
-        if (_isEnhancing)
+        if (isEnhancing)
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(
@@ -128,17 +129,22 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
               ],
             ),
           ),
-        // 프롬프트 개선 카드
-        if (_pendingEnhance != null)
+        // 프롬프트 개선 카드 (프로바이더 상태 기반)
+        if (isWaitingChoice)
           PromptEnhanceCard(
-            enhanced: _pendingEnhance!,
-            onUseEnhanced: _submitWithEnhanced,
-            onUseOriginal: _submitWithOriginal,
-            onCancel: () => setState(() => _pendingEnhance = null),
+            enhanced: agentState.pendingEnhancedPrompt!,
+            onUseEnhanced: () => ref
+                .read(agentStateProvider.notifier)
+                .confirmEnhancedPrompt(true),
+            onUseOriginal: () => ref
+                .read(agentStateProvider.notifier)
+                .confirmEnhancedPrompt(false),
+            onCancel: () =>
+                ref.read(agentStateProvider.notifier).rejectEnhancedPrompt(),
           ),
         _InputArea(
           controller: _textController,
-          isBusy: isBusy || _isEnhancing,
+          isBusy: isBusy,
           onSubmit: _handleSubmit,
           onFileDrop: _handleFileDrop,
         ),
@@ -146,52 +152,11 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
     );
   }
 
-  Future<void> _handleSubmit() async {
+  void _handleSubmit() {
     final text = _textController.text.trim();
     if (text.isEmpty) return;
-
-    // 프롬프트 개선 대상 여부 확인
-    if (PromptEnhancer.shouldEnhance(text)) {
-      final apiKey = ref.read(settingsProvider).apiKey;
-      setState(() => _isEnhancing = true);
-      _textController.clear();
-      try {
-        final enhanced = await PromptEnhancer(apiKey: apiKey.isEmpty ? null : apiKey)
-            .enhance(text);
-        if (!mounted) return;
-        if (enhanced.isImproved) {
-          setState(() {
-            _pendingEnhance = enhanced;
-            _isEnhancing = false;
-          });
-          return;
-        }
-      } catch (_) {
-        // 개선 실패 시 원본으로 진행
-      }
-      if (!mounted) return;
-      setState(() => _isEnhancing = false);
-      ref.read(agentStateProvider.notifier).handleInput(text);
-    } else {
-      ref.read(agentStateProvider.notifier).handleInput(text);
-      _textController.clear();
-    }
-  }
-
-  void _submitWithEnhanced() {
-    final enhanced = _pendingEnhance;
-    setState(() => _pendingEnhance = null);
-    if (enhanced == null) return;
-    ref.read(agentStateProvider.notifier)
-      ..setPromptContext(enhanced.original, enhanced.enhanced)
-      ..handleInput(enhanced.enhanced);
-  }
-
-  void _submitWithOriginal() {
-    final enhanced = _pendingEnhance;
-    setState(() => _pendingEnhance = null);
-    if (enhanced == null) return;
-    ref.read(agentStateProvider.notifier).handleInput(enhanced.original);
+    _textController.clear();
+    ref.read(agentStateProvider.notifier).handleInput(text);
   }
 
   void _handleFileDrop(String filePath) {
@@ -267,6 +232,20 @@ class _StatusBar extends StatelessWidget {
     switch (state.status) {
       case AgentProcessStatus.idle:
         return ('대기 중', AppTheme.textDisabled, Icons.circle_outlined, false);
+      case AgentProcessStatus.enhancingPrompt:
+        return (
+          '프롬프트 분석 중...',
+          AppTheme.primaryLight,
+          Icons.auto_fix_high_outlined,
+          true,
+        );
+      case AgentProcessStatus.waitingPromptChoice:
+        return (
+          '개선된 프롬프트 — 선택해주세요',
+          AppTheme.accent,
+          Icons.auto_awesome_outlined,
+          false,
+        );
       case AgentProcessStatus.thinking:
         return (
           '계획 수립 중...',

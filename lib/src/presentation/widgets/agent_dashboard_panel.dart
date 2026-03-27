@@ -132,6 +132,10 @@ class _AgentStatusRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
       AgentProcessStatus.idle => ('대기 중', const Color(0xFF4CAF50)),
+      AgentProcessStatus.enhancingPrompt =>
+        ('프롬프트 분석', const Color(0xFF9C27B0)),
+      AgentProcessStatus.waitingPromptChoice =>
+        ('개선 선택 대기', const Color(0xFFE91E63)),
       AgentProcessStatus.thinking => ('분석 중', const Color(0xFF2196F3)),
       AgentProcessStatus.executing => ('실행 중', const Color(0xFFFF9800)),
       AgentProcessStatus.pendingReview =>

@@ -28,6 +28,7 @@ import '../../../agents/core/agent_history.dart';
 import 'agent_output_provider.dart';
 import '../../../agents/core/agent_output.dart';
 import 'auth_provider.dart';
+import '../../../agents/core/prompt_enhancer.dart';
 
 // ─── 로그 항목 ────────────────────────────────────────
 
@@ -55,6 +56,8 @@ class AgentLogEntry {
 
 enum AgentProcessStatus {
   idle,
+  enhancingPrompt,      // PromptEnhancer API 호출 중
+  waitingPromptChoice,  // PromptEnhanceCard 표시 중, 사용자 선택 대기
   thinking,
   executing,
   pendingReview,
@@ -129,6 +132,9 @@ class AgentState {
   /// 검색 결과 컨펌 대기 중인 데이터
   final SearchConfirmData? pendingSearchResult;
 
+  /// 프롬프트 개선 결과 대기 중인 데이터 (waitingPromptChoice 상태)
+  final EnhancedPrompt? pendingEnhancedPrompt;
+
   /// 에러 메시지
   final String? errorMessage;
 
@@ -148,6 +154,7 @@ class AgentState {
     this.lastResult,
     this.pendingReview,
     this.pendingSearchResult,
+    this.pendingEnhancedPrompt,
     this.errorMessage,
     this.currentMultiTask,
     this.taskHistory = const [],
@@ -163,11 +170,13 @@ class AgentState {
     AgentResult? lastResult,
     AgentResult? pendingReview,
     SearchConfirmData? pendingSearchResult,
+    EnhancedPrompt? pendingEnhancedPrompt,
     String? errorMessage,
     MultiStepTask? currentMultiTask,
     List<MultiStepTask>? taskHistory,
     bool clearPendingReview = false,
     bool clearPendingSearch = false,
+    bool clearPendingEnhance = false,
     bool clearCurrentTask = false,
     bool clearErrorMessage = false,
     bool clearCurrentMultiTask = false,
@@ -182,6 +191,7 @@ class AgentState {
       lastResult: lastResult ?? this.lastResult,
       pendingReview: clearPendingReview ? null : (pendingReview ?? this.pendingReview),
       pendingSearchResult: clearPendingSearch ? null : (pendingSearchResult ?? this.pendingSearchResult),
+      pendingEnhancedPrompt: clearPendingEnhance ? null : (pendingEnhancedPrompt ?? this.pendingEnhancedPrompt),
       errorMessage: clearErrorMessage ? null : (errorMessage ?? this.errorMessage),
       currentMultiTask: clearCurrentMultiTask ? null : (currentMultiTask ?? this.currentMultiTask),
       taskHistory: taskHistory ?? this.taskHistory,
@@ -291,18 +301,87 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
   }
 
   /// TaskPlanner로 단일/멀티 판단 후 적절한 경로로 실행
-  /// 기존 handle()과 달리 멀티스텝도 처리 가능
+  /// generateContent/analyzeRecord → PromptEnhancer 선처리 후 waitingPromptChoice
   Future<void> handleInput(String userInput) async {
-    if (_lastInput.isEmpty) {
-      _lastInput = userInput;
-      _lastEnhancedPrompt = userInput;
-    }
+    _lastInput = userInput;
+    _lastEnhancedPrompt = userInput;
+
+    // 로그 초기화 (PromptEnhancer 결과도 여기서부터 기록)
     state = state.copyWith(
-      status: AgentProcessStatus.thinking,
       clearCurrentTask: true,
       clearErrorMessage: true,
       clearCurrentMultiTask: true,
       agentLog: [],
+    );
+
+    // 1단계: PromptEnhancer (generateContent/analyzeRecord 키워드 감지)
+    if (PromptEnhancer.shouldEnhance(userInput)) {
+      state = state.copyWith(status: AgentProcessStatus.enhancingPrompt);
+      _addLog('✨', '프롬프트 분석 중...');
+
+      final settings = _ref.read(settingsProvider);
+      final apiKey = settings.apiKey.isEmpty ? null : settings.apiKey;
+
+      try {
+        final enhanced =
+            await PromptEnhancer(apiKey: apiKey).enhance(userInput);
+
+        // 원본 로그 (항상 기록)
+        _addLog('원본', userInput, logType: HistoryLogType.promptOriginal.name);
+
+        if (enhanced.isImproved) {
+          // 개선안 로그
+          _addLog('개선', enhanced.enhanced,
+              logType: HistoryLogType.promptEnhanced.name);
+          // PromptEnhanceCard 표시 → 사용자 선택 대기
+          state = state.copyWith(
+            status: AgentProcessStatus.waitingPromptChoice,
+            pendingEnhancedPrompt: enhanced,
+          );
+          return;
+        }
+      } catch (_) {
+        // 개선 실패 → 원본으로 진행
+      }
+    }
+
+    // 2단계: PromptEnhancer 불필요하거나 개선 안 됨 → 바로 실행
+    await _executeInput(userInput);
+  }
+
+  /// PromptEnhanceCard에서 사용자 선택 처리
+  Future<void> confirmEnhancedPrompt(bool useEnhanced) async {
+    final pending = state.pendingEnhancedPrompt;
+    if (pending == null) return;
+
+    final promptToUse = useEnhanced ? pending.enhanced : pending.original;
+    if (useEnhanced) _lastEnhancedPrompt = pending.enhanced;
+
+    // [실행] 로그
+    _addLog('실행', promptToUse, logType: HistoryLogType.promptExecuted.name);
+
+    state = state.copyWith(
+      status: AgentProcessStatus.thinking,
+      clearPendingEnhance: true,
+    );
+
+    await _executeInput(promptToUse);
+  }
+
+  /// PromptEnhanceCard 취소
+  void rejectEnhancedPrompt() {
+    _addLog('취소', '프롬프트 개선 취소');
+    state = state.copyWith(
+      status: AgentProcessStatus.idle,
+      clearPendingEnhance: true,
+      clearCurrentTask: true,
+    );
+  }
+
+  /// 실제 실행 진입점 (PromptEnhancer 이후 또는 직접 진입)
+  Future<void> _executeInput(String userInput) async {
+    state = state.copyWith(
+      status: AgentProcessStatus.thinking,
     );
 
     try {
