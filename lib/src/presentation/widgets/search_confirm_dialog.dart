@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/agent_state_provider.dart';
 import '../theme/app_theme.dart';
+import 'output_type_selector.dart';
 
 class SearchConfirmDialog extends ConsumerStatefulWidget {
   final SearchConfirmData data;
@@ -26,6 +27,9 @@ class _SearchConfirmDialogState extends ConsumerState<SearchConfirmDialog> {
   late List<SearchResultRecord> _allRecords;
   final TextEditingController _pickerSearch = TextEditingController();
   String _pickerQuery = '';
+
+  // 산출물 유형 선택
+  late List<String> _selectedOutputTypes;
 
   @override
   void initState() {
@@ -52,6 +56,8 @@ class _SearchConfirmDialogState extends ConsumerState<SearchConfirmDialog> {
               isSelected: false,
             ))
         .toList();
+    // AI 추천 유형 기본 선택
+    _selectedOutputTypes = [widget.data.aiRecommendedOutputType];
   }
 
   @override
@@ -85,8 +91,12 @@ class _SearchConfirmDialogState extends ConsumerState<SearchConfirmDialog> {
       case 'generate_summary':
         return '요약집 생성';
       default:
-        return '보고서 생성';
+        return '생성';
     }
+  }
+
+  String get _aiRecommendedLabel {
+    return outputTypeLabel(widget.data.aiRecommendedOutputType);
   }
 
   @override
@@ -95,6 +105,59 @@ class _SearchConfirmDialogState extends ConsumerState<SearchConfirmDialog> {
       return _showPicker ? _buildPickerDialog() : _buildNoResultsDialog();
     }
     return _buildNormalDialog();
+  }
+
+  // ── AI 추천 배너 ────────────────────────────────────
+
+  Widget _buildAiSuggestBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.purple.shade50,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.auto_awesome, size: 14, color: Colors.purple.shade400),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              '프롬프트를 분석했어요. '
+              '$_aiRecommendedLabel이(가) 가장 적합해 보여요. '
+              '다른 형태도 함께 만들 수 있어요.',
+              style: TextStyle(
+                  fontSize: 11, color: Colors.purple.shade700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 산출물 유형 선택 섹션 ─────────────────────────
+
+  Widget _buildOutputTypeSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 20),
+        _buildAiSuggestBanner(),
+        const SizedBox(height: 10),
+        const Text(
+          '산출물 유형 선택 (복수 선택 가능)',
+          style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textSecondary),
+        ),
+        const SizedBox(height: 8),
+        OutputTypeSelector(
+          aiRecommendedId: widget.data.aiRecommendedOutputType,
+          onChanged: (selected) =>
+              setState(() => _selectedOutputTypes = selected),
+        ),
+      ],
+    );
   }
 
   // ── 결과 없음 다이얼로그 ─────────────────────────────
@@ -112,91 +175,87 @@ class _SearchConfirmDialogState extends ConsumerState<SearchConfirmDialog> {
         ],
       ),
       content: SizedBox(
-        width: 480,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 검색어 표시
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryLight.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.format_quote,
-                      size: 14, color: AppTheme.textDisabled),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      widget.data.enhancedPrompt.isNotEmpty
-                          ? widget.data.enhancedPrompt
-                          : widget.data.originalPrompt,
-                      style: const TextStyle(
-                          fontSize: 11, color: AppTheme.textSecondary),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 검색어 표시
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryLight.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.format_quote,
+                        size: 14, color: AppTheme.textDisabled),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        widget.data.enhancedPrompt.isNotEmpty
+                            ? widget.data.enhancedPrompt
+                            : widget.data.originalPrompt,
+                        style: const TextStyle(
+                            fontSize: 11, color: AppTheme.textSecondary),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'AI 의미 검색 결과: 0건',
-              style: TextStyle(fontSize: 11, color: Colors.orange.shade700),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '어떻게 진행할까요?',
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary),
-            ),
-            const SizedBox(height: 10),
-
-            // 선택지 1: 기록 직접 선택
-            if (_allRecords.isNotEmpty)
-              _OptionCard(
-                icon: Icons.folder_open_outlined,
-                iconColor: AppTheme.primaryLight,
-                title: '기록 직접 선택',
-                subtitle: '전체 기록 목록에서 포함할 기록을 직접 선택합니다',
-                onTap: () => setState(() => _showPicker = true),
+              const SizedBox(height: 6),
+              Text(
+                'AI 의미 검색 결과: 0건',
+                style: TextStyle(fontSize: 11, color: Colors.orange.shade700),
               ),
-            if (_allRecords.isNotEmpty) const SizedBox(height: 8),
+              const SizedBox(height: 12),
 
-            // 선택지 2: 기록 없이 실행
-            _OptionCard(
-              icon: Icons.play_circle_outline,
-              iconColor: Colors.green.shade600,
-              title: '기록 없이 최대한 실행',
-              subtitle: '등록된 기록 없이 프롬프트 내용만으로 최대한 처리합니다',
-              onTap: () {
-                Navigator.of(context).pop();
-                ref.read(agentStateProvider.notifier).executeWithoutRecords();
-              },
-            ),
-            const SizedBox(height: 8),
+              // 기록 직접 선택 옵션
+              if (_allRecords.isNotEmpty)
+                _OptionCard(
+                  icon: Icons.folder_open_outlined,
+                  iconColor: AppTheme.primaryLight,
+                  title: '기록 직접 선택',
+                  subtitle: '전체 기록 목록에서 포함할 기록을 직접 선택합니다',
+                  onTap: () => setState(() => _showPicker = true),
+                ),
 
-            // 선택지 3: 취소
-            _OptionCard(
-              icon: Icons.close,
-              iconColor: AppTheme.textDisabled,
-              title: '취소',
-              subtitle: '처리를 중단합니다',
-              onTap: () {
-                Navigator.of(context).pop();
-                ref.read(agentStateProvider.notifier).rejectSearch();
-              },
-            ),
-          ],
+              // 산출물 유형 선택
+              _buildOutputTypeSection(),
+            ],
+          ),
         ),
       ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            ref.read(agentStateProvider.notifier).rejectSearch();
+          },
+          child: const Text('취소'),
+        ),
+        OutlinedButton.icon(
+          onPressed: () {
+            Navigator.of(context).pop();
+            ref.read(agentStateProvider.notifier).executeWithoutRecords(
+                  outputTypes: _selectedOutputTypes,
+                );
+          },
+          icon: const Icon(Icons.play_circle_outline, size: 16),
+          label: const Text('기록 없이 실행'),
+        ),
+        if (_allRecords.isNotEmpty)
+          FilledButton.icon(
+            onPressed: () => setState(() => _showPicker = true),
+            icon: const Icon(Icons.folder_open_outlined, size: 16),
+            label: const Text('기록 선택 후 실행'),
+          ),
+      ],
     );
   }
 
@@ -225,75 +284,79 @@ class _SearchConfirmDialogState extends ConsumerState<SearchConfirmDialog> {
       ),
       content: SizedBox(
         width: 520,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 검색창
-            TextField(
-              controller: _pickerSearch,
-              decoration: const InputDecoration(
-                hintText: '제목 / 구술자로 검색...',
-                prefixIcon: Icon(Icons.search, size: 18),
-                isDense: true,
-                border: OutlineInputBorder(),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 검색창
+              TextField(
+                controller: _pickerSearch,
+                decoration: const InputDecoration(
+                  hintText: '제목 / 구술자로 검색...',
+                  prefixIcon: Icon(Icons.search, size: 18),
+                  isDense: true,
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (v) => setState(() => _pickerQuery = v),
               ),
-              onChanged: (v) => setState(() => _pickerQuery = v),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            // 카운터 행
-            Row(
-              children: [
-                Text(
-                  '전체 ${_allRecords.length}건',
-                  style: const TextStyle(
-                      fontSize: 11, color: AppTheme.textSecondary),
-                ),
-                const Spacer(),
-                Text(
-                  '선택됨: $selectedCount건',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: selectedCount > 0
-                        ? AppTheme.primaryLight
-                        : AppTheme.textDisabled,
+              // 카운터 행
+              Row(
+                children: [
+                  Text(
+                    '전체 ${_allRecords.length}건',
+                    style: const TextStyle(
+                        fontSize: 11, color: AppTheme.textSecondary),
                   ),
-                ),
-              ],
-            ),
-            const Divider(height: 8),
-
-            // 기록 목록
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 320),
-              child: filtered.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.all(24),
-                      child: Text('검색 결과 없음',
-                          style: TextStyle(color: AppTheme.textDisabled)),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: filtered.length,
-                      itemBuilder: (context, i) {
-                        final r = filtered[i];
-                        return _PickerItem(
-                          record: r,
-                          onToggle: () => setState(() {
-                            // allRecords의 실제 항목 토글
-                            final idx = _allRecords
-                                .indexWhere((x) => x.recordId == r.recordId);
-                            if (idx >= 0) {
-                              _allRecords[idx].isSelected =
-                                  !_allRecords[idx].isSelected;
-                            }
-                          }),
-                        );
-                      },
+                  const Spacer(),
+                  Text(
+                    '선택됨: $selectedCount건',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: selectedCount > 0
+                          ? AppTheme.primaryLight
+                          : AppTheme.textDisabled,
                     ),
-            ),
-          ],
+                  ),
+                ],
+              ),
+              const Divider(height: 8),
+
+              // 기록 목록
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 240),
+                child: filtered.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('검색 결과 없음',
+                            style: TextStyle(color: AppTheme.textDisabled)),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filtered.length,
+                        itemBuilder: (context, i) {
+                          final r = filtered[i];
+                          return _PickerItem(
+                            record: r,
+                            onToggle: () => setState(() {
+                              final idx = _allRecords
+                                  .indexWhere((x) => x.recordId == r.recordId);
+                              if (idx >= 0) {
+                                _allRecords[idx].isSelected =
+                                    !_allRecords[idx].isSelected;
+                              }
+                            }),
+                          );
+                        },
+                      ),
+              ),
+
+              // 산출물 유형 선택
+              _buildOutputTypeSection(),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -308,7 +371,10 @@ class _SearchConfirmDialogState extends ConsumerState<SearchConfirmDialog> {
                   Navigator.of(context).pop();
                   ref
                       .read(agentStateProvider.notifier)
-                      .confirmSearch(_pickerSelectedIds);
+                      .confirmSearch(
+                        _pickerSelectedIds,
+                        outputTypes: _selectedOutputTypes,
+                      );
                 },
           icon: const Icon(Icons.play_arrow_rounded, size: 16),
           label: Text('$selectedCount건 선택하여 $_actionLabel'),
@@ -335,74 +401,79 @@ class _SearchConfirmDialogState extends ConsumerState<SearchConfirmDialog> {
       ),
       content: SizedBox(
         width: 520,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryLight.withValues(alpha: 0.07),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.format_quote,
-                      size: 14, color: AppTheme.textDisabled),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      widget.data.enhancedPrompt.isNotEmpty
-                          ? widget.data.enhancedPrompt
-                          : widget.data.originalPrompt,
-                      style: const TextStyle(
-                          fontSize: 11, color: AppTheme.textSecondary),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryLight.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.format_quote,
+                        size: 14, color: AppTheme.textDisabled),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        widget.data.enhancedPrompt.isNotEmpty
+                            ? widget.data.enhancedPrompt
+                            : widget.data.originalPrompt,
+                        style: const TextStyle(
+                            fontSize: 11, color: AppTheme.textSecondary),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Checkbox(
+                    value: selectedCount == _records.length,
+                    tristate:
+                        selectedCount > 0 && selectedCount < _records.length,
+                    onChanged: (v) => setState(() {
+                      for (final r in _records) {
+                        r.isSelected = v ?? false;
+                      }
+                    }),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  Text(
+                    '전체 선택 ($selectedCount/${_records.length})',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textSecondary),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Checkbox(
-                  value: selectedCount == _records.length,
-                  tristate:
-                      selectedCount > 0 && selectedCount < _records.length,
-                  onChanged: (v) => setState(() {
-                    for (final r in _records) {
-                      r.isSelected = v ?? false;
-                    }
-                  }),
-                  visualDensity: VisualDensity.compact,
-                ),
-                Text(
-                  '전체 선택 ($selectedCount/${_records.length})',
-                  style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textSecondary),
-                ),
-              ],
-            ),
-            const Divider(height: 8),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 340),
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: _records.length,
-                itemBuilder: (context, i) => _RecordItem(
-                  record: _records[i],
-                  onToggle: () => setState(() {
-                    _records[i].isSelected = !_records[i].isSelected;
-                  }),
+              const Divider(height: 8),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 260),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _records.length,
+                  itemBuilder: (context, i) => _RecordItem(
+                    record: _records[i],
+                    onToggle: () => setState(() {
+                      _records[i].isSelected = !_records[i].isSelected;
+                    }),
+                  ),
                 ),
               ),
-            ),
-          ],
+
+              // 산출물 유형 선택
+              _buildOutputTypeSection(),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -420,7 +491,10 @@ class _SearchConfirmDialogState extends ConsumerState<SearchConfirmDialog> {
                   Navigator.of(context).pop();
                   ref
                       .read(agentStateProvider.notifier)
-                      .confirmSearch(_selectedIds);
+                      .confirmSearch(
+                        _selectedIds,
+                        outputTypes: _selectedOutputTypes,
+                      );
                 },
           icon: const Icon(Icons.play_arrow_rounded, size: 16),
           label: Text(

@@ -348,8 +348,27 @@ class AgentCore {
       case IntentType.generateContent:
         final genParams = Map<String, dynamic>.from(intent.params);
         genParams['docType'] ??= 'report';
+        genParams['outputType'] ??= 'report';
         genParams['recordIds'] ??= <String>[];
         return _ExecutionPlan([_PlanStep('generate_doc', genParams)]);
+      case IntentType.writeCreative:
+        final creativeParams = Map<String, dynamic>.from(intent.params);
+        creativeParams['docType'] ??= 'book';
+        creativeParams['outputType'] ??= 'creative';
+        creativeParams['recordIds'] ??= <String>[];
+        return _ExecutionPlan([_PlanStep('generate_doc', creativeParams)]);
+      case IntentType.writeAcademic:
+        final academicParams = Map<String, dynamic>.from(intent.params);
+        academicParams['docType'] ??= 'report';
+        academicParams['outputType'] ??= 'academic';
+        academicParams['recordIds'] ??= <String>[];
+        return _ExecutionPlan([_PlanStep('generate_doc', academicParams)]);
+      case IntentType.writePopular:
+        final popularParams = Map<String, dynamic>.from(intent.params);
+        popularParams['docType'] ??= 'book';
+        popularParams['outputType'] ??= 'popular';
+        popularParams['recordIds'] ??= <String>[];
+        return _ExecutionPlan([_PlanStep('generate_doc', popularParams)]);
       case IntentType.exportData:
         return _ExecutionPlan([_PlanStep('export', Map.from(intent.params))]);
       case IntentType.analyzeRecord:

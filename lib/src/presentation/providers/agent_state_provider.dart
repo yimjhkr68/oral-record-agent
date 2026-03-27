@@ -127,6 +127,9 @@ class SearchConfirmData {
   final bool hasResults;
   /// 직접 선택용 전체 기록 목록 (hasResults == false 일 때 채워짐)
   final List<SearchResultRecord> allRecords;
+  /// AI 추천 산출물 유형 ID (OutputTypeSelector 기본 선택용)
+  /// 예: 'report', 'novel', 'academic', 'essay', 'life_history' 등
+  final String aiRecommendedOutputType;
 
   const SearchConfirmData({
     required this.originalPrompt,
@@ -136,6 +139,7 @@ class SearchConfirmData {
     this.requirements,
     this.hasResults = true,
     this.allRecords = const [],
+    this.aiRecommendedOutputType = 'report',
   });
 }
 
@@ -679,7 +683,11 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
   }
 
   /// 검색 결과 컨펌 → 선택된 기록으로 다음 단계 실행
-  Future<void> confirmSearch(List<String> selectedRecordIds) async {
+  /// [outputTypes]: 사용자가 선택한 산출물 유형 ID 목록 (복수 선택 가능)
+  Future<void> confirmSearch(
+    List<String> selectedRecordIds, {
+    List<String> outputTypes = const ['report'],
+  }) async {
     final pending = state.pendingSearchResult;
     if (pending == null) return;
 
@@ -738,30 +746,13 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
               errorMessage: result.errorMessage);
         }
       } else {
-        // generate_report / generate_book / generate_summary
-        final docType = pending.nextAction.startsWith('generate_')
-            ? pending.nextAction.substring('generate_'.length)
-            : 'report';
-        _addLog('실행', 'generate_doc ($docType) 실행 중...',
-            logType: HistoryLogType.toolStart.name);
-        final result = await toolRegistry.run('generate_doc', {
-          'docType': docType,
-          'recordIds': selectedRecordIds,
-          'title': '구술기록 ${_docTypeLabel(docType)}',
-          if (pending.requirements != null) 'requirements': pending.requirements!,
-        });
-        if (result.success) {
-          _addFileCompletionLog(result.output);
-          _saveOutputIfPresentFromResult(result);
-          state = state.copyWith(
-              status: AgentProcessStatus.idle, clearCurrentTask: true);
-        } else {
-          _addLog('오류', result.errorMessage ?? '생성 실패',
-              isError: true, logType: HistoryLogType.toolError.name);
-          state = state.copyWith(
-              status: AgentProcessStatus.error,
-              errorMessage: result.errorMessage);
-        }
+        // 복수 산출물 생성
+        await _generateMultipleOutputs(
+          toolRegistry: toolRegistry,
+          recordIds: selectedRecordIds,
+          outputTypes: outputTypes,
+          requirements: pending.requirements,
+        );
       }
 
       _saveHistory(
@@ -778,7 +769,9 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
   }
 
   /// 기록 없이 최대한 실행 (검색 결과 0건 → 사용자 선택)
-  Future<void> executeWithoutRecords() async {
+  Future<void> executeWithoutRecords({
+    List<String> outputTypes = const ['report'],
+  }) async {
     final pending = state.pendingSearchResult;
     if (pending == null) return;
 
@@ -819,41 +812,104 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
               errorMessage: result.errorMessage);
         }
       } else {
-        final docType = pending.nextAction.startsWith('generate_')
-            ? pending.nextAction.substring('generate_'.length)
-            : 'report';
-        _addLog('실행', 'generate_doc ($docType) 실행 중...',
-            logType: HistoryLogType.toolStart.name);
         final requirements = [
           if (pending.requirements != null && pending.requirements!.isNotEmpty)
             pending.requirements!,
           pending.originalPrompt,
         ].join('\n');
-        final result = await toolRegistry.run('generate_doc', {
-          'docType': docType,
-          'recordIds': <String>[],
-          'title': '구술기록 ${_docTypeLabel(docType)}',
-          'requirements': requirements,
-        });
-        if (result.success) {
-          _addFileCompletionLog(result.output);
-          _addLog('안내', '※ 관련 구술 기록 없음 — 요구사항 기반 작성');
-          _saveOutputIfPresentFromResult(result);
-          state = state.copyWith(
-              status: AgentProcessStatus.idle, clearCurrentTask: true);
-        } else {
-          _addLog('오류', result.errorMessage ?? '생성 실패',
-              isError: true, logType: HistoryLogType.toolError.name);
-          state = state.copyWith(
-              status: AgentProcessStatus.error,
-              errorMessage: result.errorMessage);
-        }
+        await _generateMultipleOutputs(
+          toolRegistry: toolRegistry,
+          recordIds: const [],
+          outputTypes: outputTypes,
+          requirements: requirements,
+          noRecords: true,
+        );
       }
     } catch (e) {
       _addLog('오류', '처리 중 오류: $e', isError: true);
       state = state.copyWith(
           status: AgentProcessStatus.error, errorMessage: '$e');
     }
+  }
+
+  /// 복수 산출물 순차 생성 공통 로직
+  Future<void> _generateMultipleOutputs({
+    required ToolRegistry toolRegistry,
+    required List<String> recordIds,
+    required List<String> outputTypes,
+    String? requirements,
+    bool noRecords = false,
+  }) async {
+    final total = outputTypes.length;
+    final successOutputs = <Map<String, dynamic>>[];
+
+    for (int i = 0; i < total; i++) {
+      final optionId = outputTypes[i];
+      final label = _outputOptionLabel(optionId);
+      _addLog('생성', '${i + 1}/$total: $label 생성 중...',
+          logType: HistoryLogType.toolStart.name);
+
+      final p = _optionIdToParams(optionId);
+      final result = await toolRegistry.run('generate_doc', {
+        'docType': p.docType,
+        'outputType': p.mode,
+        'recordIds': recordIds,
+        'title': '구술기록 $label',
+        if (requirements != null && requirements.isNotEmpty)
+          'requirements': requirements,
+      });
+
+      if (result.success) {
+        successOutputs.add(result.output);
+        _saveOutputIfPresentFromResult(result);
+      } else {
+        _addLog('오류', '$label 생성 실패: ${result.errorMessage ?? ''}',
+            isError: true, logType: HistoryLogType.toolError.name);
+      }
+    }
+
+    if (successOutputs.isEmpty) {
+      state = state.copyWith(
+          status: AgentProcessStatus.error,
+          errorMessage: '모든 산출물 생성 실패',
+          clearCurrentTask: true);
+      return;
+    }
+
+    // 완료 로그
+    final lines = StringBuffer();
+    if (noRecords) lines.writeln('※ 관련 구술 기록 없음 — 요구사항 기반 작성\n');
+    for (final out in successOutputs) {
+      final fname = out['fileName'] as String? ?? '';
+      final kb = out['fileSizeKb'] as int? ?? 0;
+      final outLabel = _outputOptionLabel(
+          (out['outputType'] as String?) ?? 'report');
+      lines.writeln('📄 $outLabel: $fname ($kb KB)');
+    }
+    final folderPath = successOutputs.first['outputsDir'] as String?;
+    _addLog(
+      '완료',
+      '${successOutputs.length}종 산출물 생성 완료\n${lines.toString().trim()}',
+      logType: HistoryLogType.agentComplete.name,
+      folderPath: folderPath,
+    );
+    state = state.copyWith(
+        status: AgentProcessStatus.idle, clearCurrentTask: true);
+  }
+
+  static String _outputOptionLabel(String optionId) {
+    const labels = {
+      'novel': '단편소설',
+      'report': '분석 보고서',
+      'essay': '에세이',
+      'academic': '학술 논문',
+      'life_history': '생애사 책',
+      'column': '칼럼',
+      'poem': '시',
+      'play': '희곡·시나리오',
+      'education': '교육 자료',
+    };
+    return labels[optionId] ?? optionId;
   }
 
   /// 검색 결과 거부 → idle로 전환
@@ -960,6 +1016,8 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           ? 'analyze'
           : 'generate_$docType';
 
+      final mode0 = intent.params['outputType'] as String?;
+      final docType0 = intent.params['docType'] as String? ?? 'report';
       state = state.copyWith(
         status: AgentProcessStatus.pendingSearchConfirm,
         clearCurrentTask: true,
@@ -971,6 +1029,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           requirements: intent.params['requirements'] as String?,
           hasResults: false,
           allRecords: allRecords,
+          aiRecommendedOutputType: _modeToOptionId(mode0, docType0),
         ),
       );
       return true;
@@ -995,6 +1054,8 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
     _pendingToolRegistry = toolRegistry;
     _pendingRecordRepo = recordRepo;
 
+    final mode1 = intent.params['outputType'] as String?;
+    final docType1 = intent.params['docType'] as String? ?? 'report';
     state = state.copyWith(
       status: AgentProcessStatus.pendingSearchConfirm,
       clearCurrentTask: true,
@@ -1004,6 +1065,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         records: resultRecords,
         nextAction: nextAction,
         requirements: intent.params['requirements'] as String?,
+        aiRecommendedOutputType: _modeToOptionId(mode1, docType1),
       ),
     );
     return true;
@@ -1063,11 +1125,28 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
     _lastEnhancedPrompt = '';
   }
 
-  String _docTypeLabel(String docType) {
-    switch (docType) {
-      case 'book': return '생애사 책';
-      case 'summary': return '요약집';
-      default: return '보고서';
+/// intent params의 outputType 모드와 docType을 조합해
+  /// OutputTypeSelector의 option ID로 변환
+  static String _modeToOptionId(String? mode, String? docType) {
+    if (mode == 'creative') return 'novel';
+    if (mode == 'academic') return 'academic';
+    if (mode == 'popular') return 'essay';
+    if (docType == 'book') return 'life_history';
+    return 'report';
+  }
+
+  /// outputType option ID → (docType, mode) 매핑
+  static ({String docType, String mode}) _optionIdToParams(String optionId) {
+    switch (optionId) {
+      case 'novel':        return (docType: 'book',   mode: 'creative');
+      case 'essay':        return (docType: 'report', mode: 'popular');
+      case 'academic':     return (docType: 'report', mode: 'academic');
+      case 'life_history': return (docType: 'book',   mode: 'popular');
+      case 'column':       return (docType: 'report', mode: 'popular');
+      case 'poem':         return (docType: 'report', mode: 'creative');
+      case 'play':         return (docType: 'report', mode: 'creative');
+      case 'education':    return (docType: 'report', mode: 'report');
+      default:             return (docType: 'report', mode: 'report');
     }
   }
 
