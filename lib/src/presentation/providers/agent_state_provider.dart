@@ -177,6 +177,9 @@ class AgentState {
   /// 중복 파일 감지 정보 (pendingDuplicate 상태일 때)
   final DuplicateFileInfo? pendingDuplicateInfo;
 
+  /// 마지막으로 실행한 프롬프트 원문 (취소 시 입력창 복원용)
+  final String lastUserInput;
+
   const AgentState({
     this.status = AgentProcessStatus.idle,
     this.currentTask,
@@ -192,6 +195,7 @@ class AgentState {
     this.currentMultiTask,
     this.taskHistory = const [],
     this.pendingDuplicateInfo,
+    this.lastUserInput = '',
   });
 
   AgentState copyWith({
@@ -209,6 +213,7 @@ class AgentState {
     MultiStepTask? currentMultiTask,
     List<MultiStepTask>? taskHistory,
     DuplicateFileInfo? pendingDuplicateInfo,
+    String? lastUserInput,
     bool clearPendingReview = false,
     bool clearPendingSearch = false,
     bool clearPendingEnhance = false,
@@ -216,6 +221,7 @@ class AgentState {
     bool clearCurrentTask = false,
     bool clearErrorMessage = false,
     bool clearCurrentMultiTask = false,
+    bool clearLastUserInput = false,
   }) {
     return AgentState(
       status: status ?? this.status,
@@ -232,6 +238,7 @@ class AgentState {
       currentMultiTask: clearCurrentMultiTask ? null : (currentMultiTask ?? this.currentMultiTask),
       taskHistory: taskHistory ?? this.taskHistory,
       pendingDuplicateInfo: clearPendingDuplicate ? null : (pendingDuplicateInfo ?? this.pendingDuplicateInfo),
+      lastUserInput: clearLastUserInput ? '' : (lastUserInput ?? this.lastUserInput),
     );
   }
 }
@@ -345,6 +352,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
 
     // 로그 초기화 (PromptEnhancer 결과도 여기서부터 기록)
     state = state.copyWith(
+      lastUserInput: userInput,
       clearCurrentTask: true,
       clearErrorMessage: true,
       clearCurrentMultiTask: true,
@@ -1014,6 +1022,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           clearPendingReview: true,
           clearCurrentTask: true,
           clearErrorMessage: true,
+          clearLastUserInput: true,
         );
         // 기록 저장이 포함된 경우 목록 Provider 갱신
         if (result.savedRecordId != null) {

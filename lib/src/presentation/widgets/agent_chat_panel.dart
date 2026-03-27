@@ -107,6 +107,21 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
           ),
         ).then((_) => _duplicateDialogShown = false);
       }
+
+      // idle 복귀 시 입력창 처리:
+      // 성공 완료(lastUserInput 초기화됨) → 입력창 비움
+      // 취소/오류(lastUserInput 유지됨) → 직전 프롬프트 복원
+      if (next.status == AgentProcessStatus.idle &&
+          prev?.status != AgentProcessStatus.idle) {
+        if (next.lastUserInput.isEmpty) {
+          _textController.clear();
+        } else {
+          _textController.text = next.lastUserInput;
+          _textController.selection = TextSelection.fromPosition(
+            TextPosition(offset: next.lastUserInput.length),
+          );
+        }
+      }
     });
 
     final isEnhancing =
