@@ -59,12 +59,32 @@ enum AgentProcessStatus {
   idle,
   enhancingPrompt,      // PromptEnhancer API 호출 중
   waitingPromptChoice,  // PromptEnhanceCard 표시 중, 사용자 선택 대기
+  planningPreview,      // PlanPreviewCard 표시 중, 사용자 실행 확인 대기
   thinking,
   executing,
   pendingReview,
   pendingSearchConfirm, // 검색 결과 컨펌 대기
   pendingDuplicate,     // 중복 파일 감지 다이얼로그 대기
   error,
+}
+
+// ─── 실행 전 계획 미리보기 데이터 ────────────────────
+class PendingPlanData {
+  /// 사용자가 입력한 원문 (실행할 프롬프트)
+  final String userInput;
+  /// 의도 유형 한국어 레이블
+  final String intentLabel;
+  /// 선택된 산출물 유형 ID (OutputTypeSelector 기본값용)
+  final String outputTypeId;
+  /// 실행 단계 요약 (간략한 단계 목록)
+  final List<String> planSteps;
+
+  const PendingPlanData({
+    required this.userInput,
+    required this.intentLabel,
+    required this.outputTypeId,
+    required this.planSteps,
+  });
 }
 
 // ─── 중복 파일 감지 처리 선택 ────────────────────────
@@ -197,6 +217,9 @@ class AgentState {
   /// 이력 상세창 "재실행" 시 입력창에 복원할 프롬프트 (소비 후 null)
   final String? pendingInputRestore;
 
+  /// 실행 전 계획 미리보기 데이터 (planningPreview 상태일 때)
+  final PendingPlanData? pendingPlan;
+
   const AgentState({
     this.status = AgentProcessStatus.idle,
     this.currentTask,
@@ -215,6 +238,7 @@ class AgentState {
     this.lastUserInput = '',
     this.lastExecutedPrompt = '',
     this.pendingInputRestore,
+    this.pendingPlan,
   });
 
   AgentState copyWith({
@@ -235,6 +259,7 @@ class AgentState {
     String? lastUserInput,
     String? lastExecutedPrompt,
     String? pendingInputRestore,
+    PendingPlanData? pendingPlan,
     bool clearPendingReview = false,
     bool clearPendingSearch = false,
     bool clearPendingEnhance = false,
@@ -245,6 +270,7 @@ class AgentState {
     bool clearLastUserInput = false,
     bool clearLastExecutedPrompt = false,
     bool clearPendingInputRestore = false,
+    bool clearPendingPlan = false,
   }) {
     return AgentState(
       status: status ?? this.status,
@@ -264,6 +290,7 @@ class AgentState {
       lastUserInput: clearLastUserInput ? '' : (lastUserInput ?? this.lastUserInput),
       lastExecutedPrompt: clearLastExecutedPrompt ? '' : (lastExecutedPrompt ?? this.lastExecutedPrompt),
       pendingInputRestore: clearPendingInputRestore ? null : (pendingInputRestore ?? this.pendingInputRestore),
+      pendingPlan: clearPendingPlan ? null : (pendingPlan ?? this.pendingPlan),
     );
   }
 }
@@ -426,8 +453,8 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
       }
     }
 
-    // 2단계: PromptEnhancer 불필요하거나 개선 안 됨 → 바로 실행
-    await _executeInput(userInput);
+    // 2단계: PromptEnhancer 불필요하거나 개선 안 됨 → 계획 미리보기
+    await _proceedToPlanPreview(userInput);
   }
 
   /// PromptEnhanceCard에서 사용자 선택 처리
@@ -442,11 +469,10 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
     _addLog('실행', promptToUse, logType: HistoryLogType.promptExecuted.name);
 
     state = state.copyWith(
-      status: AgentProcessStatus.thinking,
       clearPendingEnhance: true,
     );
 
-    await _executeInput(promptToUse);
+    await _proceedToPlanPreview(promptToUse);
   }
 
   /// PromptEnhanceCard 취소
@@ -455,6 +481,88 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
     state = state.copyWith(
       status: AgentProcessStatus.idle,
       clearPendingEnhance: true,
+      clearCurrentTask: true,
+    );
+  }
+
+  /// 계획 미리보기 단계: 의도 분석 후 PlanPreviewCard 표시
+  Future<void> _proceedToPlanPreview(String userInput) async {
+    state = state.copyWith(status: AgentProcessStatus.thinking);
+
+    try {
+      final settings = _ref.read(settingsProvider);
+      final apiKey = settings.apiKey.isEmpty ? null : settings.apiKey;
+      final parser = IntentParser(claudeApiKey: apiKey);
+      final intent = await parser.parse(userInput);
+
+      // 의도 유형별 계획 단계 생성
+      final steps = _buildPlanSteps(intent);
+      final outputTypeId = _modeToOptionId(
+        intent.params['outputType'] as String?,
+        intent.params['docType'] as String?,
+      );
+
+      state = state.copyWith(
+        status: AgentProcessStatus.planningPreview,
+        pendingPlan: PendingPlanData(
+          userInput: userInput,
+          intentLabel: intent.typeLabel,
+          outputTypeId: outputTypeId,
+          planSteps: steps,
+        ),
+      );
+    } catch (e) {
+      // 분석 실패 → 바로 실행
+      await _executeInput(userInput);
+    }
+  }
+
+  /// 의도 유형별 실행 단계 목록 반환
+  List<String> _buildPlanSteps(AgentIntent intent) {
+    switch (intent.type) {
+      case IntentType.registerRecord:
+        return ['파일 해시 중복 검사', '음성 전사 (Whisper)', '요약 생성', 'Hive 저장'];
+      case IntentType.analyzeRecord:
+        return ['관련 기록 스마트 검색', '기록 내용 분석', '결과 요약 출력'];
+      case IntentType.generateContent:
+      case IntentType.writeCreative:
+      case IntentType.writeAcademic:
+      case IntentType.writePopular:
+        final label = _outputOptionLabel(_modeToOptionId(
+          intent.params['outputType'] as String?,
+          intent.params['docType'] as String?,
+        ));
+        return ['관련 기록 스마트 검색', '기록 내용 결합', '$label 생성 (Claude API)', 'Word 파일 저장'];
+      case IntentType.searchRecord:
+        return ['검색 조건 분석', '기록 DB 검색', '결과 목록 표시'];
+      case IntentType.managePersons:
+        return ['인물사전 조회', '항목 업데이트', '저장'];
+      case IntentType.exportData:
+        return ['기록 목록 조회', 'CSV/JSON 변환', '파일 저장'];
+      default:
+        return ['요청 분석', '처리 실행'];
+    }
+  }
+
+  /// PlanPreviewCard [실행] 확인
+  Future<void> confirmPlan() async {
+    final plan = state.pendingPlan;
+    if (plan == null) return;
+
+    state = state.copyWith(
+      status: AgentProcessStatus.thinking,
+      clearPendingPlan: true,
+    );
+
+    await _executeInput(plan.userInput);
+  }
+
+  /// PlanPreviewCard [취소]
+  void cancelPlan() {
+    _addLog('취소', '실행 취소');
+    state = state.copyWith(
+      status: AgentProcessStatus.idle,
+      clearPendingPlan: true,
       clearCurrentTask: true,
     );
   }
@@ -576,9 +684,12 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
       if (task.steps.length == 1) {
         final intent = task.steps.first.intent;
 
-        // analyzeRecord / generateContent → SmartSearch 선처리
+        // analyzeRecord / generateContent / write* → SmartSearch 선처리
         if (intent.type == IntentType.analyzeRecord ||
-            intent.type == IntentType.generateContent) {
+            intent.type == IntentType.generateContent ||
+            intent.type == IntentType.writeCreative ||
+            intent.type == IntentType.writeAcademic ||
+            intent.type == IntentType.writePopular) {
           final intercepted = await _runSmartSearchIntercept(
             userInput: userInput,
             intent: intent,

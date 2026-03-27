@@ -10,6 +10,7 @@ import '../providers/agent_state_provider.dart';
 import '../theme/app_theme.dart';
 import 'multi_step_progress.dart';
 import 'review_dialog.dart';
+import 'plan_preview_card.dart';
 import 'prompt_enhance_card.dart';
 import 'search_confirm_dialog.dart';
 import 'log_full_screen_dialog.dart';
@@ -109,18 +110,31 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
       }
 
       // idle 복귀 시 입력창 처리:
-      // 성공 완료(lastUserInput 초기화됨) → 입력창 비움
-      // 취소/오류(lastUserInput 유지됨) → 직전 프롬프트 복원
+      // 성공 완료(lastExecutedPrompt 초기화됨) → 입력창 비움
+      // 취소/오류(lastExecutedPrompt 유지됨) → 실행된 프롬프트 복원
       if (next.status == AgentProcessStatus.idle &&
           prev?.status != AgentProcessStatus.idle) {
-        if (next.lastUserInput.isEmpty) {
+        final prompt = next.lastExecutedPrompt.isNotEmpty
+            ? next.lastExecutedPrompt
+            : next.lastUserInput;
+        if (prompt.isEmpty) {
           _textController.clear();
         } else {
-          _textController.text = next.lastUserInput;
+          _textController.text = prompt;
           _textController.selection = TextSelection.fromPosition(
-            TextPosition(offset: next.lastUserInput.length),
+            TextPosition(offset: prompt.length),
           );
         }
+      }
+
+      // 이력 상세창 "재실행" → pendingInputRestore 감지
+      if (next.pendingInputRestore != null &&
+          next.pendingInputRestore != prev?.pendingInputRestore) {
+        _textController.text = next.pendingInputRestore!;
+        _textController.selection = TextSelection.fromPosition(
+          TextPosition(offset: next.pendingInputRestore!.length),
+        );
+        ref.read(agentStateProvider.notifier).clearInputRestore();
       }
     });
 
@@ -133,7 +147,12 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
     final isBusy = agentState.status == AgentProcessStatus.thinking ||
         agentState.status == AgentProcessStatus.executing ||
         agentState.status == AgentProcessStatus.pendingSearchConfirm ||
+        agentState.status == AgentProcessStatus.planningPreview ||
         agentState.status == AgentProcessStatus.enhancingPrompt;
+
+    final isPlanPreview =
+        agentState.status == AgentProcessStatus.planningPreview &&
+            agentState.pendingPlan != null;
 
     return Column(
       children: [
@@ -160,6 +179,15 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
                 Text('프롬프트 분석 중...', style: TextStyle(fontSize: 12)),
               ],
             ),
+          ),
+        // 계획 미리보기 카드
+        if (isPlanPreview)
+          PlanPreviewCard(
+            plan: agentState.pendingPlan!,
+            onConfirm: () =>
+                ref.read(agentStateProvider.notifier).confirmPlan(),
+            onCancel: () =>
+                ref.read(agentStateProvider.notifier).cancelPlan(),
           ),
         // 프롬프트 개선 카드 (프로바이더 상태 기반)
         if (isWaitingChoice || isEnhancing && agentState.pendingEnhancedPrompt != null)
@@ -305,6 +333,13 @@ class _StatusBar extends StatelessWidget {
           '검색 결과 확인 — 진행할 기록을 선택해주세요',
           AppTheme.primaryLight,
           Icons.fact_check_outlined,
+          false,
+        );
+      case AgentProcessStatus.planningPreview:
+        return (
+          '실행 계획 확인 — 진행하시겠습니까?',
+          AppTheme.primaryLight,
+          Icons.checklist_rounded,
           false,
         );
       case AgentProcessStatus.pendingDuplicate:
