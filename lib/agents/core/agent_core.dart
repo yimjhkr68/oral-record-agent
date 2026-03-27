@@ -305,8 +305,25 @@ class AgentCore {
   String _summary(AgentIntent intent, List<ToolCallResult> results) {
     final ok = results.where((r) => r.success).length;
     final ms = results.fold<int>(0, (s, r) => s + r.executionTime.inMilliseconds);
-    return '${intent.typeLabel} 완료: $ok/${results.length}단계 '
+    final base = '${intent.typeLabel} 완료: $ok/${results.length}단계 '
         '(${(ms / 1000).toStringAsFixed(1)}초)';
+
+    // 업데이트 모드: 제목 변경 정보 추가
+    final saveResult = results
+        .where((r) => r.toolName == 'save_record' && r.success)
+        .firstOrNull;
+    final out = saveResult?.output as Map<String, dynamic>?;
+    if (out != null && out['wasUpdate'] == true) {
+      final oldTitle = out['oldTitle'] as String? ?? '';
+      final newTitle = out['newTitle'] as String? ?? '';
+      final recId = out['displayId'] as String? ?? out['recordId'] as String? ?? '';
+      if (oldTitle != newTitle && newTitle.isNotEmpty) {
+        return '$base\n[$recId] 제목: $oldTitle → $newTitle\n등록일 갱신 완료';
+      }
+      return '$base\n[$recId] 콘텐츠·요약·태그 갱신 완료';
+    }
+
+    return base;
   }
 
   AgentResult _withTiming(AgentResult r, Duration elapsed) => AgentResult(

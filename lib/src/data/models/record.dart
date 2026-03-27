@@ -169,9 +169,11 @@ class Record {
     String? summary,
     List<String>? tags,
     DateTime? updatedAt,
+    DateTime? createdAt,
     int? duration,
     String? displayId,
     String? fileHash,
+    String? originalFileName,
   }) {
     return Record(
       id: id,
@@ -180,7 +182,7 @@ class Record {
       inputType: inputType,
       originalAudioPath: originalAudioPath,
       originalDocPath: originalDocPath,
-      originalFileName: originalFileName,
+      originalFileName: originalFileName ?? this.originalFileName,
       fileSize: fileSize,
       duration: duration ?? this.duration,
       mimeType: mimeType,
@@ -197,7 +199,7 @@ class Record {
       classification: classification ?? this.classification,
       summary: summary ?? this.summary,
       tags: tags ?? this.tags,
-      createdAt: createdAt,
+      createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
   }

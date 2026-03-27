@@ -679,6 +679,7 @@ class CheckDuplicateTool extends AgentTool {
         debugPrint('[CheckDuplicate] 중복 감지: ${existing.title}');
         return ToolResult(success: false, output: {
           'isDuplicate': true,
+          'filePath': filePath,
           'existingRecordId': existing.id,
           'existingTitle': existing.title,
           'existingDisplayId': existing.displayId,
@@ -771,10 +772,54 @@ class SaveRecordTool extends AgentTool {
         ? rawTags.map((e) => e.toString()).toList()
         : <String>[];
     final narratorId = input['narratorId'] as String? ?? 'unknown';
+    // check_duplicate 단계에서 미리 계산된 해시 사용 (강제 등록 시 null)
+    final fileHash = input['fileHash'] as String?;
+
+    // ── 업데이트 모드: 기존 기록 ID가 있으면 create 대신 update ──
+    final updateRecordId = input['updateRecordId'] as String?;
+    if (updateRecordId != null) {
+      try {
+        final existing = await _services!.recordRepo!.getRecord(updateRecordId);
+        if (existing == null) {
+          return ToolResult(success: false, errorMessage: '업데이트할 기록을 찾을 수 없습니다: $updateRecordId');
+        }
+        final newFileName = filePath != null
+            ? p.basenameWithoutExtension(filePath)
+            : null;
+        final newTitle = (newFileName != null && newFileName.isNotEmpty)
+            ? newFileName
+            : existing.title;
+        final updated = existing.copyWith(
+          title: newTitle,
+          originalFileName: filePath != null
+              ? p.basename(filePath)
+              : null,
+          fileHash: fileHash,
+          content: transcript.isNotEmpty ? transcript : null,
+          summary: summary,
+          tags: tags.isNotEmpty ? tags : null,
+          createdAt: now,
+          updatedAt: now,
+        );
+        await _services!.recordRepo!.updateRecord(updateRecordId, updated);
+        debugPrint('[SaveRecord] 업데이트 완료: $updateRecordId '
+            '(${existing.title} → $newTitle)');
+        return ToolResult(success: true, output: {
+          'recordId': updateRecordId,
+          'displayId': existing.displayId,
+          'oldTitle': existing.title,
+          'newTitle': newTitle,
+          'savedAt': now.toIso8601String(),
+          'wasUpdate': true,
+        });
+      } catch (e) {
+        return ToolResult(success: false, errorMessage: '기록 업데이트 실패: $e');
+      }
+    }
+
+    // ── 신규 등록 모드 ──
     final sessionId = 'agent-session-${now.millisecondsSinceEpoch}';
     final title = _buildTitle(filePath, narratorId, now);
-    // check_duplicate 단계에서 미리 계산된 해시 사용
-    final fileHash = input['fileHash'] as String?;
 
     final record = Record(
       title: title,
