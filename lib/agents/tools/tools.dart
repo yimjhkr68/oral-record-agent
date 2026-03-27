@@ -397,9 +397,23 @@ class SummarizeTool extends AgentTool {
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
-    final text = input['text'] as String? ?? '';
+    final text = (input['text'] as String? ?? '').trim();
     final summaryType = input['summaryType'] as String? ?? 'brief';
     final apiKey = _services?.claudeApiKey;
+
+    // 빈 텍스트 조기 반환
+    if (text.isEmpty) {
+      return const ToolResult(
+        success: false,
+        errorMessage: '요약할 텍스트가 없습니다. 콘텐츠가 있는 기록을 선택해주세요.',
+      );
+    }
+    if (text.length < 10) {
+      return ToolResult(
+        success: false,
+        errorMessage: '텍스트가 너무 짧습니다 (${text.length}자). 의미있는 요약을 생성할 수 없습니다.',
+      );
+    }
 
     if (apiKey == null || apiKey.isEmpty) {
       return const ToolResult(success: true, output: {
@@ -452,20 +466,26 @@ class SummarizeTool extends AgentTool {
 
       final start = responseText.indexOf('{');
       final end = responseText.lastIndexOf('}');
-      if (start == -1 || end == -1) {
-        return const ToolResult(success: false, errorMessage: '요약 응답 파싱 실패');
+
+      // JSON 파싱 시도, 실패 시 raw 텍스트를 요약으로 fallback
+      Map<String, dynamic>? parsed;
+      if (start != -1 && end != -1) {
+        try {
+          parsed = jsonDecode(responseText.substring(start, end + 1))
+              as Map<String, dynamic>;
+        } catch (_) {
+          // JSON 파싱 실패 → fallback
+        }
       }
 
-      final parsed =
-          jsonDecode(responseText.substring(start, end + 1)) as Map<String, dynamic>;
-
       return ToolResult(success: true, output: {
-        'summary': parsed['summary'] as String? ?? '',
-        'keywords': (parsed['keywords'] as List<dynamic>?)
+        'summary': parsed?['summary'] as String? ??
+            responseText.trim(),
+        'keywords': (parsed?['keywords'] as List<dynamic>?)
                 ?.map((e) => e.toString())
                 .toList() ??
             [],
-        'period': parsed['period'] as String? ?? '',
+        'period': parsed?['period'] as String? ?? '',
       });
     } catch (e) {
       return ToolResult(success: false, errorMessage: '요약 실패: $e');

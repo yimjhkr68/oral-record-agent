@@ -662,14 +662,25 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         return;
       }
 
-      // 선택된 기록 텍스트 결합
+      // 선택된 기록 텍스트 결합 (빈 콘텐츠 기록 자동 제외)
       final combinedText = await _buildCombinedText(selectedRecordIds);
+
+      if (combinedText.trim().isEmpty) {
+        _addLog('오류',
+            '선택된 기록 중 처리 가능한 콘텐츠가 없습니다.\n기록 상세에서 콘텐츠를 추가하거나 재등록해주세요.',
+            isError: true);
+        state = state.copyWith(
+            status: AgentProcessStatus.error,
+            errorMessage: '처리 가능한 콘텐츠 없음',
+            clearCurrentTask: true);
+        return;
+      }
 
       if (pending.nextAction == 'analyze') {
         _addLog('실행', 'summarize 실행 중...',
             logType: HistoryLogType.toolStart.name);
         final result = await toolRegistry.run('summarize', {
-          'text': combinedText.isEmpty ? '(내용 없음)' : combinedText,
+          'text': combinedText,
           'summaryType': 'detailed',
         });
         if (result.success) {
@@ -838,17 +849,33 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
     final repo = _pendingRecordRepo;
     if (repo == null) return '';
     final parts = <String>[];
+    final skipped = <String>[];
+
     for (final id in recordIds) {
       try {
         final record = await repo.getRecord(id);
         if (record == null) continue;
-        parts.add('=== ${record.title} ===');
-        if (record.content.isNotEmpty) parts.add(record.content);
-        if (record.summary?.isNotEmpty == true) {
-          parts.add('[요약] ${record.summary}');
+
+        final hasContent = record.content.trim().isNotEmpty;
+        final hasSummary = record.summary?.trim().isNotEmpty == true;
+
+        if (!hasContent && !hasSummary) {
+          skipped.add(record.title);
+          _addLog('제외', '${record.title} — 콘텐츠와 요약이 모두 비어있어 제외됩니다');
+          continue;
         }
+
+        parts.add('=== ${record.title} ===');
+        if (hasContent) parts.add(record.content);
+        if (hasSummary) parts.add('[요약] ${record.summary}');
       } catch (_) {}
     }
+
+    if (skipped.isNotEmpty) {
+      _addLog('안내',
+          '${skipped.length}건 제외됨, ${recordIds.length - skipped.length}건으로 처리합니다.');
+    }
+
     return parts.join('\n\n');
   }
 

@@ -561,6 +561,10 @@ class _LogBubble extends StatelessWidget {
         return (Icons.settings_outlined, AppTheme.primaryLight);
       case '검증':
         return (Icons.fact_check_outlined, Colors.orange.shade600);
+      case '제외':
+        return (Icons.remove_circle_outline, Colors.orange.shade700);
+      case '안내':
+        return (Icons.info_outline, Colors.blue.shade600);
       case '완료':
         return (Icons.done_all, Colors.green.shade600);
       case '검토':
