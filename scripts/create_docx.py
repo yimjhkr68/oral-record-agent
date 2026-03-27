@@ -68,9 +68,23 @@ def add_chapter_content(doc, content):
         para_text = para_text.strip()
         if not para_text:
             continue
-        # 소제목 감지 (짧은 줄 + 다음에 내용 있는 경우)
         lines = para_text.split('\n')
-        if len(lines) == 1 and len(para_text) < 40 and not para_text.endswith('.'):
+        # 소제목 감지: 첫 줄이 짧고 뒤에 본문이 이어지는 경우
+        if len(lines) >= 2 and len(lines[0]) < 40 and not lines[0].endswith('.') and not lines[0].startswith('태그:'):
+            # 첫 줄 → 소제목
+            p = doc.add_heading(lines[0], level=2)
+            p.paragraph_format.space_before = Pt(12)
+            p.paragraph_format.space_after = Pt(6)
+            for run in p.runs:
+                run.font.size = Pt(13)
+                run.font.color.rgb = RGBColor(0x2D, 0x4A, 0x9E)
+            # 나머지 줄 → 본문 단락
+            body = ' '.join(line.strip() for line in lines[1:] if line.strip())
+            if body:
+                para = doc.add_paragraph(body)
+                set_paragraph_style(para)
+        elif len(lines) == 1 and len(para_text) < 40 and not para_text.endswith('.') and not para_text.startswith('태그:'):
+            # 단독 소제목
             p = doc.add_heading(para_text, level=2)
             p.paragraph_format.space_before = Pt(12)
             p.paragraph_format.space_after = Pt(6)
@@ -78,7 +92,7 @@ def add_chapter_content(doc, content):
                 run.font.size = Pt(13)
                 run.font.color.rgb = RGBColor(0x2D, 0x4A, 0x9E)
         else:
-            # 일반 단락 (줄바꿈을 공백으로 합치기)
+            # 일반 단락 (줄바꿈 유지 또는 공백 병합)
             merged = ' '.join(line.strip() for line in lines if line.strip())
             para = doc.add_paragraph(merged)
             set_paragraph_style(para)

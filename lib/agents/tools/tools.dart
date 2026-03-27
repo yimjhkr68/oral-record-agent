@@ -918,19 +918,75 @@ class GenerateDocTool extends AgentTool {
     await outputDir.create(recursive: true);
     final outputPath = '${outputDir.path}${Platform.pathSeparator}$fileName';
 
+    // create_docx.py 가 기대하는 chapters 구조로 변환
+    final dateStr =
+        '${now.year}년 ${now.month}월 ${now.day}일';
+    final chapters = <Map<String, dynamic>>[];
+
+    // 목차
+    if (records.isNotEmpty) {
+      final tocLines = records
+          .asMap()
+          .entries
+          .map((e) => '${e.key + 2}. ${e.value.title}')
+          .join('\n');
+      chapters.add({
+        'title': '목차',
+        'content': '1. 개요\n$tocLines',
+        'type': 'toc',
+      });
+    }
+
+    // 개요
+    final overviewParts = <String>[
+      '생성일: $dateStr',
+      '기록 수: ${records.length}건',
+    ];
+    if (records.isNotEmpty) {
+      overviewParts.add(
+          '수록 기록:\n${records.map((r) => '  • ${r.title}').join('\n')}');
+    }
+    chapters.add({
+      'title': '1. 개요',
+      'content': overviewParts.join('\n\n'),
+      'type': 'chapter',
+    });
+
+    // 기록별 챕터
+    for (int i = 0; i < records.length; i++) {
+      final r = records[i];
+      final parts = <String>[];
+
+      if (r.summary?.isNotEmpty == true) {
+        parts.add('요약');
+        parts.add(r.summary!);
+      }
+
+      if (r.content.isNotEmpty) {
+        parts.add('주요 내용');
+        final preview = r.content.length > 3000
+            ? '${r.content.substring(0, 3000)}...'
+            : r.content;
+        parts.add(preview);
+      }
+
+      final allTags = [...r.tags, ...r.keywordTags];
+      if (allTags.isNotEmpty) {
+        parts.add('태그: ${allTags.map((t) => '#$t').join(' ')}');
+      }
+
+      chapters.add({
+        'title': '${i + 2}. ${r.title}',
+        'content': parts.join('\n\n'),
+        'type': 'chapter',
+      });
+    }
+
     final jsonData = jsonEncode({
       'docType': docType,
       'title': title,
       'generatedAt': now.toIso8601String(),
-      'records': records
-          .map((r) => {
-                'id': r.id,
-                'title': r.title,
-                'content': r.content,
-                'summary': r.summary,
-                'tags': r.tags,
-              })
-          .toList(),
+      'chapters': chapters,
     });
 
     final tmpFile = File(
