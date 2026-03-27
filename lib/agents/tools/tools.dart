@@ -1175,7 +1175,8 @@ class GenerateDocTool extends AgentTool {
     final timeoutMin = _services?.generateDocTimeoutMinutes ?? 3;
     final httpTimeout = Duration(seconds: timeoutMin * 60);
 
-    if (apiKey != null && apiKey.isNotEmpty && records.isNotEmpty) {
+    final hasRequirements = requirements != null && requirements.isNotEmpty;
+    if (apiKey != null && apiKey.isNotEmpty && (records.isNotEmpty || hasRequirements)) {
       // 입력 텍스트 수집 (기록당 최대 2000자, 전체 최대 8000자)
       var combinedText = records
           .where((r) => r.content.isNotEmpty || r.summary?.isNotEmpty == true)
@@ -1198,7 +1199,12 @@ class GenerateDocTool extends AgentTool {
         _services?.onProgress?.call('안내', '텍스트가 길어 앞 8000자만 분석에 사용합니다.');
       }
 
-      if (combinedText.isNotEmpty) {
+      // 기록 없이 요구사항만으로 실행 시 안내
+      if (records.isEmpty) {
+        _services?.onProgress?.call('안내', '관련 구술 기록 없음 — 요구사항을 바탕으로 생성합니다.');
+      }
+
+      if (combinedText.isNotEmpty || hasRequirements) {
         try {
           const systemPrompt =
               '당신은 구술기록 전문 연구원이자 전문 편집자입니다.\n'
@@ -1217,8 +1223,11 @@ class GenerateDocTool extends AgentTool {
           final reqText = requirements != null && requirements.isNotEmpty
               ? '분석 요구사항: $requirements\n\n'
               : '';
-          final userContent =
-              '${reqText}다음 구술 기록들을 바탕으로 분석 보고서를 작성하세요:\n\n$combinedText';
+          final userContent = combinedText.isNotEmpty
+              ? '${reqText}다음 구술 기록들을 바탕으로 분석 보고서를 작성하세요:\n\n'
+                '$combinedText'
+              : '${reqText}관련 구술 기록이 없습니다. 위 요구사항만을 바탕으로 최대한 보고서를 작성하세요.\n'
+                '작성한 보고서에 "※ 관련 구술 기록 없음 — 요구사항 기반 작성" 문구를 포함하세요.';
 
           // ── 1단계: 초안 생성 ────────────────────────────
           _services?.onProgress?.call('실행', '1/2단계: 보고서 초안 생성 중...');

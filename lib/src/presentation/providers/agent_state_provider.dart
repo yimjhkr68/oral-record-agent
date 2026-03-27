@@ -20,6 +20,7 @@ import '../../../agents/tools/tool_services.dart';
 import '../../../agents/tools/tool_interface.dart';
 import '../../data/repositories/record_repository.dart';
 import '../../data/repositories/narrator_repository.dart';
+import '../../data/models/search_filters.dart';
 import '../../data/repositories/repository_provider.dart';
 import 'settings_provider.dart';
 import 'record_provider.dart';
@@ -122,6 +123,10 @@ class SearchConfirmData {
   final String nextAction;
   /// 사용자가 명시한 분석 방법론/관점 (예: "비교문화적 관점")
   final String? requirements;
+  /// 검색 결과가 있는지 여부 (false면 0건 UI 표시)
+  final bool hasResults;
+  /// 직접 선택용 전체 기록 목록 (hasResults == false 일 때 채워짐)
+  final List<SearchResultRecord> allRecords;
 
   const SearchConfirmData({
     required this.originalPrompt,
@@ -129,6 +134,8 @@ class SearchConfirmData {
     required this.records,
     required this.nextAction,
     this.requirements,
+    this.hasResults = true,
+    this.allRecords = const [],
   });
 }
 
@@ -770,6 +777,85 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
     }
   }
 
+  /// 기록 없이 최대한 실행 (검색 결과 0건 → 사용자 선택)
+  Future<void> executeWithoutRecords() async {
+    final pending = state.pendingSearchResult;
+    if (pending == null) return;
+
+    state = state.copyWith(
+      status: AgentProcessStatus.executing,
+      clearPendingSearch: true,
+    );
+    _addLog('선택', '기록 없이 최대한 실행',
+        logType: HistoryLogType.searchConfirmed.name);
+
+    try {
+      final toolRegistry = _pendingToolRegistry;
+      if (toolRegistry == null) {
+        _addLog('오류', '도구 레지스트리 없음', isError: true);
+        state = state.copyWith(
+            status: AgentProcessStatus.error, errorMessage: '내부 오류');
+        return;
+      }
+
+      _addLog('실행', '관련 기록 없음 — 프롬프트 내용으로 최대한 처리 중');
+
+      if (pending.nextAction == 'analyze') {
+        final result = await toolRegistry.run('summarize', {
+          'text': pending.originalPrompt,
+          'summaryType': 'detailed',
+        });
+        if (result.success) {
+          final summary = result.output['summary'] as String? ?? '처리 완료';
+          _addLog('완료', '※ 구술 기록 미포함 — 프롬프트 기반 분석\n$summary',
+              logType: HistoryLogType.agentComplete.name);
+          state = state.copyWith(
+              status: AgentProcessStatus.idle, clearCurrentTask: true);
+        } else {
+          _addLog('오류', result.errorMessage ?? '분석 실패',
+              isError: true, logType: HistoryLogType.toolError.name);
+          state = state.copyWith(
+              status: AgentProcessStatus.error,
+              errorMessage: result.errorMessage);
+        }
+      } else {
+        final docType = pending.nextAction.startsWith('generate_')
+            ? pending.nextAction.substring('generate_'.length)
+            : 'report';
+        _addLog('실행', 'generate_doc ($docType) 실행 중...',
+            logType: HistoryLogType.toolStart.name);
+        final requirements = [
+          if (pending.requirements != null && pending.requirements!.isNotEmpty)
+            pending.requirements!,
+          pending.originalPrompt,
+        ].join('\n');
+        final result = await toolRegistry.run('generate_doc', {
+          'docType': docType,
+          'recordIds': <String>[],
+          'title': '구술기록 ${_docTypeLabel(docType)}',
+          'requirements': requirements,
+        });
+        if (result.success) {
+          _addFileCompletionLog(result.output);
+          _addLog('안내', '※ 관련 구술 기록 없음 — 요구사항 기반 작성');
+          _saveOutputIfPresentFromResult(result);
+          state = state.copyWith(
+              status: AgentProcessStatus.idle, clearCurrentTask: true);
+        } else {
+          _addLog('오류', result.errorMessage ?? '생성 실패',
+              isError: true, logType: HistoryLogType.toolError.name);
+          state = state.copyWith(
+              status: AgentProcessStatus.error,
+              errorMessage: result.errorMessage);
+        }
+      }
+    } catch (e) {
+      _addLog('오류', '처리 중 오류: $e', isError: true);
+      state = state.copyWith(
+          status: AgentProcessStatus.error, errorMessage: '$e');
+    }
+  }
+
   /// 검색 결과 거부 → idle로 전환
   void rejectSearch() {
     _addLog('취소', '검색 결과 거부 — 새 입력을 기다립니다');
@@ -844,15 +930,49 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         logType: HistoryLogType.searchResult.name);
 
     if (!hasResults) {
-      _addLog(
-        '검색',
-        '[검색 실패] "${intent.params['query'] ?? userInput}"에 해당하는 기록을 찾지 못했어요.\n'
-        '힌트: 구술자 이름, 날짜, 주제어로 다시 시도해보세요.',
-        logType: HistoryLogType.searchResult.name,
-      );
-      _saveHistory(userInput, AgentResult.failed('검색 결과 없음'));
+      _addLog('검색', '관련 기록을 찾지 못했어요 — 직접 선택하거나 기록 없이 실행할 수 있습니다.',
+          logType: HistoryLogType.searchResult.name);
+
+      // 직접 선택용 전체 기록 로드
+      final List<SearchResultRecord> allRecords = [];
+      if (recordRepo != null) {
+        try {
+          final all = await recordRepo.searchRecords(SearchFilters());
+          for (final r in all) {
+            allRecords.add(SearchResultRecord(
+              recordId: r.id,
+              title: r.title,
+              narratorName: '',
+              date: r.createdAt.toIso8601String(),
+              summaryPreview: r.summary ?? '',
+              relevanceScore: 0.0,
+              isSelected: false,
+            ));
+          }
+        } catch (_) {}
+      }
+
+      _pendingToolRegistry = toolRegistry;
+      _pendingRecordRepo = recordRepo;
+
+      final docType = intent.params['docType'] as String? ?? 'report';
+      final nextAction = intent.type == IntentType.analyzeRecord
+          ? 'analyze'
+          : 'generate_$docType';
+
       state = state.copyWith(
-          status: AgentProcessStatus.idle, clearCurrentTask: true);
+        status: AgentProcessStatus.pendingSearchConfirm,
+        clearCurrentTask: true,
+        pendingSearchResult: SearchConfirmData(
+          originalPrompt: _lastInput,
+          enhancedPrompt: _lastEnhancedPrompt,
+          records: const [],
+          nextAction: nextAction,
+          requirements: intent.params['requirements'] as String?,
+          hasResults: false,
+          allRecords: allRecords,
+        ),
+      );
       return true;
     }
 
