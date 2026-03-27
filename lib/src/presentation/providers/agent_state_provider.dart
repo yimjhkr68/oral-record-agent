@@ -71,12 +71,14 @@ class DuplicateFileInfo {
   final String existingRecordId;
   final String existingTitle;
   final String? existingDisplayId;
+  final String? existingDate;
   final String fileHash;
 
   const DuplicateFileInfo({
     required this.existingRecordId,
     required this.existingTitle,
     this.existingDisplayId,
+    this.existingDate,
     required this.fileHash,
   });
 }
@@ -960,28 +962,26 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           lastResult: result,
           clearCurrentTask: true,
         );
-      case AgentStatus.failed:
-        // 중복 파일 감지 처리
+      case AgentStatus.duplicateDetected:
         final dupStep = result.toolCallResults
-            .where((tr) => tr.toolName == 'save_record' &&
-                (tr.output as Map<String, dynamic>?)?['isDuplicate'] == true)
+            .where((tr) => tr.toolName == 'check_duplicate')
             .firstOrNull;
-        if (dupStep != null) {
-          final out = dupStep.output as Map<String, dynamic>;
-          _addLog('중복', '이미 등록된 파일: ${out['existingTitle']}', isError: false);
-          state = state.copyWith(
-            status: AgentProcessStatus.pendingDuplicate,
-            pendingDuplicateInfo: DuplicateFileInfo(
-              existingRecordId: out['existingRecordId'] as String,
-              existingTitle: out['existingTitle'] as String,
-              existingDisplayId: out['existingDisplayId'] as String?,
-              fileHash: out['fileHash'] as String,
-            ),
-            lastResult: result,
-            clearCurrentTask: true,
-          );
-          return;
-        }
+        final out = (dupStep?.output as Map<String, dynamic>?) ?? {};
+        _addLog('중복 감지',
+            '${out['existingTitle'] ?? ''}은 이미 등록된 파일이에요.\nOCR/전사를 건너뛰고 중단했습니다.');
+        state = state.copyWith(
+          status: AgentProcessStatus.pendingDuplicate,
+          pendingDuplicateInfo: DuplicateFileInfo(
+            existingRecordId: out['existingRecordId'] as String? ?? '',
+            existingTitle: out['existingTitle'] as String? ?? '',
+            existingDisplayId: out['existingDisplayId'] as String?,
+            existingDate: out['existingDate'] as String?,
+            fileHash: out['fileHash'] as String? ?? '',
+          ),
+          lastResult: result,
+          clearCurrentTask: true,
+        );
+      case AgentStatus.failed:
         _addLog('실패', result.errorMessage ?? '처리 실패', isError: true);
         state = state.copyWith(
           status: AgentProcessStatus.error,

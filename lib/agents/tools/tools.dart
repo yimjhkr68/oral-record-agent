@@ -635,6 +635,74 @@ class LinkPersonTool extends AgentTool {
 }
 
 // ═══════════════════════════════════════════════════════
+// 6b. CheckDuplicateTool — 파일 해시로 중복 등록 여부 확인
+//     파일 드롭 직후 첫 번째로 실행 → 중복이면 즉시 중단
+// ═══════════════════════════════════════════════════════
+class CheckDuplicateTool extends AgentTool {
+  final ToolServices? _services;
+  CheckDuplicateTool([this._services]);
+
+  @override
+  String get name => 'check_duplicate';
+
+  @override
+  String get description => '파일 SHA-256 해시로 중복 등록 여부를 확인합니다. '
+      '중복이면 success=false, output.isDuplicate=true를 반환합니다.';
+
+  @override
+  List<ToolParam> get params => [
+        const ToolParam(
+          name: 'filePath',
+          type: 'string',
+          description: '확인할 파일의 절대 경로',
+          required: true,
+        ),
+      ];
+
+  @override
+  Future<ToolResult> execute(Map<String, dynamic> input) async {
+    final filePath = _resolveFilePath(input['filePath'] as String);
+
+    if (_services?.recordRepo == null) {
+      return ToolResult(success: true, output: {
+        'isDuplicate': false,
+        'fileHash': 'stub-hash',
+      });
+    }
+
+    try {
+      final bytes = await File(filePath).readAsBytes();
+      final fileHash = sha256.convert(bytes).toString();
+      final existing = await _services!.recordRepo!.findByFileHash(fileHash);
+
+      if (existing != null) {
+        debugPrint('[CheckDuplicate] 중복 감지: ${existing.title}');
+        return ToolResult(success: false, output: {
+          'isDuplicate': true,
+          'existingRecordId': existing.id,
+          'existingTitle': existing.title,
+          'existingDisplayId': existing.displayId,
+          'existingDate': existing.createdAt.toIso8601String(),
+          'fileHash': fileHash,
+        }, errorMessage:
+            '이미 등록된 파일이에요.\n기존 기록: ${existing.title} (${existing.displayId ?? existing.id})\n등록일: ${existing.createdAt.toString().substring(0, 10)}');
+      }
+
+      return ToolResult(success: true, output: {
+        'isDuplicate': false,
+        'fileHash': fileHash,
+      });
+    } catch (_) {
+      // 해시 계산 실패 → 중복 체크 건너뜀 (성공으로 처리)
+      return ToolResult(success: true, output: {
+        'isDuplicate': false,
+        'fileHash': null,
+      });
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
 // 7. SaveRecordTool — 처리된 기록 → Hive DB 저장
 //    v1 연결: RecordRepository.createRecord()
 // ═══════════════════════════════════════════════════════
@@ -705,28 +773,8 @@ class SaveRecordTool extends AgentTool {
     final narratorId = input['narratorId'] as String? ?? 'unknown';
     final sessionId = 'agent-session-${now.millisecondsSinceEpoch}';
     final title = _buildTitle(filePath, narratorId, now);
-
-    // 중복 파일 감지: 파일 해시 계산 후 기존 기록 조회
-    String? fileHash;
-    if (filePath != null) {
-      try {
-        fileHash = await _calculateFileHash(filePath);
-        final existing = await _services!.recordRepo!.findByFileHash(fileHash);
-        if (existing != null) {
-          debugPrint('[SaveRecord] 중복 파일 감지: ${existing.title}');
-          return ToolResult(success: false, output: {
-            'isDuplicate': true,
-            'existingRecordId': existing.id,
-            'existingTitle': existing.title,
-            'existingDisplayId': existing.displayId,
-            'fileHash': fileHash,
-          }, errorMessage:
-              '중복 파일: 이미 "${existing.title}" (${existing.displayId ?? existing.id})로 등록된 파일입니다.');
-        }
-      } catch (_) {
-        // 해시 계산 실패 시 중복 체크 건너뜀
-      }
-    }
+    // check_duplicate 단계에서 미리 계산된 해시 사용
+    final fileHash = input['fileHash'] as String?;
 
     final record = Record(
       title: title,
@@ -754,11 +802,6 @@ class SaveRecordTool extends AgentTool {
       debugPrint('[SaveRecord] 저장 실패: $e');
       return ToolResult(success: false, errorMessage: '기록 저장 실패: $e');
     }
-  }
-
-  Future<String> _calculateFileHash(String filePath) async {
-    final bytes = await File(filePath).readAsBytes();
-    return sha256.convert(bytes).toString();
   }
 
   String _inputTypeFromPath(String? path) {

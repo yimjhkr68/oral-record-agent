@@ -4,6 +4,7 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/agent_state_provider.dart';
@@ -97,9 +98,12 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
           next.pendingDuplicateInfo != null &&
           prev?.status != AgentProcessStatus.pendingDuplicate) {
         final info = next.pendingDuplicateInfo!;
+        final dateStr = info.existingDate != null
+            ? info.existingDate!.substring(0, 10)
+            : '';
         showDialog<void>(
           context: context,
-          builder: (_) => AlertDialog(
+          builder: (ctx) => AlertDialog(
             title: const Row(
               children: [
                 Icon(Icons.warning_amber_rounded, color: Colors.orange),
@@ -114,6 +118,7 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
                 Text('기존 기록: ${info.existingTitle}'),
                 if (info.existingDisplayId != null)
                   Text('식별자: ${info.existingDisplayId}'),
+                if (dateStr.isNotEmpty) Text('등록일: $dateStr'),
                 const SizedBox(height: 8),
                 const Text(
                   '같은 파일을 다시 등록하려면 기존 기록을 삭제 후 진행하세요.',
@@ -124,7 +129,15 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  Navigator.of(ctx).pop();
+                  ref.read(agentStateProvider.notifier).dismissDuplicate();
+                  ctx.go('/records/detail/${info.existingRecordId}');
+                },
+                child: const Text('기존 기록 보기'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(ctx).pop();
                   ref.read(agentStateProvider.notifier).dismissDuplicate();
                 },
                 child: const Text('확인'),

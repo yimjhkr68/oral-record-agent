@@ -191,13 +191,19 @@ class AgentCore {
     }
 
     if (intent.type == IntentType.registerRecord) {
-      final hasSave = results.any((r) => r.toolName == 'save_record' && r.success);
-      if (!hasSave) {
-        return const _CheckResult(
-          passed: false,
-          reason: '저장 단계가 실행되지 않았습니다',
-          needsHumanReview: true,
-        );
+      // 중복 파일 감지 시 save_record 없어도 정상 (별도 처리)
+      final dupDetected = results.any((r) =>
+          r.toolName == 'check_duplicate' &&
+          (r.output as Map<String, dynamic>?)?['isDuplicate'] == true);
+      if (!dupDetected) {
+        final hasSave = results.any((r) => r.toolName == 'save_record' && r.success);
+        if (!hasSave) {
+          return const _CheckResult(
+            passed: false,
+            reason: '저장 단계가 실행되지 않았습니다',
+            needsHumanReview: true,
+          );
+        }
       }
     }
 
@@ -220,6 +226,21 @@ class AgentCore {
         );
       }
       return AgentResult.failed(check.reason ?? '검증 실패', completed: toolResults);
+    }
+
+    // 중복 파일 감지 처리
+    final dupResult = toolResults
+        .where((r) =>
+            r.toolName == 'check_duplicate' &&
+            (r.output as Map<String, dynamic>?)?['isDuplicate'] == true)
+        .firstOrNull;
+    if (dupResult != null) {
+      return AgentResult(
+        status: AgentStatus.duplicateDetected,
+        toolCallResults: toolResults,
+        summary: dupResult.errorMessage,
+        savedRecordId: (dupResult.output as Map<String, dynamic>?)?['existingRecordId'] as String?,
+      );
     }
 
     final saveResult = toolResults
@@ -267,6 +288,10 @@ class AgentCore {
       if (step.toolName == 'link_person' && next.toolName == 'save_record') {
         next.params['narratorId'] =
             (out['linkedPersonIds'] as List?)?.firstOrNull;
+      }
+      // check_duplicate → save_record: 미리 계산한 해시 전달
+      if (step.toolName == 'check_duplicate' && next.toolName == 'save_record') {
+        next.params['fileHash'] = out['fileHash'];
       }
     }
   }
@@ -333,6 +358,11 @@ class AgentCore {
               required: true),
         ]);
       }
+    }
+
+    // 파일이 있으면 중복 체크를 첫 번째 단계로 실행 (required: true → 중복 시 즉시 중단)
+    if (filePath.isNotEmpty) {
+      steps.add(_PlanStep('check_duplicate', {'filePath': filePath}, required: true));
     }
 
     if (preprocessTool != null) {

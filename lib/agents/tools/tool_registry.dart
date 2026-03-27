@@ -16,6 +16,13 @@ const Map<String, String> _extToTool = {
   'mov': 'transcribe',
   'pdf': 'extract_pdf',
   'docx': 'extract_docx',
+  'jpg': 'extract_image',
+  'jpeg': 'extract_image',
+  'png': 'extract_image',
+  'bmp': 'extract_image',
+  'tiff': 'extract_image',
+  'tif': 'extract_image',
+  'webp': 'extract_image',
 };
 
 /// ──────────────────────────────────────────────────────
@@ -35,11 +42,13 @@ class ToolRegistry {
   ToolRegistry(List<AgentTool> tools)
       : _tools = {for (final t in tools) t.name: t};
 
-  /// 프로덕션용 — 11개 툴 전부 등록
+  /// 프로덕션용 — 12개 툴 전부 등록
   factory ToolRegistry.standard() => ToolRegistry([
+        CheckDuplicateTool(),
         TranscribeTool(),
         ExtractPdfTool(),
         ExtractDocxTool(),
+        ExtractImageTool(),
         SummarizeTool(),
         TagTool(),
         LinkPersonTool(),
@@ -52,9 +61,11 @@ class ToolRegistry {
 
   /// 프로덕션용 — v1 실제 서비스 주입
   factory ToolRegistry.withServices(ToolServices services) => ToolRegistry([
+        CheckDuplicateTool(services),
         TranscribeTool(services),
         ExtractPdfTool(services),
         ExtractDocxTool(services),
+        ExtractImageTool(services),
         SummarizeTool(services),
         TagTool(services),
         LinkPersonTool(services),
@@ -108,7 +119,7 @@ class ToolRegistry {
   /// (컨텍스트 윈도우 절약)
   List<Map<String, dynamic>> toolsForIntent(String intentType) {
     const intentToolMap = {
-      'registerRecord':  ['transcribe', 'extract_pdf', 'extract_docx',
+      'registerRecord':  ['transcribe', 'extract_pdf', 'extract_docx', 'extract_image',
                           'summarize', 'tag', 'link_person', 'save_record'],
       'searchRecord':    ['search'],
       'generateContent': ['search', 'generate_doc'],

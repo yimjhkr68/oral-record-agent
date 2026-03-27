@@ -3,11 +3,12 @@
 
 /// 에이전트 작업의 최종 상태
 enum AgentStatus {
-  success,          // 완료, 저장됨
-  pendingReview,    // 완료됐지만 사람의 검토 필요
-  needsClarification, // 의도 불명확 → 사용자에게 질문
-  partialSuccess,   // 일부 단계만 성공
-  failed,           // 실패
+  success,             // 완료, 저장됨
+  pendingReview,       // 완료됐지만 사람의 검토 필요
+  needsClarification,  // 의도 불명확 → 사용자에게 질문
+  partialSuccess,      // 일부 단계만 성공
+  duplicateDetected,   // 중복 파일 감지 → OCR/전사 건너뜀
+  failed,              // 실패
 }
 
 /// 개별 툴 실행 결과
