@@ -142,8 +142,8 @@ class Record {
     // 제약 검증: title 길이
     assert(title.isNotEmpty && title.length <= 200, 'title은 1-200자여야 합니다');
     // 제약 검증: inputType 유효성
-    assert(['audio', 'document', 'text', 'video'].contains(inputType),
-        'inputType은 audio, document, text, video 중 하나여야 합니다');
+    assert(['audio', 'document', 'text', 'video', 'image'].contains(inputType),
+        'inputType은 audio, document, text, video, image 중 하나여야 합니다');
     // 제약 검증: visibility 유효성
     assert(['public', 'private', 'conditional'].contains(visibility),
         'visibility은 public, private, conditional 중 하나여야 합니다');

@@ -656,6 +656,8 @@ class _MetadataInputPageState extends ConsumerState<MetadataInputPage> {
         icon = Icons.videocam;
       case 'document':
         icon = Icons.description;
+      case 'image':
+        icon = Icons.image;
       default:
         icon = Icons.text_fields;
     }

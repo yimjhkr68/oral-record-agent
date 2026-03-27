@@ -119,7 +119,7 @@ class CollectRecordTool {
     }
 
     // inputType 검증
-    const validTypes = ['audio', 'document', 'text'];
+    const validTypes = ['audio', 'document', 'text', 'video', 'image'];
     if (!validTypes.contains(inputType)) {
       throw ValidationException(
         'inputType은 ${validTypes.join(", ")} 중 하나여야 합니다 (현재: "$inputType")',
