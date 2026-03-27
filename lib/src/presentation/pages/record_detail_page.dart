@@ -1564,7 +1564,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
               ],
             ),
           if (r.displayId != null) const SizedBox(height: 4),
-          Text(r.title, style: Theme.of(context).textTheme.headlineSmall),
+          SelectableText(r.title, style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
 
           // 메타데이터 박스
@@ -1669,16 +1669,36 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           // 콘텐츠 미리보기
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.only(left: 10, top: 6, bottom: 6, right: 4),
             decoration: BoxDecoration(
               color: const Color(0xFF185FA5).withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text('콘텐츠',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            child: Row(
+              children: [
+                Text('콘텐츠',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                if (!RecordProcessingUtil.needsProcessing(r) && r.content.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.copy, size: 16),
+                    tooltip: '전체 복사',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: r.content));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('콘텐츠가 클립보드에 복사됐어요'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
           ),
           const SizedBox(height: 8),
           if (RecordProcessingUtil.needsProcessing(r)) ...[
@@ -1741,12 +1761,15 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
               ),
             ],
           ] else ...[
-            Text(
+            SelectableText(
               displayContent,
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
                   ?.copyWith(height: 1.6, fontSize: 14),
+              contextMenuBuilder: (context, editableTextState) =>
+                  AdaptiveTextSelectionToolbar.editableText(
+                      editableTextState: editableTextState),
             ),
             if (contentExceedsLimit) ...[
               const SizedBox(height: 4),
@@ -1779,16 +1802,36 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
           // 요약 섹션
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.only(left: 10, top: 6, bottom: 6, right: 4),
             decoration: BoxDecoration(
               color: const Color(0xFF185FA5).withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: Text('요약',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            child: Row(
+              children: [
+                Text('요약',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                if (r.summary != null && r.summary!.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.copy, size: 16),
+                    tooltip: '전체 복사',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: r.summary!));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('요약이 클립보드에 복사됐어요'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
           ),
           const SizedBox(height: 8),
 
@@ -1802,12 +1845,15 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: const Color(0xFF90CAF9)),
               ),
-              child: Text(
+              child: SelectableText(
                 r.summary!,
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
                     ?.copyWith(height: 1.6, fontSize: 14),
+                contextMenuBuilder: (context, editableTextState) =>
+                    AdaptiveTextSelectionToolbar.editableText(
+                        editableTextState: editableTextState),
               ),
             ),
             const SizedBox(height: 8),
