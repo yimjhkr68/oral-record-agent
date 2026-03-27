@@ -378,6 +378,52 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
     );
   }
 
+  /// 편집된 텍스트로 재개선 요청 (최대 3회)
+  Future<void> reEnhancePrompt(String editedText) async {
+    final pending = state.pendingEnhancedPrompt;
+    if (pending == null) return;
+
+    state = state.copyWith(status: AgentProcessStatus.enhancingPrompt);
+
+    final settings = _ref.read(settingsProvider);
+    final apiKey = settings.apiKey.isEmpty ? null : settings.apiKey;
+
+    try {
+      final result =
+          await PromptEnhancer(apiKey: apiKey).enhance(editedText);
+
+      // API가 isImproved: false 반환 → 편집 텍스트 자체를 사용
+      final newEnhanced = result.isImproved ? result.enhanced : editedText;
+      final newReason = result.isImproved
+          ? result.reason
+          : '편집한 프롬프트를 그대로 사용합니다.';
+
+      _addLog('재개선', newEnhanced,
+          logType: HistoryLogType.promptEnhanced.name);
+
+      state = state.copyWith(
+        status: AgentProcessStatus.waitingPromptChoice,
+        pendingEnhancedPrompt: EnhancedPrompt(
+          original: pending.original, // 원본은 보존
+          enhanced: newEnhanced,
+          reason: newReason,
+          isImproved: true,
+        ),
+      );
+    } catch (_) {
+      // 실패 → 편집 텍스트 그대로 유지
+      state = state.copyWith(
+        status: AgentProcessStatus.waitingPromptChoice,
+        pendingEnhancedPrompt: EnhancedPrompt(
+          original: pending.original,
+          enhanced: editedText,
+          reason: '재개선 실패 — 편집된 프롬프트를 사용합니다.',
+          isImproved: true,
+        ),
+      );
+    }
+  }
+
   /// 실제 실행 진입점 (PromptEnhancer 이후 또는 직접 진입)
   Future<void> _executeInput(String userInput) async {
     state = state.copyWith(

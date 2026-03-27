@@ -130,9 +130,10 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
             ),
           ),
         // 프롬프트 개선 카드 (프로바이더 상태 기반)
-        if (isWaitingChoice)
+        if (isWaitingChoice || isEnhancing && agentState.pendingEnhancedPrompt != null)
           PromptEnhanceCard(
             enhanced: agentState.pendingEnhancedPrompt!,
+            isReEnhancing: isEnhancing,
             onUseEnhanced: () => ref
                 .read(agentStateProvider.notifier)
                 .confirmEnhancedPrompt(true),
@@ -141,6 +142,9 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
                 .confirmEnhancedPrompt(false),
             onCancel: () =>
                 ref.read(agentStateProvider.notifier).rejectEnhancedPrompt(),
+            onReEnhance: (editedText) => ref
+                .read(agentStateProvider.notifier)
+                .reEnhancePrompt(editedText),
           ),
         _InputArea(
           controller: _textController,
