@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
 
 import '../../src/data/models/record.dart';
 import '../../src/data/models/narrator.dart';
@@ -206,6 +207,107 @@ class ExtractPdfTool extends AgentTool {
       'charCount': charCount,
       'filePath': filePath,
     });
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// 2b. ExtractImageTool — 이미지 → OCR 텍스트 추출
+//     v1 연결: Python pytesseract (scripts/extract_image.py)
+// ═══════════════════════════════════════════════════════
+class ExtractImageTool extends AgentTool {
+  final ToolServices? _services;
+  ExtractImageTool([this._services]);
+
+  @override
+  String get name => 'extract_image';
+
+  @override
+  String get description =>
+      '이미지 파일(jpg/png 등)에서 OCR로 텍스트를 추출합니다. '
+      'Tesseract를 사용하며 한국어+영어를 지원합니다.';
+
+  @override
+  List<ToolParam> get params => [
+        const ToolParam(
+          name: 'filePath',
+          type: 'string',
+          description: '추출할 이미지 파일의 절대 경로 (.jpg/.jpeg/.png/.bmp/.tiff/.webp)',
+          required: true,
+        ),
+      ];
+
+  @override
+  Future<ToolResult> execute(Map<String, dynamic> input) async {
+    final filePath = _resolveFilePath(input['filePath'] as String);
+
+    if (_services == null) {
+      return ToolResult(success: true, output: {
+        'transcript': '[이미지 OCR] 이미지에서 추출된 텍스트...',
+        'extractionMethod': 'ocr',
+        'charCount': 20,
+        'filePath': filePath,
+      });
+    }
+
+    try {
+      final scriptDir = Directory.current.path;
+      final scriptPath =
+          '$scriptDir${Platform.pathSeparator}scripts${Platform.pathSeparator}extract_image.py';
+
+      // stdoutEncoding: utf8 — Python 스크립트가 UTF-8로 출력하므로 강제 지정
+      // (Windows 기본 systemEncoding이 CP949일 경우 한글이 깨짐)
+      final result = await Process.run(
+        _services!.pythonPath,
+        [scriptPath, filePath],
+        runInShell: Platform.isWindows,
+        stdoutEncoding: utf8,
+        stderrEncoding: utf8,
+      ).timeout(const Duration(minutes: 2));
+
+      if (result.exitCode != 0) {
+        return ToolResult(
+          success: false,
+          errorMessage: '이미지 OCR 실패: ${result.stderr}',
+        );
+      }
+
+      final stdout = result.stdout as String;
+      final start = stdout.indexOf('{');
+      final end = stdout.lastIndexOf('}');
+
+      // JSON 파싱 성공 경로
+      if (start >= 0 && end > start) {
+        try {
+          final parsed =
+              jsonDecode(stdout.substring(start, end + 1)) as Map<String, dynamic>;
+          if (parsed['success'] == false) {
+            return ToolResult(
+              success: false,
+              errorMessage: parsed['error'] as String? ?? 'OCR 실패',
+            );
+          }
+          return ToolResult(success: true, output: {
+            'transcript': parsed['text'] as String? ?? '',
+            'extractionMethod': 'ocr',
+            'charCount': parsed['char_count'] as int? ?? 0,
+            'filePath': filePath,
+          });
+        } catch (_) {
+          // JSON 파싱 실패 시 stdout 원문을 텍스트로 fallback
+        }
+      }
+
+      // Fallback: stdout 전체를 텍스트로 사용
+      final rawText = stdout.trim();
+      return ToolResult(success: true, output: {
+        'transcript': rawText,
+        'extractionMethod': 'ocr_raw',
+        'charCount': rawText.length,
+        'filePath': filePath,
+      });
+    } catch (e) {
+      return ToolResult(success: false, errorMessage: '이미지 OCR 실패: $e');
+    }
   }
 }
 
@@ -639,15 +741,22 @@ class SaveRecordTool extends AgentTool {
     if (['mp3', 'wav', 'm4a', 'webm'].contains(ext)) return 'audio';
     if (['mp4', 'mov'].contains(ext)) return 'video';
     if (['pdf', 'docx', 'txt'].contains(ext)) return 'document';
+    if (['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'tif', 'webp'].contains(ext)) return 'image';
     return 'text';
   }
 
   String _buildTitle(String? filePath, String narratorId, DateTime now) {
-    if (filePath != null) {
-      final fileName = filePath.split(Platform.pathSeparator).last;
-      final dotIdx = fileName.lastIndexOf('.');
-      if (dotIdx > 0) return fileName.substring(0, dotIdx);
-      return fileName;
+    if (filePath != null && filePath.isNotEmpty) {
+      // p.basenameWithoutExtension: / \ 모두 처리하며 확장자까지 제거
+      final stem = p.basenameWithoutExtension(filePath);
+      if (stem.isNotEmpty) {
+        // 타임스탬프 패턴 제거: YYYYMMDD_HHmmss_ / YYYYMMDD_ 접두어
+        final cleaned = stem
+            .replaceFirst(RegExp(r'^\d{8}[_-]\d{6}[_-]?'), '')
+            .replaceFirst(RegExp(r'^\d{8}[_-]'), '')
+            .trim();
+        return cleaned.isNotEmpty ? cleaned : stem;
+      }
     }
     return '에이전트 기록 ${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
@@ -876,12 +985,18 @@ class GenerateDocTool extends AgentTool {
           type: 'string',
           description: '문서 제목',
         ),
+        const ToolParam(
+          name: 'requirements',
+          type: 'string',
+          description: '사용자 요구사항 (분석 관점/방법론)',
+        ),
       ];
 
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
     final docType = input['docType'] as String? ?? 'report';
     final title = input['title'] as String? ?? '구술기록 $docType';
+    final requirements = input['requirements'] as String?;
     final now = DateTime.now();
     final fileName = _outputFileName(now, docType, 'docx');
 
@@ -942,6 +1057,9 @@ class GenerateDocTool extends AgentTool {
       '생성일: $dateStr',
       '기록 수: ${records.length}건',
     ];
+    if (requirements != null && requirements.isNotEmpty) {
+      overviewParts.add('분석 요구사항: $requirements');
+    }
     if (records.isNotEmpty) {
       overviewParts.add(
           '수록 기록:\n${records.map((r) => '  • ${r.title}').join('\n')}');

@@ -51,6 +51,12 @@ dependencies:
   # 파일 드래그앤드롭 (Windows 데스크탑)
   desktop_drop: ^0.4.4
 
+  # OS 기본 앱으로 파일/폴더 열기
+  url_launcher: ^6.2.0
+
+  # 파일 경로 처리 (basename, basenameWithoutExtension)
+  path: ^1.9.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
