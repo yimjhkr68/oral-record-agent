@@ -178,6 +178,12 @@ class AgentCore {
     final failed = results.where((r) => !r.success).toList();
 
     if (failed.isNotEmpty) {
+      // 중복 파일 감지(isDuplicate=true)는 실패가 아님 → _act()에서 별도 처리
+      final dupOnly = failed.every((r) =>
+          r.toolName == 'check_duplicate' &&
+          (r.output as Map<String, dynamic>?)?['isDuplicate'] == true);
+      if (dupOnly) return const _CheckResult(passed: true);
+
       // 미지원 파일 형식은 사람 검토 불필요 → 즉시 실패
       final unsupported = failed.any((r) => r.toolName == '_unsupported_type');
       final reason = failed
