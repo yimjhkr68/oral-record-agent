@@ -85,7 +85,7 @@ def add_chapter_content(doc, content):
 
 def main():
     if len(sys.argv) < 2:
-        print("사용법: python create_docx.py <json_data_path>", file=sys.stderr)
+        print("사용법: python create_docx.py <json_data_path> [output_path]", file=sys.stderr)
         sys.exit(1)
 
     json_path = sys.argv[1]
@@ -97,7 +97,11 @@ def main():
         sys.exit(1)
 
     title = data.get('title', '구술 기록 산출물')
-    output_path = data.get('output_path', 'output.docx')
+    # argv[2] 우선, 없으면 JSON 내 output_path, 없으면 기본값
+    if len(sys.argv) >= 3 and sys.argv[2]:
+        output_path = sys.argv[2]
+    else:
+        output_path = data.get('output_path', 'output.docx')
     chapters = data.get('chapters', [])
 
     doc = Document()

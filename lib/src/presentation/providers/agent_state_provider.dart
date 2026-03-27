@@ -5,6 +5,7 @@
 //   final state = ref.watch(agentStateProvider);
 //   ref.read(agentStateProvider.notifier).handle('interview.mp3 등록해줘');
 
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -37,6 +38,8 @@ class AgentLogEntry {
   final bool isError;
   /// HistoryLogType.name 문자열 (nullable — 기존 로그 호환)
   final String? logType;
+  /// 산출물 폴더 경로 — non-null이면 "폴더 열기" 버튼 표시
+  final String? folderPath;
 
   AgentLogEntry({
     required this.step,
@@ -44,6 +47,7 @@ class AgentLogEntry {
     DateTime? timestamp,
     this.isError = false,
     this.logType,
+    this.folderPath,
   }) : timestamp = timestamp ?? DateTime.now();
 }
 
@@ -522,8 +526,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
           'title': '구술기록 ${_docTypeLabel(docType)}',
         });
         if (result.success) {
-          _addLog('완료', '${_docTypeLabel(docType)} 생성 완료',
-              logType: HistoryLogType.agentComplete.name);
+          _addFileCompletionLog(result.output);
           _saveOutputIfPresentFromResult(result);
           state = state.copyWith(
               status: AgentProcessStatus.idle, clearCurrentTask: true);
@@ -703,6 +706,25 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
     }
   }
 
+  /// 파일 생성 완료 로그 — 파일명/경로/크기 + 폴더 열기 버튼
+  void _addFileCompletionLog(Map<String, dynamic> output) {
+    final filePath = output['filePath'] as String? ?? '';
+    if (filePath.isEmpty) return;
+    final fileName = output['fileName'] as String? ??
+        filePath.split(Platform.pathSeparator).last;
+    final fileSizeKb = output['fileSizeKb'] as int? ?? 0;
+    final folderPath = output['outputsDir'] as String? ??
+        filePath.substring(0, filePath.lastIndexOf(Platform.pathSeparator));
+    final sizeLabel = fileSizeKb > 0 ? '$fileSizeKb KB' : '-';
+
+    _addLog(
+      '완료',
+      '파일이 생성되었습니다\n\n📄 $fileName\n📁 $folderPath\n💾 $sizeLabel',
+      logType: HistoryLogType.agentComplete.name,
+      folderPath: folderPath,
+    );
+  }
+
   /// 산출물 파일 자동 기록 (filePath 출력이 있는 경우)
   void _saveOutputIfPresent(AgentResult result) {
     final filePath = result.toolCallResults
@@ -764,9 +786,13 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
   }
 
   void _addLog(String step, String detail,
-      {bool isError = false, String? logType}) {
+      {bool isError = false, String? logType, String? folderPath}) {
     final entry = AgentLogEntry(
-        step: step, detail: detail, isError: isError, logType: logType);
+        step: step,
+        detail: detail,
+        isError: isError,
+        logType: logType,
+        folderPath: folderPath);
     state = state.copyWith(agentLog: [...state.agentLog, entry]);
   }
 
@@ -790,6 +816,13 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
         );
       default:
         _addLog('완료', result.summary ?? '처리 완료');
+        // 파일 산출물 완료 로그 자동 추가
+        for (final tr in result.toolCallResults) {
+          if (tr.success &&
+              (tr.toolName == 'generate_doc' || tr.toolName == 'export')) {
+            _addFileCompletionLog(tr.output);
+          }
+        }
         state = state.copyWith(
           status: AgentProcessStatus.idle,
           lastResult: result,

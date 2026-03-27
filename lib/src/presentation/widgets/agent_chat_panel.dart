@@ -4,6 +4,7 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/agent_state_provider.dart';
 import '../providers/settings_provider.dart';
@@ -426,6 +427,29 @@ class _LogBubble extends StatelessWidget {
                               : AppTheme.textPrimary,
                         ),
                   ),
+                  if (entry.folderPath != null) ...[
+                    const SizedBox(height: 6),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: () async {
+                          final uri = Uri.directory(entry.folderPath!);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri);
+                          }
+                        },
+                        icon: const Icon(Icons.folder_open_outlined, size: 13),
+                        label: const Text('폴더 열기',
+                            style: TextStyle(fontSize: 11)),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

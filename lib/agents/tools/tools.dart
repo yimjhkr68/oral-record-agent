@@ -65,6 +65,27 @@ String _resolveFilePath(String path) {
   return candidates.isNotEmpty ? candidates.first : path;
 }
 
+/// Documents/OralRecordAgent/outputs 폴더 경로 반환
+String _outputsDir() {
+  final home = Platform.environment['USERPROFILE'] ??
+      Platform.environment['HOME'] ??
+      Directory.current.path;
+  return '$home${Platform.pathSeparator}Documents'
+      '${Platform.pathSeparator}OralRecordAgent'
+      '${Platform.pathSeparator}outputs';
+}
+
+/// 산출물 파일명 생성: {YYYYMMDD_HHmmss}_{suffix}.{ext}
+String _outputFileName(DateTime now, String suffix, String ext) {
+  final y = now.year.toString();
+  final mo = now.month.toString().padLeft(2, '0');
+  final d = now.day.toString().padLeft(2, '0');
+  final h = now.hour.toString().padLeft(2, '0');
+  final mi = now.minute.toString().padLeft(2, '0');
+  final s = now.second.toString().padLeft(2, '0');
+  return '${y}${mo}${d}_${h}${mi}${s}_$suffix.$ext';
+}
+
 // ═══════════════════════════════════════════════════════
 // 1. TranscribeTool — 음성/영상 → 텍스트 전사
 //    v1 연결: LocalTranscriptionService.transcribeFile()
@@ -745,16 +766,20 @@ class ExportTool extends AgentTool {
   Future<ToolResult> execute(Map<String, dynamic> input) async {
     final format = input['format'] as String? ?? 'csv';
     final now = DateTime.now();
-    final fileName =
-        'export_${now.year}${now.month.toString().padLeft(2, '0')}'
-        '${now.day.toString().padLeft(2, '0')}.$format';
+    final fileName = _outputFileName(now, 'export', format);
+    final outputType = 'export_$format';
 
+    final outputsDirPath = _outputsDir();
     if (_services?.recordRepo == null) {
+      final stubPath = '$outputsDirPath${Platform.pathSeparator}$fileName';
       return ToolResult(success: true, output: {
-        'filePath':
-            'C:\\Users\\OralRecordAgent\\exports\\$fileName',
+        'filePath': stubPath,
+        'fileName': fileName,
+        'fileSizeKb': 0,
+        'outputsDir': outputsDirPath,
         'recordCount': 0,
         'format': format,
+        'outputType': outputType,
       });
     }
 
@@ -789,18 +814,25 @@ class ExportTool extends AgentTool {
         );
       }
 
-      // 내보내기 디렉터리에 파일 저장
-      final exportDir = Directory(
-          '${Directory.current.path}${Platform.pathSeparator}exports');
-      await exportDir.create(recursive: true);
-      final filePath =
-          '${exportDir.path}${Platform.pathSeparator}$fileName';
+      // outputs 폴더에 파일 저장
+      final outputDir = Directory(outputsDirPath);
+      await outputDir.create(recursive: true);
+      final filePath = '${outputDir.path}${Platform.pathSeparator}$fileName';
       await File(filePath).writeAsString(content, flush: true);
+
+      int fileSizeKb = 0;
+      try {
+        fileSizeKb = (await File(filePath).length() / 1024).ceil();
+      } catch (_) {}
 
       return ToolResult(success: true, output: {
         'filePath': filePath,
+        'fileName': fileName,
+        'fileSizeKb': fileSizeKb,
+        'outputsDir': outputsDirPath,
         'recordCount': targetRecords.length,
         'format': format,
+        'outputType': outputType,
       });
     } catch (e) {
       return ToolResult(success: false, errorMessage: '내보내기 실패: $e');
@@ -850,12 +882,19 @@ class GenerateDocTool extends AgentTool {
   Future<ToolResult> execute(Map<String, dynamic> input) async {
     final docType = input['docType'] as String? ?? 'report';
     final title = input['title'] as String? ?? '구술기록 $docType';
+    final now = DateTime.now();
+    final fileName = _outputFileName(now, docType, 'docx');
 
+    final outputsDir = _outputsDir();
     if (_services == null) {
+      final stubPath = '$outputsDir${Platform.pathSeparator}$fileName';
       return ToolResult(success: true, output: {
-        'filePath':
-            'C:\\Users\\OralRecordAgent\\outputs\\$title.docx',
+        'filePath': stubPath,
+        'fileName': fileName,
+        'fileSizeKb': 0,
+        'outputsDir': outputsDir,
         'docType': docType,
+        'outputType': docType,
         'pageCount': 0,
       });
     }
@@ -874,14 +913,10 @@ class GenerateDocTool extends AgentTool {
       }
     }
 
-    // 임시 JSON 파일 생성 후 create_docx.py 호출
-    final now = DateTime.now();
-    final safeTitle = title.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
-    final outputDir = Directory(
-        '${Directory.current.path}${Platform.pathSeparator}outputs');
+    // outputs 폴더에 파일 저장
+    final outputDir = Directory(outputsDir);
     await outputDir.create(recursive: true);
-    final outputPath =
-        '${outputDir.path}${Platform.pathSeparator}$safeTitle.docx';
+    final outputPath = '${outputDir.path}${Platform.pathSeparator}$fileName';
 
     final jsonData = jsonEncode({
       'docType': docType,
@@ -922,9 +957,18 @@ class GenerateDocTool extends AgentTool {
         );
       }
 
+      int fileSizeKb = 0;
+      try {
+        fileSizeKb = (await File(outputPath).length() / 1024).ceil();
+      } catch (_) {}
+
       return ToolResult(success: true, output: {
         'filePath': outputPath,
+        'fileName': fileName,
+        'fileSizeKb': fileSizeKb,
+        'outputsDir': outputsDir,
         'docType': docType,
+        'outputType': docType,
         'pageCount': records.length,
       });
     } catch (e) {
