@@ -4,7 +4,6 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/agent_state_provider.dart';
@@ -14,6 +13,7 @@ import 'review_dialog.dart';
 import 'prompt_enhance_card.dart';
 import 'search_confirm_dialog.dart';
 import 'log_full_screen_dialog.dart';
+import 'duplicate_resolution_dialog.dart';
 
 // ── 메인 패널 ──────────────────────────────────────────
 
@@ -31,6 +31,7 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
   late final AnimationController _pulseController;
   bool _reviewDialogShown = false;
   bool _searchDialogShown = false;
+  bool _duplicateDialogShown = false;
 
   @override
   void initState() {
@@ -93,58 +94,18 @@ class _AgentChatPanelState extends ConsumerState<AgentChatPanel>
         ).then((_) => _searchDialogShown = false);
       }
 
-      // pendingDuplicate 시 중복 파일 다이얼로그 표시
+      // pendingDuplicate 시 중복 파일 해결 다이얼로그 표시
       if (next.status == AgentProcessStatus.pendingDuplicate &&
           next.pendingDuplicateInfo != null &&
-          prev?.status != AgentProcessStatus.pendingDuplicate) {
-        final info = next.pendingDuplicateInfo!;
-        final dateStr = info.existingDate != null
-            ? info.existingDate!.substring(0, 10)
-            : '';
+          !_duplicateDialogShown) {
+        _duplicateDialogShown = true;
         showDialog<void>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.warning_amber_rounded, color: Colors.orange),
-                SizedBox(width: 8),
-                Text('이미 등록된 파일이에요'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('기존 기록: ${info.existingTitle}'),
-                if (info.existingDisplayId != null)
-                  Text('식별자: ${info.existingDisplayId}'),
-                if (dateStr.isNotEmpty) Text('등록일: $dateStr'),
-                const SizedBox(height: 8),
-                const Text(
-                  '같은 파일을 다시 등록하려면 기존 기록을 삭제 후 진행하세요.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  ref.read(agentStateProvider.notifier).dismissDuplicate();
-                  ctx.go('/records/detail/${info.existingRecordId}');
-                },
-                child: const Text('기존 기록 보기'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.of(ctx).pop();
-                  ref.read(agentStateProvider.notifier).dismissDuplicate();
-                },
-                child: const Text('확인'),
-              ),
-            ],
+          barrierDismissible: false,
+          builder: (_) => DuplicateResolutionDialog(
+            info: next.pendingDuplicateInfo!,
           ),
-        );
+        ).then((_) => _duplicateDialogShown = false);
       }
     });
 

@@ -66,6 +66,13 @@ enum AgentProcessStatus {
   error,
 }
 
+// ─── 중복 파일 감지 처리 선택 ────────────────────────
+enum DuplicateResolution {
+  cancel,         // 등록 중단
+  forceRegister,  // 새 기록으로 강제 등록
+  updateExisting, // 기존 기록 파일 교체 + 재처리
+}
+
 // ─── 중복 파일 정보 ─────────────────────────────────
 class DuplicateFileInfo {
   final String existingRecordId;
@@ -73,6 +80,7 @@ class DuplicateFileInfo {
   final String? existingDisplayId;
   final String? existingDate;
   final String fileHash;
+  final String filePath; // 원본 파일 경로 (재처리용)
 
   const DuplicateFileInfo({
     required this.existingRecordId,
@@ -80,6 +88,7 @@ class DuplicateFileInfo {
     this.existingDisplayId,
     this.existingDate,
     required this.fileHash,
+    required this.filePath,
   });
 }
 
@@ -977,6 +986,7 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
             existingDisplayId: out['existingDisplayId'] as String?,
             existingDate: out['existingDate'] as String?,
             fileHash: out['fileHash'] as String? ?? '',
+            filePath: out['filePath'] as String? ?? '',
           ),
           lastResult: result,
           clearCurrentTask: true,
@@ -1020,6 +1030,117 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
       status: AgentProcessStatus.idle,
       clearPendingDuplicate: true,
     );
+  }
+
+  /// 중복 파일 감지 후 사용자 선택 처리
+  Future<void> resolveDuplicate(
+    DuplicateResolution resolution,
+    String originalFilePath,
+    String existingRecordId,
+  ) async {
+    state = state.copyWith(
+      status: AgentProcessStatus.executing,
+      clearPendingDuplicate: true,
+    );
+
+    switch (resolution) {
+      case DuplicateResolution.cancel:
+        _addLog('취소', '등록 중단 — 이미 등록된 파일입니다');
+        state = state.copyWith(
+          status: AgentProcessStatus.idle,
+          clearCurrentTask: true,
+        );
+
+      case DuplicateResolution.forceRegister:
+        _addLog('강제 등록', '중복 체크 건너뜀 — 새 기록으로 등록 시작');
+        await _executeWithoutDuplicateCheck(originalFilePath);
+
+      case DuplicateResolution.updateExisting:
+        _addLog('업데이트', '기존 기록($existingRecordId) 재처리 시작');
+        await _updateExistingRecord(originalFilePath, existingRecordId);
+    }
+  }
+
+  /// skipDuplicateCheck: true 로 파이프라인 재실행 (강제 등록)
+  Future<void> _executeWithoutDuplicateCheck(String filePath) async {
+    final intent = AgentIntent(
+      type: IntentType.registerRecord,
+      rawInput: '$filePath 등록해줘',
+      params: {
+        'filePath': filePath,
+        'skipDuplicateCheck': true,
+      },
+    );
+    await _runCoreWithIntent(intent);
+  }
+
+  /// updateRecordId 파라미터로 기존 기록 재처리 (OCR/전사 → 요약/태그 재생성)
+  Future<void> _updateExistingRecord(
+      String filePath, String existingRecordId) async {
+    final intent = AgentIntent(
+      type: IntentType.registerRecord,
+      rawInput: '$filePath 업데이트해줘',
+      params: {
+        'filePath': filePath,
+        'skipDuplicateCheck': true,
+        'updateRecordId': existingRecordId,
+      },
+    );
+    await _runCoreWithIntent(intent);
+  }
+
+  /// AgentIntent를 직접 받아 AgentCore 실행 (중복 처리 경로 공통 헬퍼)
+  Future<void> _runCoreWithIntent(AgentIntent intent) async {
+    try {
+      final settings = _ref.read(settingsProvider);
+      final apiKey = settings.apiKey.isEmpty ? null : settings.apiKey;
+
+      RecordRepository? recordRepo;
+      NarratorRepository? narratorRepo;
+      try {
+        recordRepo = await _ref.read(recordRepositoryProvider.future);
+        narratorRepo = await _ref.read(narratorRepositoryProvider.future);
+      } catch (_) {}
+
+      final ToolRegistry toolRegistry;
+      if (recordRepo == null && narratorRepo == null) {
+        toolRegistry = ToolRegistry.standard();
+      } else {
+        final services = ToolServices(
+          claudeApiKey: apiKey,
+          pythonPath: settings.pythonPath,
+          whisperModel: settings.whisperModel,
+          transcriptionLanguage: settings.transcriptionLanguage,
+          recordRepo: recordRepo,
+          narratorRepo: narratorRepo,
+        );
+        toolRegistry = ToolRegistry.withServices(services);
+      }
+
+      final core = AgentCore(
+        claudeApiKey: settings.apiKey,
+        toolRegistry: toolRegistry,
+        onProgress: (step, detail) {
+          _addLog(step, detail);
+          state = state.copyWith(
+            status: AgentProcessStatus.executing,
+            currentStep: step,
+            currentTask: detail,
+          );
+        },
+      );
+
+      final result = await core.handle(intent);
+      _applyResult(result);
+      _saveHistory(intent.rawInput, result);
+    } catch (e) {
+      _addLog('오류', '$e', isError: true);
+      state = state.copyWith(
+        status: AgentProcessStatus.error,
+        errorMessage: '$e',
+        clearCurrentTask: true,
+      );
+    }
   }
 }
 

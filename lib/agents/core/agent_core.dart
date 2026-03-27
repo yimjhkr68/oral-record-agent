@@ -361,7 +361,9 @@ class AgentCore {
     }
 
     // 파일이 있으면 중복 체크를 첫 번째 단계로 실행 (required: true → 중복 시 즉시 중단)
-    if (filePath.isNotEmpty) {
+    // skipDuplicateCheck: true 이면 건너뜀 (강제 등록 / 업데이트 시)
+    final skipDup = params['skipDuplicateCheck'] == true;
+    if (filePath.isNotEmpty && !skipDup) {
       steps.add(_PlanStep('check_duplicate', {'filePath': filePath}, required: true));
     }
 
