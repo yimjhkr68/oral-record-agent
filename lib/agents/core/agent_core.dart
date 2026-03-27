@@ -243,14 +243,16 @@ class AgentCore {
       // 전처리 툴(전사/추출) → summarize 로 텍스트 전달
       if ((step.toolName == 'transcribe' ||
               step.toolName == 'extract_pdf' ||
-              step.toolName == 'extract_docx') &&
+              step.toolName == 'extract_docx' ||
+              step.toolName == 'extract_image') &&
           next.toolName == 'summarize') {
         next.params['text'] = out['transcript'];
       }
       // 전처리 툴 → save_record 로 transcript 전달 (기록 본문 보존)
       if ((step.toolName == 'transcribe' ||
               step.toolName == 'extract_pdf' ||
-              step.toolName == 'extract_docx') &&
+              step.toolName == 'extract_docx' ||
+              step.toolName == 'extract_image') &&
           next.toolName == 'save_record') {
         next.params['transcript'] = out['transcript'];
       }
