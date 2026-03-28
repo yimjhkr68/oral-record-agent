@@ -173,7 +173,7 @@ class _AgentDashboardPanelState extends ConsumerState<AgentDashboardPanel> {
         physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: 6,
         crossAxisSpacing: 6,
-        childAspectRatio: 2.0,
+        childAspectRatio: 1.7,
         children: [
           _StatCard(label: '전체', value: '${stats.totalRecords}'),
           _StatCard(label: '이번 달', value: '${stats.thisMonthRecords}'),
@@ -226,14 +226,18 @@ class _StatCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              color: valueColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: valueColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           Text(
