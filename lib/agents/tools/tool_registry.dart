@@ -23,6 +23,9 @@ const Map<String, String> _extToTool = {
   'tiff': 'extract_image',
   'tif': 'extract_image',
   'webp': 'extract_image',
+  'txt': 'extract_text',
+  'md': 'extract_text',
+  'csv': 'extract_text',
 };
 
 /// ──────────────────────────────────────────────────────
@@ -49,6 +52,7 @@ class ToolRegistry {
         ExtractPdfTool(),
         ExtractDocxTool(),
         ExtractImageTool(),
+        ExtractTextTool(),
         SummarizeTool(),
         TagTool(),
         LinkPersonTool(),
@@ -66,6 +70,7 @@ class ToolRegistry {
         ExtractPdfTool(services),
         ExtractDocxTool(services),
         ExtractImageTool(services),
+        ExtractTextTool(services),
         SummarizeTool(services),
         TagTool(services),
         LinkPersonTool(services),
@@ -119,7 +124,7 @@ class ToolRegistry {
   /// (컨텍스트 윈도우 절약)
   List<Map<String, dynamic>> toolsForIntent(String intentType) {
     const intentToolMap = {
-      'registerRecord':  ['transcribe', 'extract_pdf', 'extract_docx', 'extract_image',
+      'registerRecord':  ['transcribe', 'extract_pdf', 'extract_docx', 'extract_image', 'extract_text',
                           'summarize', 'tag', 'link_person', 'save_record'],
       'searchRecord':    ['search'],
       'generateContent': ['search', 'generate_doc'],

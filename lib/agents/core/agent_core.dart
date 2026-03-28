@@ -141,7 +141,7 @@ class AgentCore {
           // 미지원 파일 형식 전용 에러 메시지
           final errMsg = step.toolName == '_unsupported_type'
               ? '지원하지 않는 파일 형식입니다: .${step.params['ext']}\n'
-                '지원 형식: mp3, mp4, wav, m4a, webm, mov, pdf, docx, txt'
+                '지원 형식: mp3, mp4, wav, m4a, webm, mov, pdf, docx, jpg, jpeg, png, txt, md, csv'
               : '등록되지 않은 툴: ${step.toolName}';
           results.add(ToolCallResult(
             toolName: step.toolName,

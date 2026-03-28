@@ -18,6 +18,7 @@ import '../../src/data/models/record.dart';
 import '../../src/data/models/narrator.dart';
 import '../../src/data/models/search_filters.dart';
 import '../../src/data/services/local_transcription_service.dart';
+import '../core/agent_system_prompt.dart';
 import '../../src/data/services/document_extraction_service.dart';
 import '../../src/data/services/import_export_service.dart';
 import 'tool_interface.dart';
@@ -362,6 +363,81 @@ class ExtractDocxTool extends AgentTool {
       'transcript': result.text,
       'filePath': filePath,
     });
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// 3-D. ExtractTextTool — .txt/.md/.csv 파일 텍스트 직접 읽기
+// ═══════════════════════════════════════════════════════
+class ExtractTextTool extends AgentTool {
+  final ToolServices? _services;
+  ExtractTextTool([this._services]);
+
+  @override
+  String get name => 'extract_text';
+
+  @override
+  String get description => '텍스트 파일(.txt, .md, .csv)에서 내용을 읽어옵니다.';
+
+  @override
+  List<ToolParam> get params => [
+        const ToolParam(
+          name: 'filePath',
+          type: 'string',
+          description: '읽을 텍스트 파일의 절대 경로 (.txt/.md/.csv)',
+          required: true,
+        ),
+      ];
+
+  @override
+  Future<ToolResult> execute(Map<String, dynamic> input) async {
+    final filePath = _resolveFilePath(input['filePath'] as String);
+
+    if (_services == null) {
+      return ToolResult(success: true, output: {
+        'transcript': '[텍스트 추출] 파일 내용...',
+        'inputType': 'document',
+        'filePath': filePath,
+      });
+    }
+
+    final file = File(filePath);
+    if (!await file.exists()) {
+      return ToolResult(
+          success: false, errorMessage: '파일을 찾을 수 없습니다: $filePath');
+    }
+
+    try {
+      // UTF-8 시도
+      final text = await file.readAsString(encoding: utf8);
+      if (text.trim().isEmpty) {
+        return ToolResult(success: false, errorMessage: '파일이 비어있습니다.');
+      }
+      return ToolResult(success: true, output: {
+        'transcript': text,
+        'charCount': text.length,
+        'extractionMethod': 'text_read_utf8',
+        'inputType': 'document',
+        'filePath': filePath,
+      });
+    } catch (_) {
+      // UTF-8 실패 → latin1 폴백 (EUC-KR 근사)
+      try {
+        final bytes = await file.readAsBytes();
+        final text = latin1.decode(bytes);
+        return ToolResult(success: true, output: {
+          'transcript': text,
+          'charCount': text.length,
+          'extractionMethod': 'text_read_latin1',
+          'inputType': 'document',
+          'filePath': filePath,
+        });
+      } catch (e2) {
+        return ToolResult(
+            success: false,
+            errorMessage: '파일 읽기 실패: 인코딩을 확인해주세요. ($e2)');
+      }
+    }
   }
 }
 
@@ -1131,6 +1207,7 @@ class GenerateDocTool extends AgentTool {
   @override
   Future<ToolResult> execute(Map<String, dynamic> input) async {
     final docType = input['docType'] as String? ?? 'report';
+    final outputMode = input['outputType'] as String? ?? 'report';
     final title = input['title'] as String? ?? '구술기록 $docType';
     final requirements = input['requirements'] as String?;
     final now = DateTime.now();
@@ -1145,7 +1222,7 @@ class GenerateDocTool extends AgentTool {
         'fileSizeKb': 0,
         'outputsDir': outputsDir,
         'docType': docType,
-        'outputType': docType,
+        'outputType': outputMode,
         'pageCount': 0,
       });
     }
@@ -1206,19 +1283,7 @@ class GenerateDocTool extends AgentTool {
 
       if (combinedText.isNotEmpty || hasRequirements) {
         try {
-          const systemPrompt =
-              '당신은 구술기록 전문 연구원이자 전문 편집자입니다.\n'
-              '구술 기록을 바탕으로 학술적이고 읽기 쉬운 보고서를 작성합니다.\n\n'
-              '작성 원칙:\n'
-              '1. 주어와 서술어가 명확히 호응하는 완전한 문장 작성\n'
-              '2. 피동형 남용 금지 ("~되어지다" → "~되다" 또는 능동형으로)\n'
-              '3. 구술자의 말을 직접 인용할 때는 반드시 따옴표 사용\n'
-              '4. 원래 의미를 왜곡하지 않는 범위에서 표현 다듬기\n'
-              '5. 서론/본론/결론 구조 유지\n\n'
-              '금지 사항:\n'
-              '- "~인 것 같다", "~일 수도 있다" 같은 불필요한 추측 표현\n'
-              '- 같은 단어/표현 3회 이상 연속 반복\n'
-              '- 원본에 없는 내용 창작';
+          final systemPrompt = DocModePrompt.fromMode(outputMode);
 
           final reqText = requirements != null && requirements.isNotEmpty
               ? '분석 요구사항: $requirements\n\n'
@@ -1409,6 +1474,7 @@ class GenerateDocTool extends AgentTool {
 
     final jsonData = jsonEncode({
       'docType': docType,
+      'mode': outputMode,
       'title': title,
       'generatedAt': now.toIso8601String(),
       'chapters': chapters,
@@ -1425,7 +1491,7 @@ class GenerateDocTool extends AgentTool {
 
       final result = await Process.run(
         _services!.pythonPath,
-        [scriptPath, tmpFile.path, outputPath],
+        [scriptPath, tmpFile.path, outputPath, '--mode', outputMode],
         runInShell: Platform.isWindows,
       ).timeout(const Duration(minutes: 5));
 
@@ -1449,7 +1515,7 @@ class GenerateDocTool extends AgentTool {
         'fileSizeKb': fileSizeKb,
         'outputsDir': outputsDir,
         'docType': docType,
-        'outputType': docType,
+        'outputType': outputMode,
         'pageCount': records.length,
       });
     } catch (e) {

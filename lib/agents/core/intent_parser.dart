@@ -131,6 +131,15 @@ class IntentParser {
     IntentType.exportData: [
       '내보내', '추출해', 'csv', 'json', '다운로드',
     ],
+    IntentType.writeCreative: [
+      '소설', '단편소설', '창작', '스토리텔링', '에세이', '이야기로 써', '문학적으로',
+    ],
+    IntentType.writeAcademic: [
+      '학술', '논문', '학술논문', '연구보고서', '아카데믹', '학술지', '연구 논문',
+    ],
+    IntentType.writePopular: [
+      '교양', '대중서', '평전', '전기', '일반 독자', '교양서', '대중적으로',
+    ],
   };
 
   // ─── 충돌 감지 ────────────────────────────────────────
@@ -154,6 +163,10 @@ class IntentParser {
     final filePath = _extractFilePath(input);
     if (filePath != null) params['filePath'] = filePath;
 
+    // 분석 요구사항(방법론/관점 키워드) 감지
+    final requirements = _extractRequirements(input);
+    if (requirements != null) params['requirements'] = requirements;
+
     // 인물 이름 감지 (한국어 2~4글자 + 호칭)
     final personName = _extractPersonName(input);
     if (personName != null) params['narratorName'] = personName;
@@ -172,6 +185,10 @@ class IntentParser {
     // 문서 유형 감지 (generateContent 인텐트용)
     params['docType'] = _extractDocType(lower);
 
+    // 출력 모드 감지 (writeCreative/writeAcademic/writePopular 인텐트용)
+    final outputType = _extractOutputType(lower);
+    if (outputType != null) params['outputType'] = outputType;
+
     return params;
   }
 
@@ -179,7 +196,7 @@ class IntentParser {
   String? _extractFilePath(String input) {
     // Windows 경로: C:\, D:\, E:\ 등 (공백 포함 경로 지원)
     // 파일 확장자로 경로 끝을 판별하여 공백이 있는 경로도 올바르게 추출
-    const exts = r'mp3|mp4|wav|m4a|webm|mov|pdf|docx|txt';
+    const exts = r'mp3|mp4|wav|m4a|webm|mov|pdf|docx|txt|md|csv|jpg|jpeg|png|bmp|tiff|tif|webp';
     final winPathWithExt = RegExp(
       r'[A-Za-z]:\\[^\n"]*?\.(' + exts + r')(?=\s|$)',
       caseSensitive: false,
@@ -199,7 +216,7 @@ class IntentParser {
 
     // 확장자만 있는 파일명: 파일명.mp3 등
     final extPattern = RegExp(
-      r'\S+\.(mp3|mp4|wav|m4a|webm|mov|pdf|docx|txt)',
+      r'\S+\.(mp3|mp4|wav|m4a|webm|mov|pdf|docx|txt|md|csv|jpg|jpeg|png|bmp|tiff|tif|webp)',
       caseSensitive: false,
     );
     final extMatch = extPattern.firstMatch(input);
@@ -246,6 +263,34 @@ class IntentParser {
     return null;
   }
 
+  /// 출력 모드 감지 (writeCreative/writeAcademic/writePopular 인텐트용)
+  /// 반환값: 'creative' | 'academic' | 'popular' | null
+  String? _extractOutputType(String lower) {
+    if (lower.contains('소설') ||
+        lower.contains('단편소설') ||
+        lower.contains('창작') ||
+        lower.contains('스토리텔링') ||
+        lower.contains('에세이') ||
+        lower.contains('문학적')) {
+      return 'creative';
+    }
+    if (lower.contains('학술') ||
+        lower.contains('논문') ||
+        lower.contains('아카데믹') ||
+        lower.contains('연구 논문')) {
+      return 'academic';
+    }
+    if (lower.contains('교양') ||
+        lower.contains('대중서') ||
+        lower.contains('평전') ||
+        lower.contains('전기') ||
+        lower.contains('교양서') ||
+        lower.contains('대중적')) {
+      return 'popular';
+    }
+    return null;
+  }
+
   /// 문서 생성 유형 감지 (generateContent 인텐트용)
   /// 기본값: 'report'
   String _extractDocType(String lower) {
@@ -260,6 +305,29 @@ class IntentParser {
       return 'summary';
     }
     return 'report'; // 보고서가 기본값
+  }
+
+  /// 분석 방법론·관점 요구사항 감지
+  /// 예: "비교문화적 관점으로", "생애사적 접근", "여성주의적 시각"
+  String? _extractRequirements(String input) {
+    final patterns = [
+      // ~적 관점/시각/접근/분석
+      RegExp(r'[가-힣A-Za-z]+적\s*(?:관점|시각|접근|분석|방식|입장)'),
+      // ~(으로/로) 분석/작성/정리
+      RegExp(r'[가-힣A-Za-z\s]{2,10}(?:으로|로)\s*(?:분석|작성|정리|서술)'),
+      // ~중심/기반/위주
+      RegExp(r'[가-힣A-Za-z]+\s*(?:중심|기반|위주)(?:으로|로)?'),
+    ];
+    final found = <String>[];
+    for (final p in patterns) {
+      for (final m in p.allMatches(input)) {
+        final g = m.group(0)?.trim();
+        if (g != null && g.length >= 4 && !found.contains(g)) {
+          found.add(g);
+        }
+      }
+    }
+    return found.isEmpty ? null : found.join(', ');
   }
 
   // ─── Claude API fallback ──────────────────────────────
@@ -277,11 +345,19 @@ class IntentParser {
 IntentType 목록:
 - registerRecord: 파일 등록, 추가, 업로드
 - searchRecord: 기록 검색, 조회
-- generateContent: 보고서/책/문서 생성
+- generateContent: 보고서/책/문서 생성 (일반)
 - analyzeRecord: 기록 분석, 요약
 - managePersons: 인물사전 관리
 - exportData: CSV/JSON 내보내기
+- writeCreative: 소설/에세이/창작 글쓰기
+- writeAcademic: 학술 논문/연구보고서 작성
+- writePopular: 교양서/평전/대중서 작성
 - unknown: 분류 불가
+
+outputType 값 (writeCreative/writeAcademic/writePopular일 때):
+- creative: 소설, 단편소설, 에세이, 창작
+- academic: 학술논문, 연구보고서, 논문
+- popular: 교양서, 평전, 전기, 대중서
 
 반드시 아래 JSON만 반환하세요 (설명 없이):
 {
@@ -292,7 +368,8 @@ IntentType 목록:
     "narratorName": "인물 이름 (있을 때만)",
     "period": "기간 (있을 때만)",
     "format": "포맷 (있을 때만)",
-    "query": "검색어 (있을 때만)"
+    "query": "검색어 (있을 때만)",
+    "outputType": "creative|academic|popular (있을 때만)"
   }
 }''';
 
@@ -359,6 +436,9 @@ IntentType 목록:
       case 'analyzeRecord':    return IntentType.analyzeRecord;
       case 'managePersons':    return IntentType.managePersons;
       case 'exportData':       return IntentType.exportData;
+      case 'writeCreative':    return IntentType.writeCreative;
+      case 'writeAcademic':    return IntentType.writeAcademic;
+      case 'writePopular':     return IntentType.writePopular;
       default:                 return IntentType.unknown;
     }
   }
