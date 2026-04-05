@@ -1,6 +1,6 @@
 # 🏛 구술기록관리 에이전트
 
-> AI 기반 구술 면담 기록 관리 Windows 데스크탑 앱
+> 구술 기록을 수집·분석·창작으로 연결하는 AI 에이전트
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart)](https://dart.dev)
@@ -10,15 +10,40 @@
 
 ---
 
+## 버전
+
+| 버전 | 설명 | 태그 |
+|------|------|------|
+| **v2.0** (현재) | 에이전트 시스템 — 자연어 프롬프트로 모든 작업 수행 | `v2.0` |
+| v1.0 | 기록관리 시스템 — 수동 조작 기반 | `v1.0` |
+
+---
+
 ## ✨ 주요 기능
 
-- 🎤 **음성/영상 자동 전사** — 로컬 Whisper 모델로 인터넷 없이 전사
-- 🤖 **AI 요약 및 분석** — Claude API 기반 자동 요약·분류·PII 감지
-- 👥 **구술자/면담자 인물사전 관리** — 등록·검색·연결
-- 🔍 **전문 검색 및 필터링** — 날짜·구술자·키워드 복합 검색
-- 📖 **AI 기반 책/보고서 자동 생성** — 챕터별 순차 생성 + Word 내보내기
-- 🔐 **계정별 권한 관리** — 관리자/일반 사용자 역할 분리
-- 📤 **CSV/JSON 내보내기/들여오기** — 데이터 이식성 보장
+### 에이전트 핵심
+- 🤖 **자연어 프롬프트** — 의도를 말하면 스스로 판단·실행
+- 🔄 **PDCA 루프** — Plan→Do→Check→Act 자율 실행
+- 💡 **프롬프트 개선** — AI가 프롬프트를 다듬고 실행 전 계획 미리보기
+- 🔍 **의미 기반 검색** — 키워드가 아닌 의미로 기록 검색
+- 📋 **멀티스텝 태스크** — "이번 달 기록 전부 정리" 같은 복합 작업 자동 처리
+
+### 산출물 생성
+- 📝 **9종 산출물** — 소설·시·희곡·에세이·학술논문·보고서·생애사책·칼럼·교육자료
+- 🎭 **페르소나** — 구술기록 큐레이터·아카이비스트 역할의 AI
+- ✅ **2단계 품질** — 초안 생성 후 교정까지 자동 수행
+
+### 파일 지원
+- 🎤 **음성/영상** — mp3, wav, mp4, mov 등 (Whisper 로컬 전사)
+- 📄 **문서** — pdf, docx, txt, md, csv
+- 🖼 **이미지 OCR** — jpg, png, bmp, tiff, webp
+- 🔒 **중복 방지** — SHA-256 해시 기반 자동 감지
+
+### UI/UX
+- 🏠 **홈 4열 레이아웃** — 사이드바·이력·에이전트·대시보드
+- 📜 **실행 이력 트리** — 펼침/접힘, 재시작 후에도 유지
+- 📋 **드래그 복사** — 이력·산출물·기록 상세 모두 SelectableText
+- 🔔 **Windows 토스트 알림** — 단계 완료 및 오류 시 알림
 
 ---
 
@@ -55,7 +80,7 @@ flutter pub get
 ### 4. Python 패키지 설치
 
 ```bash
-pip install openai-whisper pdfplumber python-docx pydub
+pip install openai-whisper pdfplumber python-docx pydub pytesseract pillow
 ```
 
 ### 5. ffmpeg 설치
@@ -92,12 +117,13 @@ flutter run -d windows
 
 | 영역 | 기술 |
 |------|------|
-| UI / 앱 | Flutter / Dart |
+| UI / 앱 | Flutter / Dart (Windows 데스크탑) |
 | 로컬 DB | Hive |
 | 상태관리 | Riverpod |
 | 음성 전사 | OpenAI Whisper (로컬) |
 | AI 기능 | Anthropic Claude API |
 | 문서 처리 | Python (pdfplumber, python-docx) |
+| OCR | Tesseract + pytesseract |
 
 ---
 
@@ -105,18 +131,32 @@ flutter run -d windows
 
 ```
 lib/
-├── agents/           # PDCA 서브에이전트
+├── agents/
+│   ├── core/         # AgentCore, IntentParser, PromptEnhancer
+│   ├── check/        # PDCA Check 서브에이전트
+│   └── tools/        # 14개 툴 (전사·OCR·요약·검색·생성 등)
 └── src/
-    ├── data/         # 데이터 모델 / 저장소
+    ├── data/         # 데이터 모델 / Hive 저장소
     ├── domain/       # 비즈니스 로직 / AI 툴
-    └── presentation/ # UI 화면 / 프로바이더
+    └── presentation/ # UI 화면 / Riverpod 프로바이더
 
 scripts/
 ├── transcribe.py     # 음성 전사 (Whisper)
-├── extract_pdf.py    # PDF 텍스트 추출
+├── extract_pdf.py    # PDF 텍스트 추출 (OCR fallback 포함)
 ├── extract_audio.py  # 영상 음성 추출
+├── extract_image.py  # 이미지 OCR (Tesseract)
 └── create_docx.py    # Word 문서 생성
 ```
+
+---
+
+## 🗺 로드맵
+
+| 버전 | 목표 |
+|------|------|
+| v2.0 ✅ | 에이전트 시스템 완성 |
+| v3.0 | RAG 적용 (벡터 검색) |
+| v4.0 | 온톨로지 적용 (지식 그래프) |
 
 ---
 
