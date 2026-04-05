@@ -17,6 +17,7 @@ import 'pages/add_edit_interviewer_page.dart';
 import 'pages/search_page.dart';
 import 'pages/account_management_page.dart';
 import 'screens/agent_screen.dart';
+import 'screens/outputs_screen.dart';
 
 // ── 공통 하단 네비게이션 바 ────────────────────────────────────
 class AppBottomNavBar extends StatelessWidget {
@@ -137,6 +138,10 @@ final goRouter = GoRouter(
         GoRoute(
           path: '/agent',
           builder: (context, state) => const AgentScreen(),
+        ),
+        GoRoute(
+          path: '/outputs',
+          builder: (context, state) => const OutputsScreen(),
         ),
       ],
     ),

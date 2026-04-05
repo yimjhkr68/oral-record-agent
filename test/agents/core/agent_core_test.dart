@@ -109,7 +109,7 @@ void main() {
       expect(saveResult.success, isTrue);
     });
 
-    test('미지원 파일 형식(PNG) → 저장 안 되고 에러 반환', () async {
+    test('PNG 파일 형식 → OCR로 등록 성공 (v2.0 이미지 지원)', () async {
       const intent = AgentIntent(
         type: IntentType.registerRecord,
         rawInput: 'C:\\Users\\test\\해커톤 계획.png 등록해줘',
@@ -119,12 +119,8 @@ void main() {
 
       final result = await agent.handle(intent);
 
-      // 미지원 형식은 성공으로 처리되면 안 됨
-      expect(result.isSuccess, isFalse);
-      expect(result.savedRecordId, isNull);
-      // 에러 메시지에 파일 형식 정보 포함
-      final errMsg = result.errorMessage ?? result.reviewContent ?? '';
-      expect(errMsg, contains('png'));
+      // v2.0: PNG는 extract_image(OCR)로 지원됨
+      expect(result.isSuccess, isTrue);
     });
 
     test('검색 의도 처리', () async {

@@ -13,16 +13,20 @@ void main() {
       registry = ToolRegistry.standard();
     });
 
-    test('standard() — 10개 툴 등록 확인', () {
-      expect(registry.allNames.length, equals(10));
+    test('standard() — 14개 툴 등록 확인', () {
+      expect(registry.allNames.length, equals(14));
       expect(registry.has('transcribe'), isTrue);
       expect(registry.has('extract_pdf'), isTrue);
       expect(registry.has('extract_docx'), isTrue);
+      expect(registry.has('extract_image'), isTrue);
+      expect(registry.has('extract_text'), isTrue);
+      expect(registry.has('check_duplicate'), isTrue);
       expect(registry.has('summarize'), isTrue);
       expect(registry.has('tag'), isTrue);
       expect(registry.has('link_person'), isTrue);
       expect(registry.has('save_record'), isTrue);
       expect(registry.has('search'), isTrue);
+      expect(registry.has('smart_search'), isTrue);
       expect(registry.has('export'), isTrue);
       expect(registry.has('generate_doc'), isTrue);
     });
@@ -61,12 +65,12 @@ void main() {
       expect(registry.supportsFile('audio.mp3'), isTrue);
       expect(registry.supportsFile('video.mp4'), isTrue);
       expect(registry.supportsFile('document.pdf'), isTrue);
-      expect(registry.supportsFile('image.png'), isFalse);
+      expect(registry.supportsFile('image.png'), isTrue);
     });
 
     test('toClaudeTools() — Claude API 스키마 형식 확인', () {
       final schemas = registry.toClaudeTools();
-      expect(schemas.length, equals(10));
+      expect(schemas.length, equals(14));
 
       final transcribeSchema = schemas.firstWhere((s) => s['name'] == 'transcribe');
       expect(transcribeSchema['description'], isNotEmpty);

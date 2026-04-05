@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/agent_history_provider.dart';
 import '../../../agents/core/agent_history.dart';
+import 'history_detail_window.dart';
 
 class AgentHistoryPanel extends ConsumerWidget {
   const AgentHistoryPanel({super.key});
@@ -93,17 +94,29 @@ class _HistoryTile extends StatelessWidget {
         childrenPadding: const EdgeInsets.only(bottom: 4),
         collapsedIconColor: Colors.white24,
         iconColor: Colors.white38,
-        leading: Container(
-          width: 8,
-          height: 8,
-          margin: const EdgeInsets.only(top: 4),
-          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+        leading: GestureDetector(
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (_) => HistoryDetailWindow(entry: entry),
+          ),
+          child: Container(
+            width: 8,
+            height: 8,
+            margin: const EdgeInsets.only(top: 4),
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+          ),
         ),
-        title: Text(
-          entry.title,
-          style: const TextStyle(color: Colors.white70, fontSize: 11),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+        title: GestureDetector(
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (_) => HistoryDetailWindow(entry: entry),
+          ),
+          child: Text(
+            entry.title,
+            style: const TextStyle(color: Colors.white70, fontSize: 11),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
         subtitle: Text(
           _timeAgo(entry.createdAt),

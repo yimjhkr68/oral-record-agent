@@ -157,6 +157,15 @@ class HiveService {
     await _openAccountsBox();
     await _openAuthPrefsBox();
     await _openAgentHistoryBox();
+    await _openAgentOutputsBox();
+  }
+
+  /// 에이전트 산출물 박스 오픈 (JSON 문자열 직렬화)
+  static Future<Box<String>> _openAgentOutputsBox() async {
+    if (!Hive.isBoxOpen('agent_outputs')) {
+      return await Hive.openBox<String>('agent_outputs');
+    }
+    return Hive.box<String>('agent_outputs');
   }
 
   /// 에이전트 실행 이력 박스 오픈 (JSON 문자열 직렬화)

@@ -8,6 +8,9 @@ enum IntentType {
   analyzeRecord,   // "이 기록 분석해줘"
   managePersons,   // "인물사전 업데이트해줘"
   exportData,      // "CSV로 내보내줘"
+  writeCreative,   // "소설로 써줘" / "생애 이야기 창작"
+  writeAcademic,   // "학술 논문으로 작성해줘"
+  writePopular,    // "교양서/평전으로 써줘"
   unknown,         // 분류 불가 → 사용자에게 되묻기
 }
 
@@ -40,6 +43,9 @@ class AgentIntent {
       case IntentType.analyzeRecord:    return '기록 분석';
       case IntentType.managePersons:    return '인물사전 관리';
       case IntentType.exportData:       return '데이터 내보내기';
+      case IntentType.writeCreative:    return '창작 글쓰기';
+      case IntentType.writeAcademic:    return '학술 논문';
+      case IntentType.writePopular:     return '교양·대중서';
       case IntentType.unknown:          return '알 수 없음';
     }
   }

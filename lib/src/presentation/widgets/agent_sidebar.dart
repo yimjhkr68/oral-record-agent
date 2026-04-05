@@ -42,6 +42,12 @@ class AgentSidebar extends StatelessWidget {
             active: location.startsWith('/search'),
             onTap: () => context.go('/search'),
           ),
+          _SidebarIcon(
+            icon: Icons.folder_special_outlined,
+            label: '산출물',
+            active: location.startsWith('/outputs'),
+            onTap: () => context.go('/outputs'),
+          ),
           const Spacer(),
           _SidebarIcon(
             icon: Icons.settings_outlined,
