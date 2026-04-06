@@ -21,9 +21,15 @@ function nodeColor(type) {
   return CLASS_COLORS[type] || CLASS_COLORS.default;
 }
 
-async function apiFetch(path) {
-  const res = await fetch(path);
-  if (!res.ok) throw new Error(await res.text());
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(path, {
+    headers: { "Content-Type": "application/json" },
+    ...opts,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || res.statusText);
+  }
   return res.json();
 }
 

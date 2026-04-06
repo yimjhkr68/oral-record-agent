@@ -36,6 +36,7 @@ class OntologyPredicate:
     domain:      list[str] = field(default_factory=list)
     range_:      list[str] = field(default_factory=list)
     description: str = ""
+    note:        str = ""
 
 
 @dataclass
@@ -205,8 +206,16 @@ class OntologyManager:
                 f"AI 응답 JSON 파싱 실패 — 원문: {raw[:200]!r}"
             ) from e
 
-        classes = [OntologyClass(**c) for c in parsed.get("classes", [])]
-        predicates = [OntologyPredicate(**p) for p in parsed.get("predicates", [])]
+        _cls_fields  = {"name", "label_ko", "color", "description", "examples"}
+        _pred_fields = {"name", "domain", "range_", "description", "note"}
+        classes = [
+            OntologyClass(**{k: v for k, v in c.items() if k in _cls_fields})
+            for c in parsed.get("classes", [])
+        ]
+        predicates = [
+            OntologyPredicate(**{k: v for k, v in p.items() if k in _pred_fields})
+            for p in parsed.get("predicates", [])
+        ]
 
         # 새 버전 ID 자동 생성 (타임스탬프 기반)
         ts = datetime.now().strftime("%Y%m%d%H%M%S")

@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>구술기록 지식그래프 v4.0</title>
 
-  <!-- React 19 (CDN) -->
-  <script crossorigin src="https://unpkg.com/react@19/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"></script>
+  <!-- React 18 (cdnjs) -->
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.min.js"></script>
+  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.min.js"></script>
 
-  <!-- Babel standalone (JSX in-browser 변환) -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Babel standalone (cdnjs) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
 
-  <!-- D3.js (KnowledgeGraph 시각화) -->
-  <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
+  <!-- D3.js (cdnjs) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -98,19 +98,17 @@
 <script type="text/babel" src="/static/TripleManager.jsx"></script>
 <script type="text/babel" src="/static/KnowledgeGraph.jsx"></script>
 
+<!-- JSX 포함 블록: COMPONENTS + renderTab 정의 후 window._renderTab 으로 노출 -->
 <script type="text/babel">
-  /* ── 탭 전환 ─────────────────────────────────────────────────── */
   const COMPONENTS = {
     ontology: () => <OntologyManager />,
     triple:   () => <TripleManager />,
     graph:    () => <KnowledgeGraph />,
   };
 
-  let currentTab = "ontology";
   const root = ReactDOM.createRoot(document.getElementById("content"));
 
-  function renderTab(tab) {
-    currentTab = tab;
+  window._renderTab = function(tab) {
     ["ontology", "triple", "graph"].forEach(t => {
       document.getElementById(`tab-${t}`).className = "tab" + (t === tab ? " active" : "");
     });
@@ -119,12 +117,17 @@
         {COMPONENTS[tab]()}
       </div>
     );
-  }
-
-  window.switchTab = renderTab;
+  };
 
   // 초기 렌더
-  renderTab("ontology");
+  window._renderTab("ontology");
+</script>
+
+<!-- JSX 없는 순수 JS: onclick에서 호출되는 switchTab을 전역으로 노출 -->
+<script type="text/javascript">
+  function switchTab(tab) {
+    if (window._renderTab) window._renderTab(tab);
+  }
 </script>
 
 </body>
