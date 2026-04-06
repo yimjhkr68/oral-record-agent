@@ -50,7 +50,6 @@ class TranscriptionService {
         );
       }
 
-      debugPrint('[전사 시작] $fileName (${bytes.length} bytes) → Whisper API');
 
       final request = http.MultipartRequest(
         'POST',
@@ -77,10 +76,8 @@ class TranscriptionService {
 
       if (response.statusCode == 200) {
         final text = response.body.trim();
-        debugPrint('[전사 완료] ${text.length}자');
         return TranscriptionResult(text: text, success: true);
       } else {
-        debugPrint('[전사 실패] ${response.statusCode}: ${response.body}');
         String errorMsg = '알 수 없는 오류';
         try {
           // OpenAI 오류 응답 파싱
@@ -104,7 +101,6 @@ class TranscriptionService {
         );
       }
     } catch (e) {
-      debugPrint('[전사 오류] $e');
       return TranscriptionResult(
         text: '',
         success: false,

@@ -434,6 +434,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       const _SidebarMenuItem(icon: Icons.mic_none, label: 'Whisper 설정', index: 3),
       const _SidebarMenuItem(icon: Icons.storage_outlined, label: '데이터 관리', index: 4),
       const _SidebarMenuItem(icon: Icons.info_outline, label: '앱 정보', index: 5),
+      const _SidebarMenuItem(icon: Icons.smart_toy_outlined, label: '에이전트 설정', index: 6),
     ];
 
     final validSections = items.map((e) => e.index).toSet();
@@ -597,6 +598,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       3 => _buildWhisperSection(context, settings),
       4 => _buildDataSection(context, settings),
       5 => _buildAppInfoSection(context),
+      6 => _buildAgentSection(context, settings),
       _ => _buildMyAccountSection(context),
     };
   }
@@ -1000,6 +1002,74 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               if (lang != null) ref.read(settingsProvider.notifier).setLanguage(lang);
             },
           ),
+        ),
+      ],
+    );
+  }
+
+  // ── 섹션 6: 에이전트 설정 ─────────────────────────────────────────
+  Widget _buildAgentSection(BuildContext context, AppSettingsState settings) {
+    Widget timeoutRow({
+      required String title,
+      required String subtitle,
+      required List<int> options,
+      required int current,
+      required void Function(int) onChanged,
+    }) {
+      return Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(subtitle, style: const TextStyle(color: Colors.grey)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                children: options.map((min) {
+                  final selected = current == min;
+                  return ChoiceChip(
+                    label: Text('$min분'),
+                    selected: selected,
+                    onSelected: (_) => onChanged(min),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '현재: $current분 (기본값: ${options.first}분)',
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        _sectionTitle(context, '에이전트 설정'),
+        timeoutRow(
+          title: '산출물 생성 최대 대기 시간',
+          subtitle: '보고서·책 생성 시 AI 응답을 기다리는 최대 시간입니다.\n'
+              '긴 기록이 많을수록 더 많은 시간이 필요합니다.',
+          options: const [1, 3, 5, 10],
+          current: settings.generateDocTimeoutMinutes,
+          onChanged: (v) =>
+              ref.read(settingsProvider.notifier).setGenerateDocTimeout(v),
+        ),
+        timeoutRow(
+          title: '전사(Whisper) 최대 대기 시간',
+          subtitle: '음성·영상 파일을 텍스트로 전사할 때 최대 대기 시간입니다.\n'
+              '파일이 길거나 모델이 클수록 더 많은 시간이 필요합니다.',
+          options: const [5, 10, 15, 30],
+          current: settings.transcribeTimeoutMinutes,
+          onChanged: (v) =>
+              ref.read(settingsProvider.notifier).setTranscribeTimeout(v),
         ),
       ],
     );

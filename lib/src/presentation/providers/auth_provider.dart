@@ -2,6 +2,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/account.dart';
 import '../../data/services/auth_service.dart';
+import '../../data/services/rag_server_service.dart';
 
 // ── 상태 ─────────────────────────────────────────────────────────
 class AuthState {
@@ -77,6 +78,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> logout() async {
+    await RagServerService.stop();
     if (state.currentUser != null) {
       await AuthService.logout(state.currentUser!.id);
     }

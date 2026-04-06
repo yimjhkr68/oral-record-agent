@@ -48,6 +48,9 @@ class Record {
   /// MIME 타입 (예: 'application/pdf', 'audio/mpeg')
   final String? mimeType;
 
+  /// SHA-256 파일 해시 (중복 파일 감지용, 선택)
+  final String? fileHash;
+
   // ==================== 메타데이터 필드 (필수) ====================
 
   /// 면담 세션 ID (필수, InterviewSession 참조)
@@ -120,6 +123,7 @@ class Record {
     this.duration,
     this.mimeType,
     this.displayId,
+    this.fileHash,
     required this.sessionId,
     required this.narratorId,
     required this.mainCategory,
@@ -142,8 +146,8 @@ class Record {
     // 제약 검증: title 길이
     assert(title.isNotEmpty && title.length <= 200, 'title은 1-200자여야 합니다');
     // 제약 검증: inputType 유효성
-    assert(['audio', 'document', 'text', 'video'].contains(inputType),
-        'inputType은 audio, document, text, video 중 하나여야 합니다');
+    assert(['audio', 'document', 'text', 'video', 'image'].contains(inputType),
+        'inputType은 audio, document, text, video, image 중 하나여야 합니다');
     // 제약 검증: visibility 유효성
     assert(['public', 'private', 'conditional'].contains(visibility),
         'visibility은 public, private, conditional 중 하나여야 합니다');
@@ -165,8 +169,11 @@ class Record {
     String? summary,
     List<String>? tags,
     DateTime? updatedAt,
+    DateTime? createdAt,
     int? duration,
     String? displayId,
+    String? fileHash,
+    String? originalFileName,
   }) {
     return Record(
       id: id,
@@ -175,11 +182,12 @@ class Record {
       inputType: inputType,
       originalAudioPath: originalAudioPath,
       originalDocPath: originalDocPath,
-      originalFileName: originalFileName,
+      originalFileName: originalFileName ?? this.originalFileName,
       fileSize: fileSize,
       duration: duration ?? this.duration,
       mimeType: mimeType,
       displayId: displayId ?? this.displayId,
+      fileHash: fileHash ?? this.fileHash,
       sessionId: sessionId,
       narratorId: narratorId ?? this.narratorId,
       mainCategory: mainCategory ?? this.mainCategory,
@@ -191,7 +199,7 @@ class Record {
       classification: classification ?? this.classification,
       summary: summary ?? this.summary,
       tags: tags ?? this.tags,
-      createdAt: createdAt,
+      createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
     );
   }

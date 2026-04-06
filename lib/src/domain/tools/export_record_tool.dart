@@ -49,8 +49,6 @@ class ExportRecordTool {
         includeSummary: includeSummary,
       );
       await File(filePath).writeAsString(content, flush: true);
-      debugPrint(
-          '[ExportTool] 기록 CSV 내보내기 완료: $filePath (${records.length}건)');
       return ExportResult(
           success: true, filePath: filePath, count: records.length);
     } catch (e) {
@@ -73,8 +71,6 @@ class ExportRecordTool {
       final content =
           ImportExportService.exportNarratorsCsv(narrators);
       await File(filePath).writeAsString(content, flush: true);
-      debugPrint(
-          '[ExportTool] 구술자 CSV 내보내기 완료: $filePath (${narrators.length}건)');
       return ExportResult(
           success: true, filePath: filePath, count: narrators.length);
     } catch (e) {
@@ -103,7 +99,6 @@ class ExportRecordTool {
       await File(filePath).writeAsString(content, flush: true);
       final total =
           records.length + narrators.length + interviewers.length;
-      debugPrint('[ExportTool] JSON 백업 완료: $filePath ($total건)');
       return ExportResult(
           success: true, filePath: filePath, count: total);
     } catch (e) {
@@ -121,7 +116,6 @@ class ExportRecordTool {
       final filePath = '${exportDir.path}/${type}_template.csv';
       final content = _getTemplate(type);
       await File(filePath).writeAsString(content, flush: true);
-      debugPrint('[ExportTool] 템플릿 생성 완료: $filePath');
       return ExportResult(
           success: true, filePath: filePath, count: 1);
     } catch (e) {

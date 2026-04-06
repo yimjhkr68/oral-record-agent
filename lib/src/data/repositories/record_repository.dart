@@ -1,7 +1,9 @@
 // 파일 목적: Record Repository 구현 (데이터 액세스 계층)
 
 import 'package:oral_record_agent/src/data/models/record.dart';
+import 'package:oral_record_agent/src/data/models/narrator.dart';
 import 'package:oral_record_agent/src/data/models/search_filters.dart';
+import 'package:oral_record_agent/src/data/services/display_id_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 abstract class RecordRepository {
@@ -25,22 +27,36 @@ abstract class RecordRepository {
 
   /// 최근 N개 기록 조회
   Future<List<Record>> getRecentRecords(int limit);
+
+  /// 파일 해시로 기존 기록 조회 (중복 감지)
+  Future<Record?> findByFileHash(String hash);
 }
 
 class HiveRecordRepository implements RecordRepository {
   final Box<Record> _recordBox;
+  final Box<Narrator>? _narratorBox;
 
-  HiveRecordRepository(this._recordBox);
+  HiveRecordRepository(this._recordBox, [this._narratorBox]);
 
   @override
   Future<String> createRecord(Record record) async {
     try {
-      await _recordBox.put(record.id, record);
-      // 또는: await _recordBox.put(record.id, record);
-      return record.id;
+      final recordToSave = record.displayId == null
+          ? record.copyWith(displayId: _generateDisplayId(record.createdAt))
+          : record;
+      await _recordBox.put(recordToSave.id, recordToSave);
+      return recordToSave.id;
     } catch (e) {
       throw Exception('Failed to create record: $e');
     }
+  }
+
+  String _generateDisplayId(DateTime date) {
+    final existingIds = _recordBox.values
+        .map((r) => r.displayId)
+        .whereType<String>()
+        .toList();
+    return DisplayIdService.generateRecordId(date, existingIds);
   }
 
   @override
@@ -82,12 +98,15 @@ class HiveRecordRepository implements RecordRepository {
             .toList();
       }
 
-      // 텍스트 검색 (제목, displayId)
+      // 텍스트 검색 (제목, displayId, 구술자 이름)
       if (filters.query != null && filters.query!.isNotEmpty) {
         final q = filters.query!.toLowerCase();
         results = results.where((r) {
           if (r.title.toLowerCase().contains(q)) return true;
           if (r.displayId != null && r.displayId!.toLowerCase().contains(q)) return true;
+          // 구술자 이름으로도 검색
+          final narrator = _narratorBox?.get(r.narratorId);
+          if (narrator != null && narrator.name.toLowerCase().contains(q)) return true;
           return false;
         }).toList();
       }
@@ -140,5 +159,12 @@ class HiveRecordRepository implements RecordRepository {
     } catch (e) {
       throw Exception('Failed to get recent records: $e');
     }
+  }
+
+  @override
+  Future<Record?> findByFileHash(String hash) async {
+    return _recordBox.values
+        .where((r) => r.fileHash == hash)
+        .firstOrNull;
   }
 }

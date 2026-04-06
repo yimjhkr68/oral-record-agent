@@ -75,3 +75,8 @@ flutter_run.log
 
 # Claude Code 내부 디렉터리
 .claude/
+
+# RAG 서버
+qdrant_storage/
+server/__pycache__/
+server/*.pyc

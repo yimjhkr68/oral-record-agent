@@ -1,8 +1,10 @@
+import 'dart:async' show unawaited;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'src/data/hive_service.dart';
 import 'src/data/services/auth_service.dart';
+import 'src/data/services/rag_server_service.dart';
 import 'src/presentation/app.dart';
 import 'src/presentation/providers/settings_provider.dart';
 
@@ -17,6 +19,9 @@ void main() async {
   } catch (_) {
     // .env 누락 시 API 키 없이 실행 (로컬 Whisper 모드로 동작)
   }
+
+  // RAG 서버 (Qdrant + FastAPI) 시작 - 실패해도 앱 실행에 영향 없음
+  unawaited(RagServerService.start());
 
   // Hive 초기화 및 어댑터 등록 (lock 충돌 시 재시도)
   await HiveService.initializeHive();

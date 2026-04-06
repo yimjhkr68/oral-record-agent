@@ -161,7 +161,6 @@ class AuthService {
         role: UserRole.admin,
         displayName: '관리자',
       );
-      debugPrint('[Auth] 기본 관리자 계정 생성: admin / admin1234');
     }
   }
 

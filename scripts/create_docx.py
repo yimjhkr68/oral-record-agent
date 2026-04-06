@@ -6,6 +6,7 @@
 import sys
 import io
 import json
+import argparse
 import warnings
 warnings.filterwarnings('ignore')
 from pathlib import Path
@@ -49,18 +50,20 @@ def set_paragraph_style(para, font_size=11, line_spacing=22, space_after=6):
     for run in para.runs:
         run.font.size = Pt(font_size)
 
-def add_chapter_heading(doc, title, level=1):
+def add_chapter_heading(doc, title, level=1, accent_color=None):
     """챕터 제목 추가"""
+    color = accent_color or RGBColor(0x1A, 0x2B, 0x5E)
     heading = doc.add_heading(title, level=level)
     heading.paragraph_format.space_before = Pt(24)
     heading.paragraph_format.space_after = Pt(12)
     for run in heading.runs:
         run.font.size = Pt(18 if level == 1 else 14)
-        run.font.color.rgb = RGBColor(0x1A, 0x2B, 0x5E)
+        run.font.color.rgb = color
     return heading
 
-def add_chapter_content(doc, content):
+def add_chapter_content(doc, content, accent_color=None):
     """챕터 본문 추가 (빈 줄로 단락 구분)"""
+    subheading_color = accent_color or RGBColor(0x2D, 0x4A, 0x9E)
     if not content:
         return
     paragraphs = content.split('\n\n')
@@ -68,39 +71,71 @@ def add_chapter_content(doc, content):
         para_text = para_text.strip()
         if not para_text:
             continue
-        # 소제목 감지 (짧은 줄 + 다음에 내용 있는 경우)
         lines = para_text.split('\n')
-        if len(lines) == 1 and len(para_text) < 40 and not para_text.endswith('.'):
+        # 소제목 감지: 첫 줄이 짧고 뒤에 본문이 이어지는 경우
+        if len(lines) >= 2 and len(lines[0]) < 40 and not lines[0].endswith('.') and not lines[0].startswith('태그:'):
+            # 첫 줄 → 소제목
+            p = doc.add_heading(lines[0], level=2)
+            p.paragraph_format.space_before = Pt(12)
+            p.paragraph_format.space_after = Pt(6)
+            for run in p.runs:
+                run.font.size = Pt(13)
+                run.font.color.rgb = subheading_color
+            # 나머지 줄 → 본문 단락
+            body = ' '.join(line.strip() for line in lines[1:] if line.strip())
+            if body:
+                para = doc.add_paragraph(body)
+                set_paragraph_style(para)
+        elif len(lines) == 1 and len(para_text) < 40 and not para_text.endswith('.') and not para_text.startswith('태그:'):
+            # 단독 소제목
             p = doc.add_heading(para_text, level=2)
             p.paragraph_format.space_before = Pt(12)
             p.paragraph_format.space_after = Pt(6)
             for run in p.runs:
                 run.font.size = Pt(13)
-                run.font.color.rgb = RGBColor(0x2D, 0x4A, 0x9E)
+                run.font.color.rgb = subheading_color
         else:
-            # 일반 단락 (줄바꿈을 공백으로 합치기)
+            # 일반 단락 (줄바꿈 유지 또는 공백 병합)
             merged = ' '.join(line.strip() for line in lines if line.strip())
             para = doc.add_paragraph(merged)
             set_paragraph_style(para)
 
-def main():
-    if len(sys.argv) < 2:
-        print("사용법: python create_docx.py <json_data_path>", file=sys.stderr)
-        sys.exit(1)
+def get_mode_accent_color(mode):
+    """모드별 강조색 반환 (RGB 튜플)"""
+    colors = {
+        'academic': (0x2C, 0x3E, 0x50),   # 진한 남색 — 학술
+        'creative': (0x6C, 0x3A, 0x83),   # 보라 — 창작
+        'popular':  (0x1A, 0x6B, 0x4A),   # 초록 — 교양
+    }
+    return colors.get(mode, (0x1A, 0x2B, 0x5E))  # 기본: 남색 — 보고서
 
-    json_path = sys.argv[1]
+
+def main():
+    parser = argparse.ArgumentParser(description='구술기록 Word 문서 생성')
+    parser.add_argument('json_path', help='JSON 데이터 파일 경로')
+    parser.add_argument('output_path', nargs='?', default=None, help='출력 파일 경로')
+    parser.add_argument('--mode', default=None,
+                        choices=['report', 'academic', 'creative', 'popular'],
+                        help='문서 작성 모드')
+    args = parser.parse_args()
+
     try:
-        with open(json_path, encoding='utf-8') as f:
+        with open(args.json_path, encoding='utf-8') as f:
             data = json.load(f)
     except Exception as e:
         print(f"JSON 파일 읽기 실패: {e}", file=sys.stderr)
         sys.exit(1)
 
     title = data.get('title', '구술 기록 산출물')
-    output_path = data.get('output_path', 'output.docx')
+    # CLI 인수 우선, 없으면 JSON 내 output_path, 없으면 기본값
+    output_path = args.output_path or data.get('output_path', 'output.docx')
+    # 모드: CLI --mode 우선, 없으면 JSON 내 mode, 없으면 'report'
+    mode = args.mode or data.get('mode', 'report')
     chapters = data.get('chapters', [])
 
     doc = Document()
+    accent = get_mode_accent_color(mode)
+    accent_rgb = RGBColor(*accent)
 
     # ── A4 페이지 설정 ────────────────────────────────────────
     section = doc.sections[0]
@@ -124,13 +159,13 @@ def main():
     run = title_para.add_run(title)
     run.font.size = Pt(28)
     run.font.bold = True
-    run.font.color.rgb = RGBColor(0x1A, 0x2B, 0x5E)
+    run.font.color.rgb = accent_rgb
 
     # 구분선
     line_para = doc.add_paragraph()
     line_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     line_run = line_para.add_run('─' * 20)
-    line_run.font.color.rgb = RGBColor(0x1A, 0x2B, 0x5E)
+    line_run.font.color.rgb = accent_rgb
 
     doc.add_page_break()
 
@@ -145,7 +180,7 @@ def main():
 
         if ch_type == 'toc':
             # 목차 처리
-            add_chapter_heading(doc, ch_title)
+            add_chapter_heading(doc, ch_title, accent_color=accent_rgb)
             if ch_content:
                 for line in ch_content.split('\n'):
                     if line.strip():
@@ -153,8 +188,8 @@ def main():
                         p.paragraph_format.space_after = Pt(4)
                         p.paragraph_format.first_line_indent = Pt(0)
         else:
-            add_chapter_heading(doc, ch_title)
-            add_chapter_content(doc, ch_content)
+            add_chapter_heading(doc, ch_title, accent_color=accent_rgb)
+            add_chapter_content(doc, ch_content, accent_color=accent_rgb)
 
         # 챕터 간 페이지 나누기 (마지막 챕터 제외)
         if i < len(chapters) - 1:

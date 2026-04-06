@@ -62,7 +62,8 @@ final sessionRepositoryProvider =
 
 final recordRepositoryProvider = FutureProvider<RecordRepository>((ref) async {
   final box = await ref.watch(recordBoxProvider.future);
-  return HiveRecordRepository(box);
+  final narratorBox = await ref.watch(narratorBoxProvider.future);
+  return HiveRecordRepository(box, narratorBox);
 });
 
 // ──────────────────────────────────────────────────────────

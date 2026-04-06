@@ -43,25 +43,46 @@ class HiveService {
     Hive.registerAdapter(AppSettingsAdapter()); // typeId: 5
   }
 
-  // ── lock 충돌 시 lock 파일 삭제 후 재시도 ──────────────────────
+  // ── lock 충돌 시 재시도 (최대 5회, 지수 백오프) ────────────────
+  static bool _isLockError(Object e) {
+    final msg = e.toString();
+    return msg.contains('lock') ||
+        msg.contains('PathAccessException') ||
+        msg.contains('errno = 33') ||
+        msg.contains('errno = 32');
+  }
+
   static Future<Box<T>> _openBox<T>(String boxName) async {
     if (Hive.isBoxOpen(boxName)) return Hive.box<T>(boxName);
-    try {
-      return await Hive.openBox<T>(boxName);
-    } catch (e) {
-      final msg = e.toString();
-      if (msg.contains('lock') || msg.contains('PathAccessException') ||
-          msg.contains('errno = 33') || msg.contains('errno = 32')) {
-        debugPrint('[Hive] lock 충돌 → $boxName.lock 삭제 후 재시도');
+
+    const maxAttempts = 5;
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await Hive.openBox<T>(boxName);
+      } catch (e) {
+        if (!_isLockError(e)) rethrow;
+
+        // lock 파일 삭제 시도 (다른 프로세스가 놓았을 경우에만 성공)
         try {
           final docsDir = await getApplicationDocumentsDirectory();
           final lockFile = File('${docsDir.path}/$boxName.lock');
           if (await lockFile.exists()) await lockFile.delete();
-        } catch (_) {}
-        return await Hive.openBox<T>(boxName);
+        } catch (_) {
+          // 다른 프로세스가 파일을 보유 중이면 삭제 불가 — 대기 후 재시도
+        }
+
+        if (attempt == maxAttempts) {
+          throw HiveException(
+            '$boxName 박스를 열 수 없습니다. '
+            '다른 앱 인스턴스가 실행 중이면 종료 후 다시 시도해주세요.',
+          );
+        }
+
+        // 지수 백오프: 500ms, 1s, 1.5s, 2s
+        await Future.delayed(Duration(milliseconds: 500 * attempt));
       }
-      rethrow;
     }
+    throw HiveException('$boxName 박스 오픈 실패 (최대 재시도 초과)');
   }
 
   /// Narrator 박스 오픈
@@ -133,6 +154,24 @@ class HiveService {
     await _openFileBytesBox();
     await _openAccountsBox();
     await _openAuthPrefsBox();
+    await _openAgentHistoryBox();
+    await _openAgentOutputsBox();
+  }
+
+  /// 에이전트 산출물 박스 오픈 (JSON 문자열 직렬화)
+  static Future<Box<String>> _openAgentOutputsBox() async {
+    if (!Hive.isBoxOpen('agent_outputs')) {
+      return await Hive.openBox<String>('agent_outputs');
+    }
+    return Hive.box<String>('agent_outputs');
+  }
+
+  /// 에이전트 실행 이력 박스 오픈 (JSON 문자열 직렬화)
+  static Future<Box<String>> _openAgentHistoryBox() async {
+    if (!Hive.isBoxOpen('agent_history')) {
+      return await Hive.openBox<String>('agent_history');
+    }
+    return Hive.box<String>('agent_history');
   }
 
   /// 파일 바이트(base64) 박스 오픈 (FileStorageService 사용)

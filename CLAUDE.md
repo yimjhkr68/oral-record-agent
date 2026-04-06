@@ -177,6 +177,21 @@ powershell -ExecutionPolicy Bypass -File scripts/notify.ps1 `
 
 ---
 
+## RAG 스택 (v3.0)
+- 벡터 DB: Qdrant (Docker, port 6333)
+- 임베딩: jhgan/ko-sroberta-multitask (sentence-transformers)
+- RAG 서버: FastAPI (port 9000)
+- 컬렉션: oral_records (768차원, Cosine)
+
+## 서버 실행 방법
+```
+docker start qdrant
+cd server
+python -m uvicorn main:app --host 0.0.0.0 --port 9000
+```
+
+---
+
 ## 메타
 
 - 작성일: 2026-03-24
