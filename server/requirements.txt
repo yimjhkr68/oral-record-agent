@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+qdrant-client
+anthropic
+python-dotenv
+python-multipart
+python-docx
+pypdf
+httpx
+voyageai

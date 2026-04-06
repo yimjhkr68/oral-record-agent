@@ -657,11 +657,9 @@ class _InputAreaState extends State<_InputArea> {
         onDragDone: (detail) {
           setState(() => _isDragging = false);
           if (detail.files.isEmpty) {
-            debugPrint('[드롭] 파일 없음 - detail: $detail');
             return;
           }
           final path = detail.files.first.path;
-          debugPrint('[드롭] 파일 경로: $path');
           widget.onFileDrop(path);
         },
         child: AnimatedContainer(

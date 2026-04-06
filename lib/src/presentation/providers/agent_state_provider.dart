@@ -1337,7 +1337,6 @@ class AgentStateNotifier extends StateNotifier<AgentState> {
   void _invalidateRecordProviders() {
     _ref.invalidate(recordListProvider);
     _ref.invalidate(recentRecordsProvider);
-    debugPrint('[Agent] recordListProvider 갱신 완료');
   }
 
   void _addLog(String step, String detail,

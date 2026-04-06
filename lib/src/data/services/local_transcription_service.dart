@@ -74,8 +74,6 @@ class LocalTranscriptionService {
       scriptPath = found;
     }
 
-    debugPrint('[로컬전사] 스크립트: $scriptPath');
-    debugPrint('[로컬전사] 파일: $filePath, 모델: $model, 언어: $language');
 
     try {
       // PYTHONIOENCODING=utf-8: Windows CP949 기본 인코딩으로 인한 한글 깨짐 방지
@@ -96,9 +94,7 @@ class LocalTranscriptionService {
         onTimeout: () => ProcessResult(-1, 1, '', '타임아웃: 전사에 $timeoutMinutes분 이상 소요됩니다. 설정에서 대기 시간을 늘려보세요.'),
       );
 
-      debugPrint('[로컬전사] exitCode: ${result.exitCode}');
       if (result.stderr.toString().isNotEmpty) {
-        debugPrint('[로컬전사] stderr: ${result.stderr}');
       }
 
       final stdout = result.stdout.toString().trim();
@@ -197,7 +193,6 @@ class LocalTranscriptionService {
           .map((s) => Map<String, dynamic>.from(s as Map))
           .toList();
 
-      debugPrint('[로컬전사 완료] ${text.length}자, ${segments.length}개 세그먼트');
 
       return LocalTranscriptionResult(
         text: text,

@@ -1,6 +1,7 @@
 // 파일 목적: RecordDetailPage - 기록 상세 화면 (Windows 버전)
 // 콘텐츠 미리보기, 파일 저장(다운로드), 마스킹(PII 제거), 요약 확인 다이얼로그 포함
 
+import 'dart:async' show unawaited;
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ import '../../data/services/local_transcription_service.dart';
 import '../../data/services/document_extraction_service.dart';
 import '../../data/services/video_transcription_service.dart';
 import '../../data/utils/record_processing_util.dart';
+import '../../data/services/rag_service.dart';
 import '../providers/record_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/master_data_provider.dart';
@@ -241,6 +243,9 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         content: _editContentCtrl!.text,
       );
       await recordRepo.updateRecord(r.id, updatedRecord);
+      unawaited(
+        RagService().ingestRecord(updatedRecord, narrator: _editNarrator),
+      );
 
       final session = _editingSession;
       if (session != null) {
@@ -588,6 +593,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       final repository = await ref.read(recordRepositoryProvider.future);
       final updated = r.copyWith(content: result.text);
       await repository.updateRecord(r.id, updated);
+      unawaited(RagService().ingestRecord(updated));
       ref.invalidate(recordDetailProvider(widget.recordId));
 
       if (!mounted) return;
@@ -700,6 +706,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       final repository = await ref.read(recordRepositoryProvider.future);
       final updated = r.copyWith(content: result.text);
       await repository.updateRecord(r.id, updated);
+      unawaited(RagService().ingestRecord(updated));
       ref.invalidate(recordDetailProvider(widget.recordId));
 
       if (!mounted) return;
@@ -762,6 +769,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       final repository = await ref.read(recordRepositoryProvider.future);
       final updated = r.copyWith(content: result.text);
       await repository.updateRecord(r.id, updated);
+      unawaited(RagService().ingestRecord(updated));
       ref.invalidate(recordDetailProvider(widget.recordId));
 
       if (!mounted) return;
@@ -877,6 +885,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
         detectedPII: [],
       );
       await repository.updateRecord(record.id, updated);
+      unawaited(RagService().ingestRecord(updated));
 
       setState(() {
         _isSavingMask = false;
@@ -1058,6 +1067,7 @@ class _RecordDetailPageState extends ConsumerState<RecordDetailPage> {
       final repository = await ref.read(recordRepositoryProvider.future);
       final updated = record.copyWith(summary: summaryText);
       await repository.updateRecord(record.id, updated);
+      unawaited(RagService().ingestRecord(updated));
 
       ref.invalidate(recordDetailProvider(widget.recordId));
 

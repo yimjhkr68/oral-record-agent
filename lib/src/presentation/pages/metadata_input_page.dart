@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:async' show unawaited;
 import '../providers/metadata_form_provider.dart';
 import '../providers/master_data_provider.dart';
 import '../providers/pending_content_provider.dart';
@@ -15,6 +16,7 @@ import '../../data/models/interviewer.dart';
 import '../../data/models/interview_session.dart';
 import '../../data/models/record.dart';
 import '../../data/repositories/repository_provider.dart';
+import '../../data/services/rag_service.dart';
 
 class MetadataInputPage extends ConsumerStatefulWidget {
   const MetadataInputPage({super.key});
@@ -104,6 +106,14 @@ class _MetadataInputPageState extends ConsumerState<MetadataInputPage> {
         mimeType: pending?.mimeType,
       );
       await recordRepo.createRecord(record);
+      // RAG 자동 수집 (비동기, 실패해도 앱 동작 영향 없음)
+      final narratorRepo = await ref.read(narratorRepositoryProvider.future);
+      unawaited(
+        RagService().ingestRecord(
+          record,
+          narrator: await narratorRepo.getNarrator(record.narratorId),
+        ),
+      );
 
       final bytes = pending?.bytes;
       if (bytes != null && bytes.isNotEmpty && pending?.fileName != null) {
@@ -120,9 +130,6 @@ class _MetadataInputPageState extends ConsumerState<MetadataInputPage> {
       ref.read(metadataFormProvider.notifier).reset();
       ref.invalidate(recentRecordsProvider);
       ref.invalidate(recordListProvider);
-      debugPrint('[기록저장] title: ${record.title}');
-      debugPrint('[기록저장] Hive 저장 완료: ${record.id}');
-      debugPrint('[기록저장] Provider 갱신 완료');
 
       if (!mounted) return;
       context.go('/records/detail/${record.id}');

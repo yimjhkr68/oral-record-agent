@@ -12,7 +12,6 @@ class DurationService {
   }) async {
     final script = _findScript(scriptDir, 'get_duration.py');
     if (script == null) {
-      debugPrint('[DurationService] get_duration.py 스크립트를 찾을 수 없습니다');
       return null;
     }
 
@@ -41,7 +40,6 @@ class DurationService {
 
       return map['duration'] as int?;
     } catch (e) {
-      debugPrint('[DurationService] 오류: $e');
       return null;
     }
   }

@@ -1,5 +1,4 @@
 // 파일 목적: 통합 검색 화면 (기록/구술자/면담자 전체 검색)
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +9,7 @@ import '../../data/models/interview_session.dart';
 import '../../data/models/search_filters.dart';
 import '../providers/master_data_provider.dart';
 import '../providers/record_provider.dart';
+import '../providers/rag_provider.dart';
 
 const _mainCategories = [
   '정치사건',
@@ -33,7 +33,7 @@ class _SearchPageState extends ConsumerState<SearchPage>
     with SingleTickerProviderStateMixin {
   final _searchController = TextEditingController();
   late TabController _tabController;
-  Timer? _debounce;
+  RagState? _cachedRagState;
 
   // 검색 상태
   String _query = '';
@@ -67,32 +67,13 @@ class _SearchPageState extends ConsumerState<SearchPage>
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _searchController.dispose();
     _tabController.dispose();
     super.dispose();
   }
 
   void _onSearchChanged(String value) {
-    // suffixIcon(clear) 갱신을 위해 항상 setState
-    setState(() {});
-
-    _debounce?.cancel();
-    if (value.trim().length < 2) {
-      if (_hasSearched) {
-        setState(() {
-          _query = '';
-          _hasSearched = false;
-          _recordResults = [];
-          _narratorResults = [];
-          _interviewerResults = [];
-        });
-      }
-      return;
-    }
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      _runSearch(value);
-    });
+    setState(() {}); // clear 버튼 표시를 위해서만 사용
   }
 
   void _runSearch(String query) {
@@ -115,6 +96,8 @@ class _SearchPageState extends ConsumerState<SearchPage>
       if (_recentSearches.length > 5) _recentSearches.removeLast();
     });
 
+    _cachedRagState = null;
+    ref.read(ragProvider.notifier).query(trimmed);
     _performSearch(trimmed);
   }
 
@@ -673,34 +656,38 @@ class _SearchPageState extends ConsumerState<SearchPage>
         _narratorResults.length +
         _interviewerResults.length;
 
-    if (total == 0) {
-      return const Center(
-        child: Text('검색 결과가 없습니다',
-            style: TextStyle(color: Colors.grey, fontSize: 16)),
-      );
-    }
-
-    return Column(
-      children: [
-        TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: '기록(${_recordResults.length})'),
-            Tab(text: '구술자(${_narratorResults.length})'),
-            Tab(text: '면담자(${_interviewerResults.length})'),
-          ],
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              _buildRecordsList(),
-              _buildNarratorsList(),
-              _buildInterviewersList(),
-            ],
-          ),
-        ),
-      ],
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildRagCard(),
+          if (total > 0) ...[
+            TabBar(
+              controller: _tabController,
+              tabs: [
+                Tab(text: '기록(${_recordResults.length})'),
+                Tab(text: '구술자(${_narratorResults.length})'),
+                Tab(text: '면담자(${_interviewerResults.length})'),
+              ],
+            ),
+            SizedBox(
+              height: 400,
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildRecordsList(),
+                  _buildNarratorsList(),
+                  _buildInterviewersList(),
+                ],
+              ),
+            ),
+          ] else
+            const Padding(
+              padding: EdgeInsets.only(top: 32),
+              child: Text('일반 검색 결과가 없습니다',
+                  style: TextStyle(color: Colors.grey, fontSize: 14)),
+            ),
+        ],
+      ),
     );
   }
 
@@ -869,6 +856,277 @@ class _SearchPageState extends ConsumerState<SearchPage>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildRagCard() {
+    final ragState = ref.watch(ragProvider);
+
+    // 결과가 있으면 캐시에 저장
+    if (ragState.hasResult) {
+      _cachedRagState = ragState;
+    }
+
+    // 로딩 중이 아니고 현재 결과 없으면 캐시 사용
+    final displayState = ragState.isLoading
+        ? ragState
+        : (ragState.hasResult ? ragState : (_cachedRagState ?? ragState));
+
+    // 로딩 중
+    if (displayState.isLoading) {
+      return Container(
+        margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text('AI 답변 생성 중...', style: TextStyle(fontSize: 13)),
+          ],
+        ),
+      );
+    }
+
+    // 서버 연결 불가
+    if (!displayState.serverAvailable) {
+      return const SizedBox.shrink();
+    }
+
+    // 오류
+    if (displayState.hasError && displayState.serverAvailable) {
+      return Container(
+        margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          'AI 답변 오류: ${displayState.error}',
+          style: TextStyle(
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.error,
+          ),
+        ),
+      );
+    }
+
+    // 결과 없음
+    if (!displayState.hasResult) return const SizedBox.shrink();
+
+    final result = displayState.result!;
+
+    return _RagAnswerCard(result: result);
+  }
+}
+
+class _RagAnswerCard extends StatefulWidget {
+  final RagResult result;
+  const _RagAnswerCard({required this.result});
+
+  @override
+  State<_RagAnswerCard> createState() => _RagAnswerCardState();
+}
+
+class _RagAnswerCardState extends State<_RagAnswerCard> {
+  bool _sourcesExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 헤더
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome,
+                    size: 16, color: colorScheme.primary),
+                const SizedBox(width: 6),
+                Text(
+                  'AI 답변',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '출처 ${widget.result.sources.length}건',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 답변 본문
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: Text(
+              widget.result.answer,
+              style: const TextStyle(fontSize: 13, height: 1.6),
+              maxLines: 6,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+          // 출처 접기/펼치기
+          if (widget.result.sources.isNotEmpty) ...[
+            InkWell(
+              onTap: () =>
+                  setState(() => _sourcesExpanded = !_sourcesExpanded),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+                child: Row(
+                  children: [
+                    Icon(
+                      _sourcesExpanded
+                          ? Icons.expand_less
+                          : Icons.expand_more,
+                      size: 16,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _sourcesExpanded ? '출처 숨기기' : '출처 보기',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_sourcesExpanded)
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surface.withValues(alpha: 0.6),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(10),
+                    bottomRight: Radius.circular(10),
+                  ),
+                ),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: widget.result.sources.length,
+                  itemBuilder: (context, index) {
+                    final src = widget.result.sources[index];
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          final id = src.recordId;
+                          if (id.isEmpty) return;
+                          context.push('/records/detail/$id');
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // 관련도 점수
+                              Container(
+                                width: 36,
+                                padding: const EdgeInsets.symmetric(vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  '${(src.score * 100).toInt()}%',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      src.title,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: colorScheme.primary,
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                    if (src.narratorName.isNotEmpty)
+                                      Text(
+                                        '구술자: ${src.narratorName}  |  ${src.displayId}',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: colorScheme.onSurface
+                                              .withValues(alpha: 0.5),
+                                        ),
+                                      ),
+                                    Text(
+                                      src.text.length > 80
+                                          ? '${src.text.substring(0, 80)}...'
+                                          : src.text,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: colorScheme.onSurface
+                                            .withValues(alpha: 0.7),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 16,
+                                color: colorScheme.primary.withValues(alpha: 0.6),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -61,14 +61,12 @@ class HiveService {
         return await Hive.openBox<T>(boxName);
       } catch (e) {
         if (!_isLockError(e)) rethrow;
-        debugPrint('[Hive] lock 충돌 ($attempt/$maxAttempts) → $boxName');
 
         // lock 파일 삭제 시도 (다른 프로세스가 놓았을 경우에만 성공)
         try {
           final docsDir = await getApplicationDocumentsDirectory();
           final lockFile = File('${docsDir.path}/$boxName.lock');
           if (await lockFile.exists()) await lockFile.delete();
-          debugPrint('[Hive] $boxName.lock 삭제 성공');
         } catch (_) {
           // 다른 프로세스가 파일을 보유 중이면 삭제 불가 — 대기 후 재시도
         }

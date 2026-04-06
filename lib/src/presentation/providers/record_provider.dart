@@ -1,11 +1,13 @@
 // 파일 목적: 기록 관련 Riverpod Providers
 // RecordRepository를 통한 데이터 제공 및 상태 관리
 
+import 'dart:async' show unawaited;
 import 'package:riverpod/riverpod.dart';
 import '../../data/models/record.dart';
 import '../../data/models/search_filters.dart';
 import '../../data/repositories/repository_provider.dart';
 import '../../data/services/display_id_service.dart';
+import '../../data/services/rag_service.dart';
 
 /// 기록 목록 Provider (필터 적용, 앱 생명주기 동안 캐시 유지)
 final recordListProvider =
@@ -58,6 +60,14 @@ class RecordFormNotifier extends StateNotifier<AsyncValue<void>> {
         toSave = record.copyWith(displayId: newDisplayId);
       }
       await repo.createRecord(toSave);
+      // RAG 자동 수집 (비동기, 실패해도 앱 동작 영향 없음)
+      final narratorRepo = await _ref.read(narratorRepositoryProvider.future);
+      unawaited(
+        RagService().ingestRecord(
+          toSave,
+          narrator: await narratorRepo.getNarrator(toSave.narratorId),
+        ),
+      );
       _invalidateLists();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -71,6 +81,7 @@ class RecordFormNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       final repo = await _ref.read(recordRepositoryProvider.future);
       await repo.deleteRecord(recordId);
+      unawaited(RagService().deleteRecord(recordId));
 
       final fileStorage = _ref.read(fileStorageProvider);
       await fileStorage.deleteFile(recordId);

@@ -40,7 +40,6 @@ class VideoTranscriptionService {
       );
     }
 
-    debugPrint('[영상전사] 음성 추출 시작: $videoPath');
 
     String? tempWavPath;
 
@@ -63,7 +62,6 @@ class VideoTranscriptionService {
         onTimeout: () => ProcessResult(-1, 1, '', '타임아웃: 음성 추출에 3분 이상 소요됩니다.'),
       );
 
-      debugPrint('[영상전사] extract exitCode: ${extractResult.exitCode}');
 
       if (extractResult.exitCode == -1 ||
           extractResult.stderr.toString().contains('is not recognized') ||
@@ -120,7 +118,6 @@ class VideoTranscriptionService {
         );
       }
 
-      debugPrint('[영상전사] WAV 추출 완료: $tempWavPath → Whisper 전사 시작');
 
       // 3. Whisper 전사
       onProgress?.call('2/2 텍스트 전사 중...');

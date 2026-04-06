@@ -99,7 +99,6 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
         _error = null;
       });
       _startTimer();
-      debugPrint('[녹음 시작] $path');
     } catch (e) {
       if (mounted) setState(() => _error = '녹음 시작 실패: $e');
     }
@@ -123,7 +122,6 @@ class _RecordingPageState extends ConsumerState<RecordingPage>
     setState(() {
       _isRecording = false;
     });
-    debugPrint('[녹음 중지] 파일: $path');
     if (path != null) {
       await _processRecording(path);
     }
@@ -395,7 +393,6 @@ class _FilePickerPageState extends ConsumerState<FilePickerPage> {
         ? file.name.split('.').last.toLowerCase()
         : '';
     final mime = FileService.mimeTypeFromExt(ext);
-    debugPrint('[파일 선택됨] ${file.name} ($mime, ${file.size} bytes)');
     setState(() {
       _selectedFilePath = file.path;
       _selectedFileName = file.name;
@@ -437,7 +434,6 @@ class _FilePickerPageState extends ConsumerState<FilePickerPage> {
         } else if (ext == 'docx' && result.content.isNotEmpty &&
             !result.content.startsWith('[')) {
           // Python 실패 시 Dart archive 추출 결과 유지
-          debugPrint('[문서추출] Python 실패, Dart 추출 결과 사용: ${extracted.error}');
         } else {
           // 추출 실패 → 사용자에게 알림 (업로드는 계속)
           transcriptionFailed = true;

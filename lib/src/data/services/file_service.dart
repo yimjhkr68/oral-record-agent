@@ -45,17 +45,13 @@ class FileService {
     final ext = name.contains('.') ? name.split('.').last.toLowerCase() : '';
     final mimeType = mimeTypeFromExt(ext);
 
-    debugPrint('[파일 선택됨] 파일명: $name / 확장자: $ext');
-    debugPrint('[텍스트 추출 중...] dart:io 파일 읽기 시작');
 
     final bytes = await file.readAsBytes();
     final size = bytes.length;
-    debugPrint('[파일 읽기 완료] $size bytes');
 
     // ── 영상 파일 ──
     const videoExts = {'mp4', 'avi', 'mov', 'mkv', 'wmv'};
     if (videoExts.contains(ext)) {
-      debugPrint('[텍스트 추출 완료] 영상 파일 placeholder');
       return FileReadResult(
         content: '[영상 파일: $name]',
         bytes: bytes,
@@ -69,7 +65,6 @@ class FileService {
     // ── 오디오 파일 ──
     const audioExts = {'mp3', 'wav', 'm4a', 'ogg', 'flac', 'aac'};
     if (audioExts.contains(ext)) {
-      debugPrint('[텍스트 추출 완료] 오디오 파일 placeholder (TranscriptionService로 전사 필요)');
       return FileReadResult(
         content: '[음성 파일: $name]',
         bytes: bytes,
@@ -83,7 +78,6 @@ class FileService {
     // ── TXT 파일 ──
     if (ext == 'txt') {
       final text = utf8.decode(bytes, allowMalformed: true);
-      debugPrint('[텍스트 추출 완료] TXT ${text.length}자');
       return FileReadResult(
         content: text,
         bytes: bytes,
@@ -95,9 +89,7 @@ class FileService {
 
     // ── DOCX 파일 ──
     if (ext == 'docx') {
-      debugPrint('[텍스트 추출 중...] DOCX archive 파싱');
       final text = _extractDocxText(bytes);
-      debugPrint('[텍스트 추출 완료] DOCX ${text.length}자');
       return FileReadResult(
         content: text.isNotEmpty ? text : '[DOCX 내용을 추출할 수 없습니다: $name]',
         bytes: bytes,
@@ -109,7 +101,6 @@ class FileService {
 
     // ── PDF 파일 ── (Windows 텍스트 추출 미지원 → 파일 저장만)
     if (ext == 'pdf') {
-      debugPrint('[텍스트 추출 완료] PDF — 파일 저장, 텍스트 추출 미지원');
       return FileReadResult(
         content: '[PDF 파일: $name\n원본 파일을 열어 내용을 확인하세요.]',
         bytes: bytes,
@@ -120,7 +111,6 @@ class FileService {
     }
 
     // ── 미지원 형식 ──
-    debugPrint('[텍스트 추출 완료] 미지원 형식 placeholder');
     return FileReadResult(
       content: '[지원하지 않는 파일 형식: $name]',
       bytes: bytes,
@@ -151,7 +141,6 @@ class FileService {
       }
       return buffer.toString().replaceAll(RegExp(r' +'), ' ').trim();
     } catch (e) {
-      debugPrint('[DOCX 추출 오류] $e');
       return '';
     }
   }

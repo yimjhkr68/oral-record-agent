@@ -110,7 +110,6 @@ class WindowsFileStorage implements FileStorage {
     final dir = Directory('$baseDir/$recordId');
     await dir.create(recursive: true);
 
-    debugPrint('[DB 저장 중...] WindowsFileStorage.saveFile: $fileName ($recordId) ${bytes.length} bytes');
 
     // 파일 바이트 저장
     final file = File('${dir.path}/$fileName');
@@ -126,7 +125,6 @@ class WindowsFileStorage implements FileStorage {
     final metaFile = File('${dir.path}/meta.json');
     await metaFile.writeAsString(jsonEncode(info.toJson()));
 
-    debugPrint('[DB 저장 완료] WindowsFileStorage: $fileName → ${file.path}');
   }
 
   @override
@@ -144,20 +142,16 @@ class WindowsFileStorage implements FileStorage {
 
   @override
   Future<Uint8List?> loadBytes(String recordId) async {
-    debugPrint('[FileStorage] loadBytes: $recordId');
     final info = await getFileInfo(recordId);
     if (info == null) {
-      debugPrint('[FileStorage] loadBytes: 메타 없음 ($recordId)');
       return null;
     }
     final baseDir = await _getBaseDir();
     final file = File('$baseDir/$recordId/${info.fileName}');
     if (!await file.exists()) {
-      debugPrint('[FileStorage] loadBytes: 파일 없음 (${file.path})');
       return null;
     }
     final bytes = await file.readAsBytes();
-    debugPrint('[FileStorage] loadBytes: ${bytes.length} bytes 로드 완료');
     return bytes;
   }
 
@@ -177,7 +171,6 @@ class WindowsFileStorage implements FileStorage {
     final dir = Directory('$baseDir/$recordId');
     if (await dir.exists()) {
       await dir.delete(recursive: true);
-      debugPrint('[FileStorage] deleteFile: $recordId 삭제 완료');
     }
   }
 

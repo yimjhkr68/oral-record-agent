@@ -774,7 +774,6 @@ class CheckDuplicateTool extends AgentTool {
       final existing = await _services!.recordRepo!.findByFileHash(fileHash);
 
       if (existing != null) {
-        debugPrint('[CheckDuplicate] 중복 감지: ${existing.title}');
         return ToolResult(success: false, output: {
           'isDuplicate': true,
           'filePath': filePath,
@@ -854,7 +853,6 @@ class SaveRecordTool extends AgentTool {
       final recordId =
           'REC-${now.year}${now.month.toString().padLeft(2, '0')}-'
           '${now.millisecondsSinceEpoch.toString().substring(8)}';
-      debugPrint('[SaveRecord] stub 모드 (recordRepo null) — 가짜 ID: $recordId');
       return ToolResult(success: true, output: {
         'recordId': recordId,
         'savedAt': now.toIso8601String(),
@@ -900,8 +898,6 @@ class SaveRecordTool extends AgentTool {
           updatedAt: now,
         );
         await _services!.recordRepo!.updateRecord(updateRecordId, updated);
-        debugPrint('[SaveRecord] 업데이트 완료: $updateRecordId '
-            '(${existing.title} → $newTitle)');
         return ToolResult(success: true, output: {
           'recordId': updateRecordId,
           'displayId': existing.displayId,
@@ -936,13 +932,11 @@ class SaveRecordTool extends AgentTool {
 
     try {
       final id = await _services!.recordRepo!.createRecord(record);
-      debugPrint('[SaveRecord] 저장 완료: $id (title: ${record.title})');
       return ToolResult(success: true, output: {
         'recordId': id,
         'savedAt': now.toIso8601String(),
       });
     } catch (e) {
-      debugPrint('[SaveRecord] 저장 실패: $e');
       return ToolResult(success: false, errorMessage: '기록 저장 실패: $e');
     }
   }
