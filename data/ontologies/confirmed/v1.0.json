@@ -1,0 +1,101 @@
+{
+  "version_id": "v1.0",
+  "status": "confirmed",
+  "classes": [
+    {
+      "name": "Person",
+      "label_ko": "인물",
+      "color": "#4e79a7",
+      "description": "구술에 등장하는 사람",
+      "examples": []
+    },
+    {
+      "name": "Place",
+      "label_ko": "장소",
+      "color": "#59a14f",
+      "description": "지명 및 장소",
+      "examples": []
+    },
+    {
+      "name": "Event",
+      "label_ko": "사건",
+      "color": "#e15759",
+      "description": "역사적 사건",
+      "examples": []
+    },
+    {
+      "name": "Organization",
+      "label_ko": "기관",
+      "color": "#76b7b2",
+      "description": "기관 및 단체",
+      "examples": []
+    }
+  ],
+  "predicates": [
+    {
+      "name": "출생지",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "출생 장소"
+    },
+    {
+      "name": "참여함",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Event"
+      ],
+      "description": "사건 참여"
+    },
+    {
+      "name": "거주지",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "거주 장소"
+    },
+    {
+      "name": "소속기관",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Organization"
+      ],
+      "description": "소속 기관"
+    },
+    {
+      "name": "스승",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Person"
+      ],
+      "description": "사제 관계"
+    },
+    {
+      "name": "졸업",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Organization"
+      ],
+      "description": "학교 졸업"
+    }
+  ],
+  "created_at": "2026-04-06T22:48:27.580052",
+  "confirmed_at": "2026-04-06T22:48:31.676253",
+  "archived_at": null,
+  "description": "D3 검증용",
+  "based_on": null
+}

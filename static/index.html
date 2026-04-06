@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>구술기록 지식그래프 v4.0</title>
+
+  <!-- React 19 (CDN) -->
+  <script crossorigin src="https://unpkg.com/react@19/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel standalone (JSX in-browser 변환) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- D3.js (KnowledgeGraph 시각화) -->
+  <script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 상단 헤더 */
+    #header {
+      background: #12122a;
+      border-bottom: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      height: 48px;
+      flex-shrink: 0;
+    }
+    #header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #a0b4d6;
+      margin-right: 32px;
+      white-space: nowrap;
+    }
+
+    /* 탭 */
+    .tab {
+      padding: 0 18px;
+      height: 48px;
+      line-height: 48px;
+      font-size: 13px;
+      color: #888;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .tab:hover  { color: #ccc; }
+    .tab.active { color: #a0c4ff; border-bottom-color: #4a6fa5; }
+
+    /* 콘텐츠 영역 */
+    #content {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 로딩 */
+    #loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #555;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <h1>구술기록 지식그래프 v4.0</h1>
+  <div class="tab active" id="tab-ontology"  onclick="switchTab('ontology')">온톨로지 관리</div>
+  <div class="tab"        id="tab-triple"    onclick="switchTab('triple')">트리플 관리</div>
+  <div class="tab"        id="tab-graph"     onclick="switchTab('graph')">지식그래프</div>
+</div>
+
+<div id="content">
+  <div id="loading">로딩 중...</div>
+</div>
+
+<!-- 컴포넌트 로드 (type="text/babel") -->
+<script type="text/babel" src="/static/OntologyManager.jsx"></script>
+<script type="text/babel" src="/static/TripleManager.jsx"></script>
+<script type="text/babel" src="/static/KnowledgeGraph.jsx"></script>
+
+<script type="text/babel">
+  /* ── 탭 전환 ─────────────────────────────────────────────────── */
+  const COMPONENTS = {
+    ontology: () => <OntologyManager />,
+    triple:   () => <TripleManager />,
+    graph:    () => <KnowledgeGraph />,
+  };
+
+  let currentTab = "ontology";
+  const root = ReactDOM.createRoot(document.getElementById("content"));
+
+  function renderTab(tab) {
+    currentTab = tab;
+    ["ontology", "triple", "graph"].forEach(t => {
+      document.getElementById(`tab-${t}`).className = "tab" + (t === tab ? " active" : "");
+    });
+    root.render(
+      <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+        {COMPONENTS[tab]()}
+      </div>
+    );
+  }
+
+  window.switchTab = renderTab;
+
+  // 초기 렌더
+  renderTab("ontology");
+</script>
+
+</body>
+</html>

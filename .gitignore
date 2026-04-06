@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.env
+data/triples/graph.json
+data/triples/archive/
