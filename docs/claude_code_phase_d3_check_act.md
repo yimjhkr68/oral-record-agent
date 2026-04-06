@@ -5,7 +5,7 @@
 ```
 Phase D1 — 전체 플로우 8단계  ✓ 완료
 Phase D2 — 재시작 후 복원 4케이스  ✓ 완료
-Phase D3 — KnowledgeGraph UI  → 브라우저 확인 필요 (http://localhost:8000)
+Phase D3 — KnowledgeGraph UI  → 브라우저 확인 필요 (http://localhost:9000)
 ```
 
 ---
@@ -17,14 +17,14 @@ Phase D3 — KnowledgeGraph UI  → 브라우저 확인 필요 (http://localhost
 ```
 다음을 순서대로 확인하고 결과를 보고해:
 
-1. 현재 실행 중인 프로세스 중 포트 8000 을 점유하는 것이 있는지
-   (lsof -i :8000 또는 netstat -ano | findstr 8000)
+1. 현재 실행 중인 프로세스 중 포트 9000 을 점유하는 것이 있는지
+   (lsof -i :9000 또는 netstat -ano | findstr 9000)
 
 2. 서버가 내려가 있으면 기존 실행 방식 그대로 다시 띄워줘
    (package.json 또는 main 진입점 확인 후 실행)
 
-3. http://localhost:8000 에 GET 요청을 보내서 응답 상태 코드 확인
-   (curl -s -o /dev/null -w "%{http_code}" http://localhost:8000)
+3. http://localhost:9000 에 GET 요청을 보내서 응답 상태 코드 확인
+   (curl -s -o /dev/null -w "%{http_code}" http://localhost:9000)
 ```
 
 ---
@@ -37,7 +37,7 @@ Phase D3 — KnowledgeGraph UI  → 브라우저 확인 필요 (http://localhost
 ### 2-1. 전체 그래프 데이터 확인
 
 ```bash
-curl -s http://localhost:8000/api/graph | python -m json.tool
+curl -s http://localhost:9000/api/graph | python -m json.tool
 ```
 
 확인 항목:
@@ -51,7 +51,7 @@ D1에서 생성한 트리플 중 실제 존재하는 노드명 하나를 골라 
 
 ```bash
 # 예시 — 실제 노드명으로 교체
-curl -s "http://localhost:8000/api/graph/search?q=김영수" | python -m json.tool
+curl -s "http://localhost:9000/api/graph/search?q=김영수" | python -m json.tool
 ```
 
 확인 항목:
