@@ -63,7 +63,7 @@ class _TripleExtractScreenState extends ConsumerState<TripleExtractScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ontologyAsync = ref.watch(ontologyListProvider);
+    final ontologyVersions = ref.watch(ontologyProvider).versions;
 
     return Scaffold(
       appBar: AppBar(title: const Text('구술자료 → 트리플 AI 추출')),
@@ -82,67 +82,59 @@ class _TripleExtractScreenState extends ConsumerState<TripleExtractScreen> {
                   const Text('온톨로지 버전 (Confirmed)',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  ontologyAsync.when(
-                    loading: () =>
-                        const LinearProgressIndicator(),
-                    error: (e, _) =>
-                        Text('로드 실패: $e',
-                            style: const TextStyle(color: Colors.red)),
-                    data: (versions) {
-                      final confirmed = versions
-                          .where((v) =>
-                              v.status == OntologyStatus.confirmed)
-                          .toList();
-                      if (confirmed.isEmpty) {
-                        return Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.1),
-                            border: Border.all(
-                                color: Colors.orange.withValues(alpha: 0.4)),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Row(children: [
-                            Icon(Icons.warning_amber_outlined,
-                                color: Colors.orange, size: 18),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Confirmed 상태의 온톨로지가 없습니다.\n'
-                                '먼저 온톨로지를 확정해 주세요.',
-                                style: TextStyle(fontSize: 13),
-                              ),
+                  Builder(builder: (_) {
+                    final confirmed = ontologyVersions
+                        .where((v) => v.status == OntologyStatus.confirmed)
+                        .toList();
+                    if (confirmed.isEmpty) {
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.1),
+                          border: Border.all(
+                              color: Colors.orange.withValues(alpha: 0.4)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(children: [
+                          Icon(Icons.warning_amber_outlined,
+                              color: Colors.orange, size: 18),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Confirmed 상태의 온톨로지가 없습니다.\n'
+                              '먼저 온톨로지를 확정해 주세요.',
+                              style: TextStyle(fontSize: 13),
                             ),
-                          ]),
-                        );
-                      }
-                      return InputDecorator(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
-                        ),
-                        child: DropdownButton<String>(
-                          value: _selectedVersionId,
-                          isExpanded: true,
-                          underline: const SizedBox(),
-                          hint: const Text('버전 선택'),
-                          items: confirmed
-                              .map((v) => DropdownMenuItem(
-                                    value: v.versionId,
-                                    child: Text(
-                                      '${v.versionId}  (클래스 ${v.classes.length} · 속성 ${v.predicates.length})',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ))
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => _selectedVersionId = v),
-                        ),
+                          ),
+                        ]),
                       );
-                    },
-                  ),
+                    }
+                    return InputDecorator(
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 4),
+                      ),
+                      child: DropdownButton<String>(
+                        value: _selectedVersionId,
+                        isExpanded: true,
+                        underline: const SizedBox(),
+                        hint: const Text('버전 선택'),
+                        items: confirmed
+                            .map((v) => DropdownMenuItem(
+                                  value: v.versionId,
+                                  child: Text(
+                                    '${v.versionId}  (클래스 ${v.classes.length} · 속성 ${v.predicates.length})',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => _selectedVersionId = v),
+                      ),
+                    );
+                  }),
                   const SizedBox(height: 16),
 
                   // 출처 ID (선택)

@@ -1,123 +1,159 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../models/ontology.dart';
 import '../../providers/ontology_provider.dart';
+import 'ontology_detail_panel.dart';
 
 class OntologyListScreen extends ConsumerWidget {
   const OntologyListScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final listAsync = ref.watch(ontologyListProvider);
+    final state = ref.watch(ontologyProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('온톨로지 관리'),
-        actions: [
-          TextButton.icon(
-            icon: const Icon(Icons.auto_awesome, size: 18),
-            label: const Text('샘플에서 AI 생성'),
-            onPressed: () => _showGenerateDialog(context, ref),
+      body: Row(
+        children: [
+          // ── 좌측: 버전 목록 패널 ────────────────────────────────────────
+          SizedBox(
+            width: 280,
+            child: Column(
+              children: [
+                _ListHeader(),
+                if (state.isLoading && state.versions.isEmpty)
+                  const Expanded(
+                      child: Center(child: CircularProgressIndicator()))
+                else if (state.error != null && state.versions.isEmpty)
+                  Expanded(child: _ErrorView(error: state.error!))
+                else
+                  Expanded(child: _VersionList()),
+              ],
+            ),
           ),
-          const SizedBox(width: 8),
+          const VerticalDivider(width: 1, thickness: 1),
+          // ── 우측: 상세/편집 패널 ────────────────────────────────────────
+          const Expanded(child: OntologyDetailPanel()),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateDialog(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('새 버전'),
+    );
+  }
+}
+
+// ── 목록 헤더 ─────────────────────────────────────────────────────────────────
+
+class _ListHeader extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(ontologyProvider);
+    final notifier = ref.read(ontologyProvider.notifier);
+    final mergeCount = state.selectedForMerge.length;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 8, 8),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
       ),
-      body: listAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Text('오류: $e', style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(ontologyListProvider),
-                child: const Text('다시 시도'),
+              const Text('온톨로지 관리',
+                  style:
+                      TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              const Spacer(),
+              // 새로고침
+              IconButton(
+                icon: const Icon(Icons.refresh, size: 18),
+                onPressed: () => notifier.loadVersions(),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: '새로고침',
               ),
             ],
           ),
-        ),
-        data: (versions) {
-          if (versions.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.account_tree_outlined,
-                      size: 64, color: Colors.grey),
-                  const SizedBox(height: 16),
-                  const Text('온톨로지 버전이 없습니다.',
-                      style: TextStyle(color: Colors.grey)),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: const Text('새 버전 만들기'),
-                    onPressed: () => _showCreateDialog(context, ref),
-                  ),
-                ],
+          const SizedBox(height: 8),
+          // [+ 새 버전] 버튼
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('새 버전', style: TextStyle(fontSize: 13)),
+              onPressed: () => _showCreateDialog(context, ref),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 8),
               ),
-            );
-          }
-          // 최신순 정렬
-          final sorted = [...versions]
-            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(ontologyListProvider),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: sorted.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, i) =>
-                  _VersionCard(version: sorted[i]),
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 6),
+          // [구술기록으로 생성] 버튼
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.auto_awesome, size: 16),
+              label: const Text('구술기록으로 생성',
+                  style: TextStyle(fontSize: 13)),
+              onPressed: () => _showInputSheet(context, ref),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+              ),
+            ),
+          ),
+          // [선택 Draft 종합] 버튼 — Draft 2개 이상 선택 시 표시
+          if (mergeCount >= 2) ...[
+            const SizedBox(height: 6),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.merge_type, size: 16),
+                label: Text('선택 Draft 종합 ($mergeCount개)',
+                    style: const TextStyle(fontSize: 13)),
+                onPressed: () => _showMergeDialog(context, ref),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3a5a3a),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  // ── [+ 새 버전] 다이얼로그 ──────────────────────────────────────────────────
   Future<void> _showCreateDialog(BuildContext context, WidgetRef ref) async {
     final idCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    final confirmed = await showDialog<bool>(
+    final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('새 온톨로지 버전'),
         content: Form(
           key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: idCtrl,
-                decoration: const InputDecoration(
-                  labelText: '버전 ID',
-                  hintText: 'v1.0',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? '버전 ID를 입력하세요' : null,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextFormField(
+              controller: idCtrl,
+              decoration: const InputDecoration(
+                labelText: '버전 ID',
+                hintText: 'v1.0',
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: descCtrl,
-                decoration: const InputDecoration(
-                  labelText: '설명 (선택)',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 2,
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? '버전 ID를 입력하세요' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: descCtrl,
+              decoration: const InputDecoration(
+                labelText: '설명 (선택)',
+                border: OutlineInputBorder(),
               ),
-            ],
-          ),
+              maxLines: 2,
+            ),
+          ]),
         ),
         actions: [
           TextButton(
@@ -125,170 +161,196 @@ class OntologyListScreen extends ConsumerWidget {
               child: const Text('취소')),
           ElevatedButton(
             onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(ctx, true);
-              }
+              if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
             },
             child: const Text('생성'),
           ),
         ],
       ),
     );
+    if (ok != true || !context.mounted) return;
 
-    if (confirmed != true) return;
-    if (!context.mounted) return;
-
-    try {
-      await ref
-          .read(ontologyApiProvider)
-          .createDraft(idCtrl.text.trim(), descCtrl.text.trim());
-      ref.invalidate(ontologyListProvider);
-    } catch (e) {
-      if (context.mounted) {
-        _showError(context, e.toString());
-      }
+    final result = await ref
+        .read(ontologyProvider.notifier)
+        .createDraft(idCtrl.text.trim(), descCtrl.text.trim());
+    if (result == null && context.mounted) {
+      _showError(context, ref.read(ontologyProvider).error ?? '생성 실패');
     }
   }
 
-  // ── [샘플에서 AI 생성] 다이얼로그 ────────────────────────────────────────────
-  Future<void> _showGenerateDialog(BuildContext context, WidgetRef ref) async {
-    final textCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    bool loading = false;
-
-    await showDialog(
+  Future<void> _showInputSheet(BuildContext context, WidgetRef ref) async {
+    await showModalBottomSheet(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: const Text('샘플 텍스트로 AI 온톨로지 생성'),
-          content: SizedBox(
-            width: 480,
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '구술 자료 샘플 텍스트를 입력하면 AI가 온톨로지를 자동 생성합니다.',
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: textCtrl,
-                    decoration: const InputDecoration(
-                      labelText: '구술 샘플 텍스트',
-                      hintText: '예) 김철수는 1950년 서울에서 태어났으며...',
-                      border: OutlineInputBorder(),
-                      alignLabelWithHint: true,
-                    ),
-                    maxLines: 6,
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? '텍스트를 입력하세요' : null,
-                  ),
-                  if (loading) ...[
-                    const SizedBox(height: 16),
-                    const Row(children: [
-                      SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2)),
-                      SizedBox(width: 10),
-                      Text('AI 생성 중...', style: TextStyle(fontSize: 13)),
-                    ]),
-                  ],
-                ],
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => const InputMethodBottomSheet(),
+    );
+  }
+
+  Future<void> _showMergeDialog(BuildContext context, WidgetRef ref) async {
+    final state = ref.read(ontologyProvider);
+    final idCtrl = TextEditingController(
+        text: 'merged-${DateTime.now().millisecondsSinceEpoch ~/ 1000}');
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('선택 Draft AI 종합'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('선택된 Draft ${state.selectedForMerge.length}개를 AI로 종합합니다.',
+                style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 4),
+            ...state.selectedForMerge.map((id) => Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 2),
+                  child: Text('• $id',
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.grey)),
+                )),
+            const SizedBox(height: 16),
+            TextField(
+              controller: idCtrl,
+              decoration: const InputDecoration(
+                labelText: '새 버전 ID',
+                border: OutlineInputBorder(),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-                onPressed: loading ? null : () => Navigator.pop(ctx),
-                child: const Text('취소')),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.auto_awesome, size: 16),
-              label: const Text('AI 생성'),
-              onPressed: loading
-                  ? null
-                  : () async {
-                      if (!formKey.currentState!.validate()) return;
-                      setState(() => loading = true);
-                      try {
-                        await ref
-                            .read(ontologyApiProvider)
-                            .generateFromSample(textCtrl.text.trim());
-                        ref.invalidate(ontologyListProvider);
-                        if (ctx.mounted) Navigator.pop(ctx);
-                      } catch (e) {
-                        setState(() => loading = false);
-                        if (ctx.mounted) _showError(ctx, e.toString());
-                      }
-                    },
             ),
           ],
         ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('취소')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3a5a3a),
+                foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('종합 시작'),
+          ),
+        ],
       ),
     );
+    if (ok != true || !context.mounted) return;
+
+    final result = await ref.read(ontologyProvider.notifier).mergeDrafts(
+          state.selectedForMerge.toList(),
+          idCtrl.text.trim(),
+        );
+    if (result == null && context.mounted) {
+      _showError(context, ref.read(ontologyProvider).error ?? '종합 실패');
+    }
   }
 
   void _showError(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
     );
   }
 }
 
-// ── 버전 카드 ────────────────────────────────────────────────────────────────
+// ── 버전 목록 ─────────────────────────────────────────────────────────────────
 
-class _VersionCard extends ConsumerWidget {
-  final OntologyVersion version;
-  const _VersionCard({required this.version});
-
+class _VersionList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      elevation: 1,
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: _StatusBadge(status: version.status),
-        title: Text(
-          version.versionId,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (version.description.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              Text(version.description,
-                  style: const TextStyle(fontSize: 13),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
-            ],
-            const SizedBox(height: 4),
-            Text(
-              '클래스 ${version.classes.length}개  ·  속성 ${version.predicates.length}개  ·  ${_formatDate(version.createdAt)}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.go('/ontology/${version.versionId}'),
-      ),
-    );
-  }
+    final state = ref.watch(ontologyProvider);
+    final notifier = ref.read(ontologyProvider.notifier);
 
-  String _formatDate(String iso) {
-    if (iso.length < 10) return iso;
-    return iso.substring(0, 10);
+    if (state.versions.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Text('버전이 없습니다.\n[새 버전] 또는 [구술기록으로 생성]을\n눌러 시작하세요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 13)),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: state.versions.length,
+      itemBuilder: (_, i) {
+        final v = state.versions[i];
+        final isSelected =
+            state.selectedVersion?.versionId == v.versionId;
+        final inMerge = state.selectedForMerge.contains(v.versionId);
+
+        return InkWell(
+          onTap: () => notifier.selectVersion(v),
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Theme.of(context)
+                      .colorScheme
+                      .primary
+                      .withValues(alpha: 0.1)
+                  : null,
+              border: Border(
+                left: BorderSide(
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.transparent,
+                  width: 3,
+                ),
+                bottom: BorderSide(color: Colors.grey.shade100),
+              ),
+            ),
+            child: Row(
+              children: [
+                // 체크박스 (Draft만)
+                if (v.status == OntologyStatus.draft)
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: inMerge,
+                      onChanged: (_) =>
+                          notifier.toggleMergeSelect(v.versionId),
+                      materialTapTargetSize:
+                          MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  )
+                else
+                  const SizedBox(width: 24),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(v.versionId,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 13),
+                          overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 2),
+                      Row(children: [
+                        _StatusBadge(status: v.status),
+                        const SizedBox(width: 6),
+                        Text(
+                          v.createdAt.length >= 10
+                              ? v.createdAt.substring(0, 10)
+                              : v.createdAt,
+                          style: const TextStyle(
+                              fontSize: 10, color: Colors.grey),
+                        ),
+                      ]),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
-// ── 상태 배지 ────────────────────────────────────────────────────────────────
+// ── 상태 배지 ─────────────────────────────────────────────────────────────────
 
 class _StatusBadge extends StatelessWidget {
   final OntologyStatus status;
@@ -297,20 +359,278 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      OntologyStatus.draft => ('Draft', const Color(0xFF1976D2)),
+      OntologyStatus.draft => ('Draft', const Color(0xFFE65100)),
       OntologyStatus.confirmed => ('Confirmed', const Color(0xFF388E3C)),
       OntologyStatus.archived => ('Archived', const Color(0xFF757575)),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         border: Border.all(color: color.withValues(alpha: 0.5)),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(label,
           style: TextStyle(
-              color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w600)),
+    );
+  }
+}
+
+// ── 오류 뷰 ───────────────────────────────────────────────────────────────────
+
+class _ErrorView extends ConsumerWidget {
+  final String error;
+  const _ErrorView({required this.error});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 32),
+          const SizedBox(height: 8),
+          Text(error,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+              textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: () =>
+                ref.read(ontologyProvider.notifier).loadVersions(),
+            child: const Text('다시 시도'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── InputMethodBottomSheet (구술기록으로 생성 — 텍스트 탭만 우선 구현) ────────
+
+class InputMethodBottomSheet extends ConsumerStatefulWidget {
+  const InputMethodBottomSheet({super.key});
+
+  @override
+  ConsumerState<InputMethodBottomSheet> createState() =>
+      _InputMethodBottomSheetState();
+}
+
+class _InputMethodBottomSheetState
+    extends ConsumerState<InputMethodBottomSheet>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabCtrl;
+  final _textCtrl = TextEditingController();
+  String? _baseVersionId;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    _textCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _generate() async {
+    if (_textCtrl.text.trim().isEmpty) return;
+    setState(() => _loading = true);
+    final result = await ref
+        .read(ontologyProvider.notifier)
+        .generateFromSample(_textCtrl.text.trim(),
+            baseVersionId: _baseVersionId);
+    setState(() => _loading = false);
+    if (!mounted) return;
+    if (result != null) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Draft "${result.versionId}" 가 생성됐습니다.')),
+      );
+    } else {
+      final err = ref.read(ontologyProvider).error ?? 'AI 생성 실패';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(ontologyProvider);
+    final versions = state.versions;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (_, scrollCtrl) => Column(
+        children: [
+          // 핸들
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                const Text('구술기록으로 온톨로지 생성',
+                    style: TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context)),
+              ],
+            ),
+          ),
+          TabBar(
+            controller: _tabCtrl,
+            tabs: const [
+              Tab(text: '텍스트 입력'),
+              Tab(text: '파일 업로드'),
+              Tab(text: 'Hive DB'),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabCtrl,
+              children: [
+                // ── 텍스트 입력 탭 ──────────────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('기존 버전 기반 확장 (선택)',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      InputDecorator(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                        ),
+                        child: DropdownButton<String?>(
+                          value: _baseVersionId,
+                          isExpanded: true,
+                          underline: const SizedBox(),
+                          hint: const Text('없음 (새로 생성)',
+                              style: TextStyle(fontSize: 13)),
+                          items: [
+                            const DropdownMenuItem(
+                                value: null,
+                                child: Text('없음 (새로 생성)',
+                                    style: TextStyle(fontSize: 13))),
+                            ...versions.map((v) => DropdownMenuItem(
+                                  value: v.versionId,
+                                  child: Text(v.versionId,
+                                      style: const TextStyle(fontSize: 13)),
+                                )),
+                          ],
+                          onChanged: (v) =>
+                              setState(() => _baseVersionId = v),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text('구술 자료 텍스트',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      Expanded(
+                        child: TextField(
+                          controller: _textCtrl,
+                          maxLines: null,
+                          expands: true,
+                          textAlignVertical: TextAlignVertical.top,
+                          decoration: const InputDecoration(
+                            hintText:
+                                '구술 자료 텍스트를 붙여넣으세요...',
+                            border: OutlineInputBorder(),
+                            alignLabelWithHint: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // ── 파일 업로드 탭 ──────────────────────────────────────────
+                const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.upload_file_outlined,
+                          size: 48, color: Colors.grey),
+                      SizedBox(height: 12),
+                      Text('파일 업로드 (Phase A-3에서 구현)',
+                          style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                ),
+                // ── Hive DB 탭 ──────────────────────────────────────────────
+                const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.storage_outlined,
+                          size: 48, color: Colors.grey),
+                      SizedBox(height: 12),
+                      Text('Hive DB 연결 (Phase A-3에서 구현)',
+                          style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ── 공통 하단: AI 생성 버튼 ──────────────────────────────────────
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+                16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: _loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.auto_awesome, size: 18),
+                label:
+                    Text(_loading ? 'AI 분석 중...' : 'AI 초안 생성'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primary,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: (_loading || _tabCtrl.index != 0)
+                    ? null
+                    : _generate,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

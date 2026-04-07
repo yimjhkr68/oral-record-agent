@@ -22,6 +22,14 @@ class OntologyClass {
     description: json['description'] ?? '',
     examples: List<String>.from(json['examples'] ?? []),
   );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'label_ko': labelKo,
+    'color': color,
+    'description': description,
+    'examples': examples,
+  };
 }
 
 class OntologyPredicate {
@@ -44,6 +52,13 @@ class OntologyPredicate {
         range: List<String>.from(json['range_'] ?? []),
         description: json['description'] ?? '',
       );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'domain': domain,
+    'range_': range,
+    'description': description,
+  };
 }
 
 class OntologyVersion {
