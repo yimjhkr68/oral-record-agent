@@ -1,0 +1,353 @@
+{
+  "version_id": "draft-20260406234227",
+  "status": "draft",
+  "classes": [
+    {
+      "name": "Narrator",
+      "label_ko": "구술자",
+      "color": "#4A90D9",
+      "description": "구술 기록의 화자. 익명의 개인으로, 역사적 사건에 대한 개인적 경험과 감정을 서술하는 주체",
+      "examples": [
+        "익명의 구술자"
+      ]
+    },
+    {
+      "name": "HistoricalEvent",
+      "label_ko": "역사적 사건",
+      "color": "#C0392B",
+      "description": "구술자가 언급하거나 경험한 역사적으로 중요한 사건",
+      "examples": [
+        "제주 4.3 사건",
+        "국가 폭력 규정 및 공식 사과"
+      ]
+    },
+    {
+      "name": "LiteraryWork",
+      "label_ko": "문학 작품",
+      "color": "#8E44AD",
+      "description": "구술자가 언급한 소설 또는 문학 작품으로, 역사 인식의 매개체 역할을 함",
+      "examples": [
+        "순이삼촌",
+        "이별하지 않는다"
+      ]
+    },
+    {
+      "name": "Person",
+      "label_ko": "인물",
+      "color": "#27AE60",
+      "description": "구술 텍스트에 등장하는 실존 또는 역사적 인물",
+      "examples": [
+        "노무현 대통령",
+        "한강 작가"
+      ]
+    },
+    {
+      "name": "Organization",
+      "label_ko": "단체·조직",
+      "color": "#E67E22",
+      "description": "구술 텍스트에 언급된 집단, 기관, 무장조직 등",
+      "examples": [
+        "경찰",
+        "군인",
+        "서북청년단",
+        "민주 정권"
+      ]
+    },
+    {
+      "name": "Place",
+      "label_ko": "장소",
+      "color": "#16A085",
+      "description": "구술자가 언급하거나 방문한 지리적 장소",
+      "examples": [
+        "제주도",
+        "제주 4.3 기념공원"
+      ]
+    },
+    {
+      "name": "PersonalExperience",
+      "label_ko": "개인적 경험",
+      "color": "#2980B9",
+      "description": "구술자가 직접 경험한 생애 사건 또는 행동",
+      "examples": [
+        "신혼여행 제주 방문",
+        "4.3 기념공원 방문",
+        "소설 독서"
+      ]
+    },
+    {
+      "name": "Emotion",
+      "label_ko": "감정·정서",
+      "color": "#F39C12",
+      "description": "구술자가 역사적 사건이나 경험에 대해 표현한 심리적·감정적 반응",
+      "examples": [
+        "부채 의식",
+        "의심",
+        "숙연함",
+        "소름",
+        "고민"
+      ]
+    },
+    {
+      "name": "HistoricalActor",
+      "label_ko": "역사적 가해·피해 집단",
+      "color": "#922B21",
+      "description": "역사적 사건에서 가해자 또는 피해자로 등장하는 집단",
+      "examples": [
+        "제주도민(피해)",
+        "서북청년단(가해)",
+        "경찰·군인(가해)"
+      ]
+    },
+    {
+      "name": "CommemorationInfrastructure",
+      "label_ko": "기념·추모 시설",
+      "color": "#1ABC9C",
+      "description": "역사적 사건을 기억하고 추모하기 위해 조성된 공간 또는 제도",
+      "examples": [
+        "제주 4.3 기념공원"
+      ]
+    },
+    {
+      "name": "LiteraryAward",
+      "label_ko": "문학상",
+      "color": "#D4AC0D",
+      "description": "문학 작품에 수여된 상. 역사적 사건의 세계적 공론화 경로로 기능",
+      "examples": [
+        "세계 여러 문학상 (한강 수상)"
+      ]
+    },
+    {
+      "name": "CivicConsciousness",
+      "label_ko": "시민 의식·역사 인식",
+      "color": "#5D6D7E",
+      "description": "구술자가 역사적 경험을 통해 도달한 민주 시민으로서의 자각 및 역사적 책임 의식",
+      "examples": [
+        "민주 시민으로서의 자각",
+        "다시는 비극이 없어야 한다는 다짐"
+      ]
+    },
+    {
+      "name": "TimePeriod",
+      "label_ko": "시대·시기",
+      "color": "#ABB2B9",
+      "description": "구술 텍스트에서 언급된 특정 시대 또는 시기",
+      "examples": [
+        "1980년대",
+        "1948년 전후(4.3 발생기)",
+        "노무현 정권기"
+      ]
+    }
+  ],
+  "predicates": [
+    {
+      "name": "읽다",
+      "domain": [
+        "Narrator"
+      ],
+      "range_": [
+        "LiteraryWork"
+      ],
+      "description": "구술자가 특정 문학 작품을 독서한 행위",
+      "note": ""
+    },
+    {
+      "name": "통해 인식하다",
+      "domain": [
+        "Narrator"
+      ],
+      "range_": [
+        "HistoricalEvent"
+      ],
+      "description": "구술자가 문학 작품 또는 외부 매개를 통해 역사적 사건을 처음 인지하게 됨",
+      "note": ""
+    },
+    {
+      "name": "매개하다",
+      "domain": [
+        "LiteraryWork"
+      ],
+      "range_": [
+        "HistoricalEvent"
+      ],
+      "description": "문학 작품이 역사적 사건에 대한 인식 형성의 매개 역할을 함",
+      "note": ""
+    },
+    {
+      "name": "방문하다",
+      "domain": [
+        "Narrator"
+      ],
+      "range_": [
+        "Place",
+        "CommemorationInfrastructure"
+      ],
+      "description": "구술자가 특정 장소 또는 추모 시설을 직접 방문한 행위",
+      "note": ""
+    },
+    {
+      "name": "느끼다",
+      "domain": [
+        "Narrator"
+      ],
+      "range_": [
+        "Emotion"
+      ],
+      "description": "구술자가 특정 경험이나 사건에 대해 감정적 반응을 가짐",
+      "note": ""
+    },
+    {
+      "name": "유발하다",
+      "domain": [
+        "HistoricalEvent",
+        "LiteraryWork",
+        "PersonalExperience"
+      ],
+      "range_": [
+        "Emotion"
+      ],
+      "description": "사건, 작품, 경험이 구술자의 특정 감정을 불러일으킴",
+      "note": ""
+    },
+    {
+      "name": "공식 사과하다",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "HistoricalEvent"
+      ],
+      "description": "공인(정치인)이 역사적 사건에 대해 공식적으로 사과 및 국가 책임을 인정함",
+      "note": ""
+    },
+    {
+      "name": "가해하다",
+      "domain": [
+        "Organization",
+        "HistoricalActor"
+      ],
+      "range_": [
+        "HistoricalActor"
+      ],
+      "description": "특정 조직 또는 집단이 역사적 사건에서 다른 집단에 폭력·피해를 가함",
+      "note": ""
+    },
+    {
+      "name": "피해 입다",
+      "domain": [
+        "HistoricalActor"
+      ],
+      "range_": [
+        "HistoricalEvent"
+      ],
+      "description": "특정 집단이 역사적 사건으로 인해 피해를 입음",
+      "note": ""
+    },
+    {
+      "name": "수상하다",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "LiteraryAward"
+      ],
+      "description": "작가가 문학 작품으로 특정 상을 수상함",
+      "note": ""
+    },
+    {
+      "name": "집필하다",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "LiteraryWork"
+      ],
+      "description": "작가가 특정 문학 작품을 창작함",
+      "note": ""
+    },
+    {
+      "name": "기념하다",
+      "domain": [
+        "CommemorationInfrastructure"
+      ],
+      "range_": [
+        "HistoricalEvent"
+      ],
+      "description": "추모·기념 시설이 특정 역사적 사건을 공식적으로 기억하고 추모함",
+      "note": ""
+    },
+    {
+      "name": "조성되다",
+      "domain": [
+        "CommemorationInfrastructure"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "기념 시설이 특정 장소에 건립됨",
+      "note": ""
+    },
+    {
+      "name": "명예 회복하다",
+      "domain": [
+        "HistoricalEvent"
+      ],
+      "range_": [
+        "HistoricalActor"
+      ],
+      "description": "역사적 사건에 대한 재평가를 통해 피해 집단의 명예가 점진적으로 복원됨",
+      "note": ""
+    },
+    {
+      "name": "자각에 이르다",
+      "domain": [
+        "Narrator"
+      ],
+      "range_": [
+        "CivicConsciousness"
+      ],
+      "description": "구술자가 역사적 경험·감정의 축적을 통해 민주 시민 의식에 도달함",
+      "note": ""
+    },
+    {
+      "name": "발생하다",
+      "domain": [
+        "HistoricalEvent"
+      ],
+      "range_": [
+        "TimePeriod",
+        "Place"
+      ],
+      "description": "역사적 사건이 특정 시기와 장소에서 발생함",
+      "note": ""
+    },
+    {
+      "name": "관련되다",
+      "domain": [
+        "Organization",
+        "HistoricalActor"
+      ],
+      "range_": [
+        "HistoricalEvent"
+      ],
+      "description": "조직 또는 집단이 역사적 사건과 연루됨",
+      "note": ""
+    },
+    {
+      "name": "세계에 알리다",
+      "domain": [
+        "LiteraryWork",
+        "LiteraryAward"
+      ],
+      "range_": [
+        "HistoricalEvent"
+      ],
+      "description": "문학 작품 및 수상이 역사적 사건을 국제적으로 공론화하는 역할을 함",
+      "note": ""
+    }
+  ],
+  "created_at": "2026-04-06T23:42:27.575492",
+  "confirmed_at": null,
+  "archived_at": null,
+  "description": "AI 자동 생성 (샘플 기반)",
+  "based_on": null
+}

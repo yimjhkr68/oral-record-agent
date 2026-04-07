@@ -7,12 +7,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import os
+
 from utils.file_io import atomic_write_json, ensure_dir, read_json
 
-# 프로젝트 루트 기준 절대경로
-_ROOT = Path(__file__).parent.parent
-GRAPH_FILE_DEFAULT = _ROOT / "data" / "triples" / "graph.json"
-ARCHIVE_DIR_DEFAULT = _ROOT / "data" / "triples" / "archive"
+# DATA_DIR 환경변수 → 없으면 프로젝트 루트 data/
+_DATA_ROOT = Path(os.environ["DATA_DIR"]) if os.environ.get("DATA_DIR") else Path(__file__).parent.parent / "data"
+GRAPH_FILE_DEFAULT  = _DATA_ROOT / "triples" / "graph.json"
+ARCHIVE_DIR_DEFAULT = _DATA_ROOT / "triples" / "archive"
 
 
 # ── 데이터 모델 ────────────────────────────────────────────────────────────────

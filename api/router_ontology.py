@@ -39,6 +39,11 @@ class GenerateRequest(BaseModel):
     base_version_id: Optional[str] = None
 
 
+class MergeRequest(BaseModel):
+    version_ids:    list[str]
+    new_version_id: str
+
+
 # ── 엔드포인트 ─────────────────────────────────────────────────────────────────
 
 @router.post("/", status_code=201)
@@ -55,6 +60,30 @@ def create_draft(body: CreateRequest):
 def list_all():
     """전체 버전 목록 (최신순)."""
     return get_manager().list_all()
+
+
+@router.post("/merge", status_code=201)
+def merge_drafts(body: MergeRequest):
+    """여러 Draft 버전 → AI 종합 병합 → 새 Draft 생성."""
+    try:
+        return get_manager().merge_drafts(body.version_ids, body.new_version_id)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/generate", status_code=201)
+def generate_from_sample(body: GenerateRequest):
+    """구술 샘플 텍스트 → AI 온톨로지 Draft 자동 생성."""
+    try:
+        return get_manager().generate_from_sample(
+            body.sample_text, body.base_version_id
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{version_id}")
@@ -112,14 +141,3 @@ def archive_version(version_id: str):
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
-
-
-@router.post("/generate", status_code=201)
-def generate_from_sample(body: GenerateRequest):
-    """구술 샘플 텍스트 → AI 온톨로지 Draft 자동 생성."""
-    try:
-        return get_manager().generate_from_sample(
-            body.sample_text, body.base_version_id
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))

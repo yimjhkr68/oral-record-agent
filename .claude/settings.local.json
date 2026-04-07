@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m pytest tests/test_graph_db.py -v)",
+      "Read(//e/Oral-record-agent_v3.0/server/**)",
+      "Bash(python -c \"from main import app; print\\('라우터:', [r.path for r in app.routes]\\)\")",
+      "Bash(uvicorn main:app --port 8765 --log-level warning)",
+      "Bash(curl -s http://localhost:8765/health)",
+      "Bash(curl -s -X POST http://localhost:8765/api/ontologies/ -H \"Content-Type: application/json\" -d \"{\\\\\"version_id\\\\\":\\\\\"v1.0\\\\\",\\\\\"description\\\\\":\\\\\"테스트\\\\\"}\")",
+      "Bash(curl -s http://localhost:8765/api/ontologies/)",
+      "Bash(curl -s -X POST http://localhost:8765/api/ontologies/v1.0/confirm)",
+      "Bash(python -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(python -m uvicorn --version)",
+      "Bash(python -m uvicorn main:app --port 8765 --log-level warning)",
+      "Bash(curl -s -X POST http://localhost:8765/api/triples/ -H \"Content-Type: application/json\" -d \"{\\\\\"subject\\\\\":\\\\\"김영수\\\\\",\\\\\"subject_type\\\\\":\\\\\"Person\\\\\",\\\\\"predicate\\\\\":\\\\\"출생지\\\\\",\\\\\"object\\\\\":\\\\\"경북안동\\\\\",\\\\\"object_type\\\\\":\\\\\"Place\\\\\",\\\\\"ontology_version\\\\\":\\\\\"v1.0\\\\\"}\")",
+      "Bash(curl -s http://localhost:8765/api/triples/stats)",
+      "Bash(curl -s \"http://localhost:8765/api/graph/search?q=%EA%B9%80%EC%98%81%EC%88%98\")",
+      "Bash(2>&1)",
+      "Bash(python -c \"import urllib.request; r=urllib.request.urlopen\\('http://localhost:8000'\\); print\\(r.status\\)\")",
+      "Bash(python -c ':*)",
+      "Bash(python -m pytest tests/ -v --tb=short)",
+      "Bash(netstat -ano)",
+      "Bash(cmd //c \"taskkill /PID 31896 /F\")",
+      "Bash(python -m uvicorn main:app --port 8000 --log-level warning)",
+      "Bash(python -c \"import urllib.request, json; print\\(urllib.request.urlopen\\('http://localhost:8000/health'\\).read\\(\\).decode\\(\\)\\)\")",
+      "Bash(cmd //c \"taskkill /PID 35256 /F\")",
+      "Bash(python -m uvicorn main:app --port 9000 --log-level warning)",
+      "Bash(python -c \"import urllib.request; print\\(urllib.request.urlopen\\('http://localhost:9000/health'\\).read\\(\\).decode\\(\\)\\)\")",
+      "Bash(cmd //c \"taskkill /PID 35792 /F\")"
+    ]
+  }
+}

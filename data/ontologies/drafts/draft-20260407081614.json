@@ -1,0 +1,425 @@
+{
+  "version_id": "draft-20260407081614",
+  "status": "draft",
+  "classes": [
+    {
+      "name": "Person",
+      "label_ko": "인물",
+      "color": "#4A90D9",
+      "description": "구술기록에 등장하는 모든 인간 개체",
+      "examples": [
+        "할머니",
+        "손녀 정향신",
+        "할아버지",
+        "아버지",
+        "어머니",
+        "오빠",
+        "동생"
+      ],
+      "note": ""
+    },
+    {
+      "name": "Survivor",
+      "label_ko": "생존자",
+      "color": "#E8A838",
+      "description": "집단적 폭력이나 재난에서 살아남은 인물",
+      "examples": [
+        "할머니"
+      ],
+      "note": ""
+    },
+    {
+      "name": "Witness",
+      "label_ko": "증언자",
+      "color": "#7B68EE",
+      "description": "타인의 경험을 간접 증언하는 인물",
+      "examples": [
+        "손녀 정향신"
+      ],
+      "note": ""
+    },
+    {
+      "name": "Victim",
+      "label_ko": "희생자",
+      "color": "#C0392B",
+      "description": "폭력·재난으로 사망한 인물",
+      "examples": [
+        "할아버지",
+        "아버지",
+        "어머니",
+        "오빠",
+        "동생"
+      ],
+      "note": ""
+    },
+    {
+      "name": "FamilyGroup",
+      "label_ko": "가족 집단",
+      "color": "#27AE60",
+      "description": "혈연으로 묶인 가족 단위",
+      "examples": [
+        "할머니 가족 전원"
+      ],
+      "note": ""
+    },
+    {
+      "name": "HistoricalEvent",
+      "label_ko": "역사적 사건",
+      "color": "#8B0000",
+      "description": "특정 시대·권력구조 아래 발생한 집단적 폭력 또는 수탈 사건",
+      "examples": [
+        "일제강점기 수탈 과정의 익사 사건"
+      ],
+      "note": ""
+    },
+    {
+      "name": "ColonialViolence",
+      "label_ko": "식민지 폭력",
+      "color": "#B03A2E",
+      "description": "일제강점기 식민 권력에 의한 수탈·강제·살상 행위",
+      "examples": [
+        "가족을 바다에 던진 행위",
+        "일제 수탈 과정"
+      ],
+      "note": ""
+    },
+    {
+      "name": "Trauma",
+      "label_ko": "트라우마",
+      "color": "#6C3483",
+      "description": "극단적 경험으로 인해 형성된 심리적 상처 및 그 지속적 영향",
+      "examples": [
+        "가족 익사 목격에 의한 트라우마",
+        "평생 억눌린 기억"
+      ],
+      "note": ""
+    },
+    {
+      "name": "BodyOfWater",
+      "label_ko": "수역",
+      "color": "#1A5276",
+      "description": "사건이 발생한 물리적 수계 공간",
+      "examples": [
+        "바다"
+      ],
+      "note": ""
+    },
+    {
+      "name": "FoodAvoidance",
+      "label_ko": "음식 기피",
+      "color": "#D35400",
+      "description": "트라우마 또는 심리적 원인으로 인한 특정 음식 섭취 거부 행동",
+      "examples": [
+        "생선 기피",
+        "멸치 기피",
+        "해산물 기피",
+        "육지 음식(고기) 기피"
+      ],
+      "note": ""
+    },
+    {
+      "name": "Food",
+      "label_ko": "음식",
+      "color": "#F0A500",
+      "description": "구술에서 언급된 특정 음식물",
+      "examples": [
+        "생선",
+        "멸치",
+        "해산물",
+        "고기(육지 음식)"
+      ],
+      "note": ""
+    },
+    {
+      "name": "RitualPractice",
+      "label_ko": "의례 행위",
+      "color": "#1E8449",
+      "description": "사망한 자를 추모하거나 애도하기 위해 수행하는 문화적 실천",
+      "examples": [
+        "옷을 태워 저승에 보내는 제사",
+        "가족 제사"
+      ],
+      "note": ""
+    },
+    {
+      "name": "GriefExpression",
+      "label_ko": "애도 표현",
+      "color": "#2C3E50",
+      "description": "상실에 대한 슬픔을 외적으로 드러내거나 의례화한 행위",
+      "examples": [
+        "옷 태우기",
+        "저승 전달 방식",
+        "억눌린 마음의 표현"
+      ],
+      "note": ""
+    },
+    {
+      "name": "OralRecord",
+      "label_ko": "구술기록",
+      "color": "#95A5A6",
+      "description": "개인의 경험과 기억을 말로 전달·채록한 기록물",
+      "examples": [
+        "손녀 정향신의 구술 증언"
+      ],
+      "note": ""
+    },
+    {
+      "name": "Memory",
+      "label_ko": "기억",
+      "color": "#85C1E9",
+      "description": "개인이 보유하거나 전승하는 과거 경험에 대한 심리적 재현",
+      "examples": [
+        "할머니의 억눌린 기억",
+        "손녀가 최근 알게 된 사실"
+      ],
+      "note": ""
+    },
+    {
+      "name": "IntergenerationalTransmission",
+      "label_ko": "세대 간 전승",
+      "color": "#A9CCE3",
+      "description": "트라우마·기억·이야기가 세대를 넘어 전달되는 과정",
+      "examples": [
+        "손녀가 할머니의 트라우마 원인을 뒤늦게 알게 된 경위"
+      ],
+      "note": ""
+    },
+    {
+      "name": "TemporalContext",
+      "label_ko": "시간적 맥락",
+      "color": "#AAB7B8",
+      "description": "사건이나 경험이 위치하는 특정 시간대 또는 역사적 시기",
+      "examples": [
+        "일제강점기",
+        "8세 아동기",
+        "현재(손녀 증언 시점)"
+      ],
+      "note": ""
+    }
+  ],
+  "predicates": [
+    {
+      "name": "증언하다",
+      "domain": [
+        "Witness"
+      ],
+      "range_": [
+        "OralRecord",
+        "Trauma",
+        "HistoricalEvent"
+      ],
+      "description": "증언자가 타인의 경험이나 사건에 대해 구술로 진술하는 행위",
+      "note": ""
+    },
+    {
+      "name": "경험하다",
+      "domain": [
+        "Survivor",
+        "Victim",
+        "Person"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "ColonialViolence",
+        "Trauma"
+      ],
+      "description": "인물이 특정 사건이나 트라우마를 직접 겪는 관계",
+      "note": ""
+    },
+    {
+      "name": "목격하다",
+      "domain": [
+        "Survivor"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "ColonialViolence"
+      ],
+      "description": "생존자가 폭력 사건이나 가족의 죽음을 현장에서 직접 보는 행위",
+      "note": ""
+    },
+    {
+      "name": "유발하다",
+      "domain": [
+        "HistoricalEvent",
+        "ColonialViolence"
+      ],
+      "range_": [
+        "Trauma",
+        "FoodAvoidance",
+        "GriefExpression"
+      ],
+      "description": "역사적 사건 또는 식민지 폭력이 트라우마·기피·애도 행위를 발생시키는 인과관계",
+      "note": ""
+    },
+    {
+      "name": "기피하다",
+      "domain": [
+        "Survivor"
+      ],
+      "range_": [
+        "Food"
+      ],
+      "description": "생존자가 트라우마로 인해 특정 음식을 평생 섭취하지 않는 행동 패턴",
+      "note": ""
+    },
+    {
+      "name": "상징하다",
+      "domain": [
+        "Food",
+        "FoodAvoidance"
+      ],
+      "range_": [
+        "Trauma",
+        "Memory"
+      ],
+      "description": "특정 음식 또는 그 기피 행동이 트라우마나 기억을 상징적으로 나타내는 관계",
+      "note": ""
+    },
+    {
+      "name": "수행하다",
+      "domain": [
+        "Survivor",
+        "Person"
+      ],
+      "range_": [
+        "RitualPractice",
+        "GriefExpression"
+      ],
+      "description": "인물이 의례 행위나 애도 실천을 실제로 행하는 관계",
+      "note": ""
+    },
+    {
+      "name": "애도하다",
+      "domain": [
+        "Survivor"
+      ],
+      "range_": [
+        "Victim",
+        "FamilyGroup"
+      ],
+      "description": "생존자가 사망한 가족이나 희생자를 향해 슬픔을 표현하고 기억하는 행위",
+      "note": ""
+    },
+    {
+      "name": "구성하다",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "FamilyGroup"
+      ],
+      "description": "개별 인물이 가족 집단을 이루는 구성원으로 포함되는 관계",
+      "note": ""
+    },
+    {
+      "name": "희생되다",
+      "domain": [
+        "Victim",
+        "FamilyGroup"
+      ],
+      "range_": [
+        "ColonialViolence",
+        "HistoricalEvent",
+        "BodyOfWater"
+      ],
+      "description": "희생자가 식민지 폭력 또는 역사적 사건으로 인해 바다에서 사망하는 관계",
+      "note": ""
+    },
+    {
+      "name": "발생하다",
+      "domain": [
+        "HistoricalEvent",
+        "ColonialViolence"
+      ],
+      "range_": [
+        "BodyOfWater",
+        "TemporalContext"
+      ],
+      "description": "사건이 특정 장소(수역) 및 시간적 맥락 안에서 일어나는 관계",
+      "note": ""
+    },
+    {
+      "name": "억압하다",
+      "domain": [
+        "Survivor"
+      ],
+      "range_": [
+        "Memory",
+        "Trauma",
+        "GriefExpression"
+      ],
+      "description": "생존자가 기억이나 감정을 오랫동안 외부로 드러내지 않고 내면에 눌러두는 행위",
+      "note": ""
+    },
+    {
+      "name": "전승하다",
+      "domain": [
+        "OralRecord",
+        "Memory",
+        "Trauma"
+      ],
+      "range_": [
+        "IntergenerationalTransmission",
+        "Witness"
+      ],
+      "description": "기억이나 트라우마가 세대를 건너 증언자에게 전달되는 과정",
+      "note": ""
+    },
+    {
+      "name": "인식하다",
+      "domain": [
+        "Witness"
+      ],
+      "range_": [
+        "Trauma",
+        "Memory",
+        "HistoricalEvent"
+      ],
+      "description": "증언자(손녀)가 할머니의 트라우마 원인을 뒤늦게 이해하게 되는 인식론적 전환",
+      "note": ""
+    },
+    {
+      "name": "바라다",
+      "domain": [
+        "Witness"
+      ],
+      "range_": [
+        "GriefExpression",
+        "Trauma"
+      ],
+      "description": "증언자가 생존자의 억눌린 감정이 표현되기를 소망하는 심리적 지향",
+      "note": ""
+    },
+    {
+      "name": "채록하다",
+      "domain": [
+        "OralRecord"
+      ],
+      "range_": [
+        "Memory",
+        "Trauma",
+        "HistoricalEvent"
+      ],
+      "description": "구술기록이 증언자의 말을 통해 기억·트라우마·사건을 기록물로 포착하는 행위",
+      "note": ""
+    },
+    {
+      "name": "위치하다",
+      "domain": [
+        "HistoricalEvent",
+        "ColonialViolence"
+      ],
+      "range_": [
+        "TemporalContext"
+      ],
+      "description": "사건이 특정 역사적 시기(일제강점기 등) 안에 자리하는 시간적 맥락 관계",
+      "note": ""
+    }
+  ],
+  "created_at": "2026-04-07T08:16:14.871936",
+  "confirmed_at": null,
+  "archived_at": null,
+  "description": "AI 자동 생성 (샘플 기반)",
+  "based_on": null
+}

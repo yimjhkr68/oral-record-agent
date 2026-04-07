@@ -5,15 +5,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import os
+
 from utils.file_io import atomic_write_json, ensure_dir, read_json
 
 if TYPE_CHECKING:
     from ontology.ontology_manager import OntologyVersion
 
-# 프로젝트 루트 기준 절대경로 (실행 위치 무관)
-_ROOT = Path(__file__).parent.parent
-DRAFTS_DIR    = _ROOT / "data" / "ontologies" / "drafts"
-CONFIRMED_DIR = _ROOT / "data" / "ontologies" / "confirmed"
+# DATA_DIR 환경변수 → 없으면 프로젝트 루트 data/
+_DATA_ROOT    = Path(os.environ["DATA_DIR"]) if os.environ.get("DATA_DIR") else Path(__file__).parent.parent / "data"
+DRAFTS_DIR    = _DATA_ROOT / "ontologies" / "drafts"
+CONFIRMED_DIR = _DATA_ROOT / "ontologies" / "confirmed"
 
 
 def _to_dict(version: "OntologyVersion") -> dict:

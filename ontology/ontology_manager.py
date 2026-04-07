@@ -28,6 +28,7 @@ class OntologyClass:
     color:       str
     description: str = ""
     examples:    list[str] = field(default_factory=list)
+    note:        str = ""
 
 
 @dataclass
@@ -206,7 +207,7 @@ class OntologyManager:
                 f"AI 응답 JSON 파싱 실패 — 원문: {raw[:200]!r}"
             ) from e
 
-        _cls_fields  = {"name", "label_ko", "color", "description", "examples"}
+        _cls_fields  = {"name", "label_ko", "color", "description", "examples", "note"}
         _pred_fields = {"name", "domain", "range_", "description", "note"}
         classes = [
             OntologyClass(**{k: v for k, v in c.items() if k in _cls_fields})
@@ -229,6 +230,106 @@ class OntologyManager:
             description=f"AI 자동 생성 (샘플 기반{', 기반: ' + base_version_id if base_version_id else ''})",
         )
         self._cache[version_id] = version
+        self._store.save_draft(version)
+        return version
+
+    # ── Draft 종합 병합 ────────────────────────────────────────────────────────
+
+    def merge_drafts(self,
+                     version_ids: list[str],
+                     new_version_id: str) -> OntologyVersion:
+        """
+        지정된 Draft 버전들의 클래스/속성을 수집 → AI로 중복 제거 + 정리 → 새 Draft 저장.
+        Draft/Confirmed/Archived 모두 병합 소스로 사용 가능.
+        new_version_id 중복 시 ValueError.
+        """
+        if new_version_id in self._cache:
+            raise ValueError(f"이미 존재하는 version_id: {new_version_id!r}")
+        if not version_ids:
+            raise ValueError("병합할 버전을 1개 이상 지정해야 합니다.")
+
+        # 소스 버전들 수집
+        import dataclasses
+        sources = []
+        for vid in version_ids:
+            v = self.get(vid)  # KeyError면 그대로 전파
+            sources.append(dataclasses.asdict(v))
+
+        sources_json = json.dumps(sources, ensure_ascii=False, indent=2)
+
+        system_prompt = f"""당신은 구술기록 아카이브 온톨로지 전문가다.
+아래에 여러 온톨로지 버전 초안(Draft)이 주어진다.
+이 초안들을 분석하여 중복을 제거하고, 의미가 유사한 클래스/속성은 통합하여
+하나의 완성도 높은 온톨로지를 만들어라.
+
+원칙:
+- 클래스 name 은 영문 PascalCase
+- 속성 name 은 한국어 동사형
+- 초안에 없는 새 항목은 추가하지 말 것
+- 의미 중복 항목은 더 구체적인 쪽을 살리고 나머지 제거
+
+반드시 다음 JSON 형식으로만 응답해:
+{{
+  "classes": [
+    {{
+      "name": "영문 PascalCase",
+      "label_ko": "한국어 레이블",
+      "color": "#hex",
+      "description": "정의",
+      "examples": ["예시1", "예시2"]
+    }}
+  ],
+  "predicates": [
+    {{
+      "name": "속성명 (한국어 동사형)",
+      "domain": ["허용 주어 클래스"],
+      "range_": ["허용 목적어 클래스"],
+      "description": "의미 설명"
+    }}
+  ]
+}}
+
+병합 대상 초안들:
+{sources_json}"""
+
+        client = anthropic.Anthropic()
+        try:
+            response = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=4096,
+                messages=[{"role": "user", "content": system_prompt}],
+            )
+        except Exception as e:
+            raise RuntimeError(f"AI API 호출 실패: {e}") from e
+
+        raw = response.content[0].text.strip()
+        if "```" in raw:
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"AI 응답 JSON 파싱 실패 — 원문: {raw[:200]!r}") from e
+
+        _cls_fields  = {"name", "label_ko", "color", "description", "examples", "note"}
+        _pred_fields = {"name", "domain", "range_", "description", "note"}
+        classes = [
+            OntologyClass(**{k: v for k, v in c.items() if k in _cls_fields})
+            for c in parsed.get("classes", [])
+        ]
+        predicates = [
+            OntologyPredicate(**{k: v for k, v in p.items() if k in _pred_fields})
+            for p in parsed.get("predicates", [])
+        ]
+
+        version = OntologyVersion(
+            version_id=new_version_id,
+            classes=classes,
+            predicates=predicates,
+            description=f"AI 종합 병합 ({', '.join(version_ids)})",
+        )
+        self._cache[new_version_id] = version
         self._store.save_draft(version)
         return version
 

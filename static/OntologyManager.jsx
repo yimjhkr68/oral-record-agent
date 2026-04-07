@@ -33,6 +33,10 @@ function OntologyManager() {
   const [newId, setNewId]           = useState("");
   const [newDesc, setNewDesc]       = useState("");
   const [showNew, setShowNew]       = useState(false);
+  const [merging, setMerging]       = useState(false);
+  const [showMerge, setShowMerge]   = useState(false);
+  const [mergeIds, setMergeIds]     = useState([]);
+  const [mergeNewId, setMergeNewId] = useState("");
 
   useEffect(() => { loadVersions(); }, []);
 
@@ -68,6 +72,22 @@ function OntologyManager() {
       setSampleText("");
     } catch (e) { setError(e.message); }
     finally { setGenerating(false); }
+  }
+
+  async function handleMerge() {
+    if (mergeIds.length === 0) { setError("병합할 버전을 1개 이상 선택하세요."); return; }
+    if (!mergeNewId.trim()) { setError("새 버전 ID를 입력하세요."); return; }
+    setMerging(true); setError("");
+    try {
+      const v = await apiFetch(API + "/merge", {
+        method: "POST",
+        body: JSON.stringify({ version_ids: mergeIds, new_version_id: mergeNewId.trim() }),
+      });
+      setShowMerge(false); setMergeIds([]); setMergeNewId("");
+      await loadVersions();
+      setSelected(v);
+    } catch (e) { setError(e.message); }
+    finally { setMerging(false); }
   }
 
   async function handleConfirm() {
@@ -119,6 +139,10 @@ function OntologyManager() {
             onClick={() => setEditMode(true)}>
             샘플에서 AI 생성
           </button>
+          <button style={{ ...styles.btnMerge, marginTop: 6, width: "100%" }}
+            onClick={() => { setShowMerge(!showMerge); setMergeIds([]); setMergeNewId(""); }}>
+            Draft 종합 (AI 병합)
+          </button>
         </div>
 
         <div style={{ overflowY: "auto", flex: 1 }}>
@@ -149,6 +173,63 @@ function OntologyManager() {
         {error && (
           <div style={styles.errorBanner}>
             {error} <button style={styles.closeBtn} onClick={() => setError("")}>✕</button>
+          </div>
+        )}
+
+        {/* Draft 종합 병합 모드 */}
+        {showMerge && (
+          <div>
+            <h3 style={styles.panelTitle}>Draft 종합 — AI 병합</h3>
+            <p style={{ fontSize: 13, color: "#999", marginBottom: 12 }}>
+              병합할 버전을 선택하고 새 버전 ID를 입력하세요.
+            </p>
+
+            <div style={{ fontSize: 12, color: "#aaa", marginBottom: 6 }}>병합 대상 선택</div>
+            <div style={{ maxHeight: 180, overflowY: "auto", marginBottom: 12,
+                          border: "1px solid #333", borderRadius: 4 }}>
+              {versions.length === 0 && (
+                <div style={{ padding: 10, color: "#555", fontSize: 13 }}>버전 없음</div>
+              )}
+              {versions.map(v => (
+                <label key={v.version_id} style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "7px 12px", cursor: "pointer",
+                  borderBottom: "1px solid #1e1e1e", fontSize: 13,
+                  background: mergeIds.includes(v.version_id) ? "#2a2a3a" : "transparent",
+                }}>
+                  <input type="checkbox"
+                    checked={mergeIds.includes(v.version_id)}
+                    onChange={e => {
+                      setMergeIds(prev =>
+                        e.target.checked ? [...prev, v.version_id]
+                                         : prev.filter(id => id !== v.version_id)
+                      );
+                    }}
+                  />
+                  <span style={{ color: STATUS_COLOR[v.status] }}>{STATUS_ICON[v.status]}</span>
+                  <span style={{ color: "#ccc" }}>{v.version_id}</span>
+                  <span style={{ fontSize: 11, color: "#666" }}>
+                    ({v.classes?.length ?? 0}클래스 / {v.predicates?.length ?? 0}속성)
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            <div style={{ fontSize: 12, color: "#aaa", marginBottom: 4 }}>새 버전 ID</div>
+            <input style={styles.input} placeholder="예: v2.0"
+              value={mergeNewId} onChange={e => setMergeNewId(e.target.value)} />
+
+            <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+              <button style={styles.btnPrimary}
+                onClick={handleMerge}
+                disabled={merging || mergeIds.length === 0 || !mergeNewId.trim()}>
+                {merging ? `AI 병합 중... (${mergeIds.length}개)` : `AI 병합 (${mergeIds.length}개 선택)`}
+              </button>
+              <button style={styles.btnSecondary}
+                onClick={() => { setShowMerge(false); setMergeIds([]); setMergeNewId(""); }}>
+                취소
+              </button>
+            </div>
           </div>
         )}
 
@@ -307,6 +388,7 @@ const styles = {
   },
   panel: {
     flex: 1, padding: 24, overflowY: "auto",
+    height: "calc(100vh - 56px)",
   },
   panelTitle: { fontSize: 16, fontWeight: 600, color: "#e0e0e0", marginBottom: 16 },
   versionItem: {
@@ -324,6 +406,7 @@ const styles = {
   },
   btnPrimary:   { background: "#4a6fa5", color: "#fff", border: "none", borderRadius: 4, padding: "6px 14px", cursor: "pointer", fontSize: 13 },
   btnSecondary: { background: "#333", color: "#ccc", border: "none", borderRadius: 4, padding: "6px 14px", cursor: "pointer", fontSize: 13 },
+  btnMerge:     { background: "#3a5a3a", color: "#8fbc8f", border: "none", borderRadius: 4, padding: "6px 14px", cursor: "pointer", fontSize: 13 },
   btnSuccess:   { background: "#2d6a4f", color: "#fff", border: "none", borderRadius: 4, padding: "6px 14px", cursor: "pointer", fontSize: 13 },
   btnDanger:    { background: "#6b2737", color: "#fff", border: "none", borderRadius: 4, padding: "6px 14px", cursor: "pointer", fontSize: 13 },
   errorBanner:  { background: "#5c2323", color: "#ffaaaa", borderRadius: 6, padding: "8px 12px", marginBottom: 16, fontSize: 13, display: "flex", justifyContent: "space-between" },

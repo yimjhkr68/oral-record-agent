@@ -1,0 +1,147 @@
+{
+  "version_id": "draft-20260407080808",
+  "status": "draft",
+  "classes": [
+    {
+      "name": "Person",
+      "label_ko": "인물",
+      "color": "#4A90D9",
+      "description": "구술의 주체가 되는 사람",
+      "examples": [
+        "구술자"
+      ],
+      "note": ""
+    },
+    {
+      "name": "Place",
+      "label_ko": "장소",
+      "color": "#27AE60",
+      "description": "구술에 등장하는 지명 또는 행정구역",
+      "examples": [
+        "안동",
+        "부산",
+        "경상북도"
+      ],
+      "note": ""
+    },
+    {
+      "name": "Event",
+      "label_ko": "사건",
+      "color": "#E74C3C",
+      "description": "구술에 등장하는 역사적 또는 개인적 사건",
+      "examples": [
+        "6·25 전쟁",
+        "피란"
+      ],
+      "note": ""
+    },
+    {
+      "name": "Date",
+      "label_ko": "시간",
+      "color": "#F39C12",
+      "description": "구술에 등장하는 연도, 시기 등 시간 정보",
+      "examples": [
+        "1952년",
+        "6·25 전쟁 시기"
+      ],
+      "note": ""
+    },
+    {
+      "name": "AdministrativeRegion",
+      "label_ko": "행정구역",
+      "color": "#8E44AD",
+      "description": "도, 시, 군 등 행정 단위로 구분된 지역",
+      "examples": [
+        "경상북도",
+        "안동",
+        "부산"
+      ],
+      "note": ""
+    }
+  ],
+  "predicates": [
+    {
+      "name": "태어나다",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Place",
+        "Date"
+      ],
+      "description": "인물이 특정 장소 및 시점에 출생함",
+      "note": ""
+    },
+    {
+      "name": "출생연도이다",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Date"
+      ],
+      "description": "인물의 출생 연도를 나타냄",
+      "note": ""
+    },
+    {
+      "name": "출생지이다",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "인물이 태어난 장소를 나타냄",
+      "note": ""
+    },
+    {
+      "name": "피란가다",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "인물이 전쟁·재난 등으로 인해 특정 장소로 피란함",
+      "note": ""
+    },
+    {
+      "name": "피란계기이다",
+      "domain": [
+        "Person"
+      ],
+      "range_": [
+        "Event"
+      ],
+      "description": "인물이 피란하게 된 원인 사건을 나타냄",
+      "note": ""
+    },
+    {
+      "name": "발생시기이다",
+      "domain": [
+        "Event"
+      ],
+      "range_": [
+        "Date"
+      ],
+      "description": "사건이 발생한 시간적 범위를 나타냄",
+      "note": ""
+    },
+    {
+      "name": "속하다",
+      "domain": [
+        "Place"
+      ],
+      "range_": [
+        "AdministrativeRegion"
+      ],
+      "description": "특정 장소가 상위 행정구역에 속함을 나타냄",
+      "note": ""
+    }
+  ],
+  "created_at": "2026-04-07T08:08:08.332224",
+  "confirmed_at": null,
+  "archived_at": null,
+  "description": "AI 자동 생성 (샘플 기반)",
+  "based_on": null
+}
