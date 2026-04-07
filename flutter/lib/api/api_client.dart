@@ -47,6 +47,9 @@ class ApiClient {
 
   Future<Response> delete(String path) => _dio.delete('$_baseUrl$path');
 
+  Future<Response> postFormData(String path, FormData data) =>
+      _dio.post('$_baseUrl$path', data: data);
+
   Future<bool> checkConnection() async {
     try {
       await _dio.get('$_baseUrl/health');

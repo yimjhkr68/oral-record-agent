@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../models/ontology.dart';
 import '../../providers/ontology_provider.dart';
+import '../../providers/hive_provider.dart';
+import '../../api/api_client.dart';
+import '../../api/ontology_api.dart';
 import 'ontology_detail_panel.dart';
 
 class OntologyListScreen extends ConsumerWidget {
@@ -423,30 +427,65 @@ class _InputMethodBottomSheetState
     extends ConsumerState<InputMethodBottomSheet>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
+
+  // 텍스트 탭
   final _textCtrl = TextEditingController();
   String? _baseVersionId;
-  bool _loading = false;
+
+  // 파일 탭
+  String? _pickedFileName;
+  String? _extractedText;
+  bool _extracting = false;
+
+  // Hive 탭
+  final _hiveUrlCtrl = TextEditingController();
+  final _hiveQueryCtrl = TextEditingController();
+  List<HiveRecord> _hiveResults = [];
+  HiveRecord? _selectedRecord;
+  bool _hiveConnected = false;
+  bool _hiveSearching = false;
+
+  bool _loading = false; // AI 생성 중
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl.addListener(() => setState(() {}));
+    _hiveUrlCtrl.text = ref.read(hiveUrlProvider);
   }
 
   @override
   void dispose() {
     _tabCtrl.dispose();
     _textCtrl.dispose();
+    _hiveUrlCtrl.dispose();
+    _hiveQueryCtrl.dispose();
     super.dispose();
   }
 
+  // ── 현재 탭의 샘플 텍스트 ──────────────────────────────────────────────────
+  String? get _currentSampleText {
+    switch (_tabCtrl.index) {
+      case 0:
+        return _textCtrl.text.trim().isEmpty ? null : _textCtrl.text.trim();
+      case 1:
+        return _extractedText;
+      case 2:
+        return _selectedRecord?.text;
+      default:
+        return null;
+    }
+  }
+
+  // ── AI 생성 ──────────────────────────────────────────────────────────────────
   Future<void> _generate() async {
-    if (_textCtrl.text.trim().isEmpty) return;
+    final text = _currentSampleText;
+    if (text == null || text.isEmpty) return;
     setState(() => _loading = true);
     final result = await ref
         .read(ontologyProvider.notifier)
-        .generateFromSample(_textCtrl.text.trim(),
-            baseVersionId: _baseVersionId);
+        .generateFromSample(text, baseVersionId: _baseVersionId);
     setState(() => _loading = false);
     if (!mounted) return;
     if (result != null) {
@@ -462,24 +501,92 @@ class _InputMethodBottomSheetState
     }
   }
 
+  // ── 파일 선택 ─────────────────────────────────────────────────────────────────
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['txt', 'pdf', 'docx'],
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.path == null) return;
+
+    setState(() {
+      _pickedFileName = file.name;
+      _extractedText = null;
+      _extracting = true;
+    });
+
+    try {
+      final api = OntologyApi(ref.read(apiClientProvider));
+      final res = await api.extractTextFromFile(file.path!, file.name);
+      setState(() {
+        _extractedText = res['text'] as String?;
+        _extracting = false;
+      });
+    } catch (e) {
+      setState(() => _extracting = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('텍스트 추출 실패: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // ── Hive 연결 확인 ────────────────────────────────────────────────────────────
+  Future<void> _checkHiveConnection() async {
+    final url = _hiveUrlCtrl.text.trim();
+    ref.read(hiveUrlProvider.notifier).state = url;
+    await saveHiveUrl(url);
+    setState(() => _hiveSearching = true);
+    final ok = await HiveApi(url).checkConnection();
+    setState(() {
+      _hiveConnected = ok;
+      _hiveSearching = false;
+    });
+  }
+
+  // ── Hive 검색 ─────────────────────────────────────────────────────────────────
+  Future<void> _searchHive() async {
+    if (_hiveQueryCtrl.text.trim().isEmpty) return;
+    setState(() => _hiveSearching = true);
+    try {
+      final url = _hiveUrlCtrl.text.trim();
+      final records = await HiveApi(url)
+          .searchRecords(_hiveQueryCtrl.text.trim(), topK: 5);
+      setState(() {
+        _hiveResults = records;
+        _hiveSearching = false;
+        _selectedRecord = null;
+      });
+    } catch (e) {
+      setState(() => _hiveSearching = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('검색 실패: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(ontologyProvider);
-    final versions = state.versions;
+    final versions = ref.watch(ontologyProvider).versions;
+    final canGenerate = _currentSampleText != null && !_loading;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.85,
+      initialChildSize: 0.88,
       minChildSize: 0.5,
-      maxChildSize: 0.95,
+      maxChildSize: 0.96,
       expand: false,
-      builder: (_, scrollCtrl) => Column(
+      builder: (_, __) => Column(
         children: [
           // 핸들
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Container(
-              width: 40,
-              height: 4,
+              width: 40, height: 4,
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2),
@@ -488,17 +595,14 @@ class _InputMethodBottomSheetState
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                const Text('구술기록으로 온톨로지 생성',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
-                const Spacer(),
-                IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context)),
-              ],
-            ),
+            child: Row(children: [
+              const Text('구술기록으로 온톨로지 생성',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const Spacer(),
+              IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context)),
+            ]),
           ),
           TabBar(
             controller: _tabCtrl,
@@ -513,122 +617,447 @@ class _InputMethodBottomSheetState
               controller: _tabCtrl,
               children: [
                 // ── 텍스트 입력 탭 ──────────────────────────────────────────
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('기존 버전 기반 확장 (선택)',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 13)),
-                      const SizedBox(height: 6),
-                      InputDecorator(
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 4),
-                        ),
-                        child: DropdownButton<String?>(
-                          value: _baseVersionId,
-                          isExpanded: true,
-                          underline: const SizedBox(),
-                          hint: const Text('없음 (새로 생성)',
-                              style: TextStyle(fontSize: 13)),
-                          items: [
-                            const DropdownMenuItem(
-                                value: null,
-                                child: Text('없음 (새로 생성)',
-                                    style: TextStyle(fontSize: 13))),
-                            ...versions.map((v) => DropdownMenuItem(
-                                  value: v.versionId,
-                                  child: Text(v.versionId,
-                                      style: const TextStyle(fontSize: 13)),
-                                )),
-                          ],
-                          onChanged: (v) =>
-                              setState(() => _baseVersionId = v),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text('구술 자료 텍스트',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 13)),
-                      const SizedBox(height: 6),
-                      Expanded(
-                        child: TextField(
-                          controller: _textCtrl,
-                          maxLines: null,
-                          expands: true,
-                          textAlignVertical: TextAlignVertical.top,
-                          decoration: const InputDecoration(
-                            hintText:
-                                '구술 자료 텍스트를 붙여넣으세요...',
-                            border: OutlineInputBorder(),
-                            alignLabelWithHint: true,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                _TextTab(
+                  textCtrl: _textCtrl,
+                  baseVersionId: _baseVersionId,
+                  versions: versions,
+                  onBaseChanged: (v) => setState(() => _baseVersionId = v),
                 ),
                 // ── 파일 업로드 탭 ──────────────────────────────────────────
-                const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.upload_file_outlined,
-                          size: 48, color: Colors.grey),
-                      SizedBox(height: 12),
-                      Text('파일 업로드 (Phase A-3에서 구현)',
-                          style: TextStyle(color: Colors.grey)),
-                    ],
-                  ),
+                _FileTab(
+                  pickedFileName: _pickedFileName,
+                  extractedText: _extractedText,
+                  extracting: _extracting,
+                  onPickFile: _pickFile,
                 ),
                 // ── Hive DB 탭 ──────────────────────────────────────────────
-                const Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.storage_outlined,
-                          size: 48, color: Colors.grey),
-                      SizedBox(height: 12),
-                      Text('Hive DB 연결 (Phase A-3에서 구현)',
-                          style: TextStyle(color: Colors.grey)),
-                    ],
+                _HiveTab(
+                  urlCtrl: _hiveUrlCtrl,
+                  queryCtrl: _hiveQueryCtrl,
+                  connected: _hiveConnected,
+                  searching: _hiveSearching,
+                  results: _hiveResults,
+                  selectedRecord: _selectedRecord,
+                  onCheckConnection: _checkHiveConnection,
+                  onSearch: _searchHive,
+                  onSelectRecord: (r) => setState(() => _selectedRecord = r),
+                ),
+              ],
+            ),
+          ),
+          // ── 공통 하단: 기존 버전 기반 선택 + AI 생성 버튼 ─────────────────
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+                16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 기존 버전 기반 확장 드롭다운 (텍스트 탭에만 해당하지 않고 공통)
+                if (_tabCtrl.index != 0) ...[
+                  InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: '기존 버전 기반 확장 (선택)',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    ),
+                    child: DropdownButton<String?>(
+                      value: _baseVersionId,
+                      isExpanded: true,
+                      underline: const SizedBox(),
+                      hint: const Text('없음 (새로 생성)',
+                          style: TextStyle(fontSize: 13)),
+                      items: [
+                        const DropdownMenuItem(
+                            value: null,
+                            child: Text('없음 (새로 생성)',
+                                style: TextStyle(fontSize: 13))),
+                        ...versions.map((v) => DropdownMenuItem(
+                              value: v.versionId,
+                              child: Text(v.versionId,
+                                  style: const TextStyle(fontSize: 13)),
+                            )),
+                      ],
+                      onChanged: (v) => setState(() => _baseVersionId = v),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: _loading
+                        ? const SizedBox(
+                            width: 16, height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.auto_awesome, size: 18),
+                    label: Text(_loading ? 'AI 분석 중...' : 'AI 초안 생성'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: canGenerate ? _generate : null,
                   ),
                 ),
               ],
             ),
           ),
-          // ── 공통 하단: AI 생성 버튼 ──────────────────────────────────────
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-                16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: _loading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.auto_awesome, size: 18),
-                label:
-                    Text(_loading ? 'AI 분석 중...' : 'AI 초안 생성'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: (_loading || _tabCtrl.index != 0)
-                    ? null
-                    : _generate,
+        ],
+      ),
+    );
+  }
+}
+
+// ── 텍스트 입력 탭 ────────────────────────────────────────────────────────────
+
+class _TextTab extends StatelessWidget {
+  final TextEditingController textCtrl;
+  final String? baseVersionId;
+  final List<OntologyVersion> versions;
+  final ValueChanged<String?> onBaseChanged;
+
+  const _TextTab({
+    required this.textCtrl,
+    required this.baseVersionId,
+    required this.versions,
+    required this.onBaseChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('기존 버전 기반 확장 (선택)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 6),
+          InputDecorator(
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              isDense: true,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            ),
+            child: DropdownButton<String?>(
+              value: baseVersionId,
+              isExpanded: true,
+              underline: const SizedBox(),
+              hint: const Text('없음 (새로 생성)',
+                  style: TextStyle(fontSize: 13)),
+              items: [
+                const DropdownMenuItem(
+                    value: null,
+                    child: Text('없음 (새로 생성)',
+                        style: TextStyle(fontSize: 13))),
+                ...versions.map((v) => DropdownMenuItem(
+                      value: v.versionId,
+                      child: Text(v.versionId,
+                          style: const TextStyle(fontSize: 13)),
+                    )),
+              ],
+              onChanged: onBaseChanged,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('구술 자료 텍스트',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 6),
+          Expanded(
+            child: TextField(
+              controller: textCtrl,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              decoration: const InputDecoration(
+                hintText: '구술 자료 텍스트를 붙여넣으세요...',
+                border: OutlineInputBorder(),
+                alignLabelWithHint: true,
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 파일 업로드 탭 ────────────────────────────────────────────────────────────
+
+class _FileTab extends StatelessWidget {
+  final String? pickedFileName;
+  final String? extractedText;
+  final bool extracting;
+  final VoidCallback onPickFile;
+
+  const _FileTab({
+    required this.pickedFileName,
+    required this.extractedText,
+    required this.extracting,
+    required this.onPickFile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('파일 선택 (txt / pdf / docx)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 8),
+          Row(children: [
+            ElevatedButton.icon(
+              icon: const Icon(Icons.upload_file, size: 18),
+              label: const Text('파일 선택'),
+              onPressed: extracting ? null : onPickFile,
+            ),
+            if (pickedFileName != null) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(pickedFileName!,
+                    style: const TextStyle(fontSize: 13),
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ],
+          ]),
+          const SizedBox(height: 12),
+          if (extracting)
+            const Row(children: [
+              SizedBox(
+                  width: 16, height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+              SizedBox(width: 10),
+              Text('텍스트 추출 중...', style: TextStyle(fontSize: 13)),
+            ])
+          else if (extractedText != null) ...[
+            Row(children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 16),
+              const SizedBox(width: 6),
+              Text('추출 완료 — ${extractedText!.length}자',
+                  style: const TextStyle(
+                      fontSize: 13, color: Colors.green)),
+            ]),
+            const SizedBox(height: 8),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey.shade50,
+                ),
+                child: SingleChildScrollView(
+                  child: Text(
+                    extractedText!.length > 2000
+                        ? '${extractedText!.substring(0, 2000)}…'
+                        : extractedText!,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
+            ),
+          ] else
+            const Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.description_outlined,
+                        size: 48, color: Colors.grey),
+                    SizedBox(height: 8),
+                    Text('파일을 선택하면 텍스트를 자동 추출합니다.',
+                        style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Hive DB 탭 ────────────────────────────────────────────────────────────────
+
+class _HiveTab extends StatelessWidget {
+  final TextEditingController urlCtrl;
+  final TextEditingController queryCtrl;
+  final bool connected;
+  final bool searching;
+  final List<HiveRecord> results;
+  final HiveRecord? selectedRecord;
+  final VoidCallback onCheckConnection;
+  final VoidCallback onSearch;
+  final ValueChanged<HiveRecord> onSelectRecord;
+
+  const _HiveTab({
+    required this.urlCtrl,
+    required this.queryCtrl,
+    required this.connected,
+    required this.searching,
+    required this.results,
+    required this.selectedRecord,
+    required this.onCheckConnection,
+    required this.onSearch,
+    required this.onSelectRecord,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 서버 URL + 연결 확인
+          const Text('v3.0 Hive 서버 주소',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 6),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: urlCtrl,
+                decoration: const InputDecoration(
+                  hintText: 'http://192.168.0.x:8000',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: searching ? null : onCheckConnection,
+              child: const Text('연결 확인'),
+            ),
+          ]),
+          const SizedBox(height: 6),
+          Row(children: [
+            Icon(
+              searching
+                  ? Icons.sync
+                  : connected
+                      ? Icons.check_circle
+                      : Icons.error_outline,
+              size: 14,
+              color: connected ? Colors.green : Colors.grey,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              searching
+                  ? '확인 중...'
+                  : connected
+                      ? '연결됨'
+                      : '미연결 — 서버 주소를 확인하세요',
+              style: TextStyle(
+                  fontSize: 12,
+                  color: connected ? Colors.green : Colors.grey),
+            ),
+          ]),
+          const SizedBox(height: 12),
+
+          // 검색
+          const Text('레코드 검색',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+          const SizedBox(height: 6),
+          Row(children: [
+            Expanded(
+              child: TextField(
+                controller: queryCtrl,
+                decoration: const InputDecoration(
+                  hintText: '예) 제주 4.3 경험',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onSubmitted: (_) => onSearch(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: (searching || !connected) ? null : onSearch,
+              child: const Text('검색'),
+            ),
+          ]),
+          const SizedBox(height: 10),
+
+          // 결과 목록
+          if (searching)
+            const Center(child: CircularProgressIndicator())
+          else if (results.isEmpty)
+            const Center(
+              child: Text('검색 결과가 여기에 표시됩니다.',
+                  style: TextStyle(color: Colors.grey, fontSize: 13)),
+            )
+          else
+            Expanded(
+              child: ListView.separated(
+                itemCount: results.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 6),
+                itemBuilder: (_, i) {
+                  final r = results[i];
+                  final isSelected = selectedRecord?.displayId == r.displayId;
+                  return InkWell(
+                    onTap: () => onSelectRecord(r),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey.shade300,
+                          width: isSelected ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        color: isSelected
+                            ? Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.07)
+                            : null,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            if (isSelected)
+                              const Icon(Icons.check_circle,
+                                  size: 14, color: Colors.green),
+                            if (isSelected) const SizedBox(width: 4),
+                            Text(r.displayId,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13)),
+                            const SizedBox(width: 8),
+                            Text(r.narratorName,
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey)),
+                            const Spacer(),
+                            Text(
+                                '관련도 ${(r.score * 100).toStringAsFixed(0)}%',
+                                style: const TextStyle(
+                                    fontSize: 11, color: Colors.grey)),
+                          ]),
+                          const SizedBox(height: 4),
+                          Text(
+                            r.text.length > 120
+                                ? '${r.text.substring(0, 120)}…'
+                                : r.text,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'api_client.dart';
 import '../models/ontology.dart';
 
@@ -77,4 +78,77 @@ class OntologyApi {
     });
     return OntologyVersion.fromJson(res.data as Map<String, dynamic>);
   }
+
+  /// 파일(txt/pdf/docx) → 텍스트 추출
+  /// 반환: {"text": "...", "filename": "...", "chars": N}
+  Future<Map<String, dynamic>> extractTextFromFile(
+    String filePath,
+    String filename,
+  ) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(filePath, filename: filename),
+    });
+    final res = await _client.postFormData(
+        '/api/ontologies/extract-text', formData);
+    return res.data as Map<String, dynamic>;
+  }
+}
+
+/// v3.0 Hive 서버 클라이언트 (별도 baseUrl)
+class HiveApi {
+  final Dio _dio;
+
+  HiveApi(String baseUrl)
+      : _dio = Dio(BaseOptions(
+          baseUrl: baseUrl,
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 30),
+          headers: {'Content-Type': 'application/json'},
+        ));
+
+  /// v3.0 POST /query/ → sources[].text 수집
+  Future<List<HiveRecord>> searchRecords(String query,
+      {int topK = 5}) async {
+    final res = await _dio.post('/query/', data: {'query': query, 'top_k': topK});
+    final sources = (res.data['sources'] as List? ?? []);
+    return sources
+        .map((s) => HiveRecord.fromJson(s as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<bool> checkConnection() async {
+    try {
+      await _dio.get('/health');
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
+class HiveRecord {
+  final String displayId;
+  final String title;
+  final String narratorName;
+  final String mainCategory;
+  final String text;
+  final double score;
+
+  const HiveRecord({
+    required this.displayId,
+    required this.title,
+    required this.narratorName,
+    required this.mainCategory,
+    required this.text,
+    required this.score,
+  });
+
+  factory HiveRecord.fromJson(Map<String, dynamic> json) => HiveRecord(
+        displayId: json['display_id'] ?? '',
+        title: json['title'] ?? '',
+        narratorName: json['narrator_name'] ?? '',
+        mainCategory: json['main_category'] ?? '',
+        text: json['text'] ?? '',
+        score: (json['score'] ?? 0.0).toDouble(),
+      );
 }

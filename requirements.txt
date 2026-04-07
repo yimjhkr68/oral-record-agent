@@ -4,3 +4,6 @@ anthropic
 python-dotenv
 aiofiles
 networkx
+pypdf
+python-docx
+python-multipart

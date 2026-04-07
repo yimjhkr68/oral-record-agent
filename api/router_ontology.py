@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import io
+import tempfile
+import os
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
 
 from ontology.ontology_manager import OntologyClass, OntologyManager, OntologyPredicate
@@ -139,5 +142,60 @@ def archive_version(version_id: str):
         return get_manager().archive(version_id)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/extract-text")
+async def extract_text_from_file(file: UploadFile = File(...)):
+    """파일(txt/pdf/docx) → 텍스트 추출.
+    반환: {"text": "추출된 텍스트", "filename": "파일명", "chars": N}
+    """
+    filename = file.filename or ""
+    ext = os.path.splitext(filename)[1].lower()
+
+    content_bytes = await file.read()
+
+    if ext == ".txt":
+        try:
+            text = content_bytes.decode("utf-8")
+        except UnicodeDecodeError:
+            text = content_bytes.decode("cp949", errors="replace")
+
+    elif ext == ".pdf":
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(content_bytes))
+            text = "\n".join(
+                page.extract_text() or "" for page in reader.pages
+            )
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"PDF 파싱 실패: {e}")
+
+    elif ext == ".docx":
+        try:
+            from docx import Document
+            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+                tmp.write(content_bytes)
+                tmp_path = tmp.name
+            try:
+                doc = Document(tmp_path)
+                text = "\n".join(
+                    p.text for p in doc.paragraphs if p.text.strip()
+                )
+            finally:
+                os.unlink(tmp_path)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"DOCX 파싱 실패: {e}")
+
+    else:
+        raise HTTPException(
+            status_code=415,
+            detail=f"지원하지 않는 파일 형식: {ext!r}. txt / pdf / docx만 지원합니다.",
+        )
+
+    text = text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="파일에서 텍스트를 추출할 수 없습니다.")
+
+    return {"text": text, "filename": filename, "chars": len(text)}
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
