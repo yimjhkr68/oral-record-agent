@@ -51,10 +51,12 @@ class OralRecordApp extends ConsumerWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1E3A5F),
-          brightness: Brightness.dark,
+          brightness: Brightness.light,
         ),
         useMaterial3: true,
+        scaffoldBackgroundColor: Colors.white,
       ),
+      themeMode: ThemeMode.light,
       routerConfig: router,
     );
   }
