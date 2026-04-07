@@ -197,5 +197,3 @@ async def extract_text_from_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="파일에서 텍스트를 추출할 수 없습니다.")
 
     return {"text": text, "filename": filename, "chars": len(text)}
-    except PermissionError as e:
-        raise HTTPException(status_code=403, detail=str(e))
