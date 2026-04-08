@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -324,6 +327,93 @@ class _KnowledgeGraphScreenState
     });
   }
 
+  // ── Export ──────────────────────────────────────────────────────────────────
+  Future<void> _showExportDialog() async {
+    if (_graphData == null) return;
+    final format = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('그래프 내보내기'),
+        content: const Text('저장 형식을 선택하세요.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소')),
+          OutlinedButton(
+              onPressed: () => Navigator.pop(context, 'json'),
+              child: const Text('JSON')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(context, 'csv'),
+              child: const Text('CSV')),
+        ],
+      ),
+    );
+    if (format == null) return;
+    await _exportGraph(format);
+  }
+
+  Future<void> _exportGraph(String format) async {
+    final data = _graphData!;
+    String content;
+    String defaultName;
+
+    if (format == 'csv') {
+      final buf = StringBuffer();
+      buf.writeln(
+          'subject,subject_type,predicate,object,object_type,'
+          'confidence,ontology_version,source_record_id,created_at,note');
+      String esc(String s) => '"${s.replaceAll('"', '""')}"';
+      for (final t in data.triples) {
+        buf.writeln(
+            '${esc(t.subject)},${esc(t.subjectType)},${esc(t.predicate)},'
+            '${esc(t.object)},${esc(t.objectType)},${t.confidence},'
+            '${esc(t.ontologyVersion)},${esc(t.sourceRecordId)},'
+            '${esc(t.createdAt)},${esc(t.note)}');
+      }
+      content     = buf.toString();
+      defaultName = 'knowledge_graph.csv';
+    } else {
+      content = const JsonEncoder.withIndent('  ').convert({
+        'nodes': data.nodes
+            .map((n) => {'id': n.id, 'type': n.type, 'degree': n.degree})
+            .toList(),
+        'triples': data.triples
+            .map((t) => {
+                  'subject': t.subject,
+                  'subject_type': t.subjectType,
+                  'predicate': t.predicate,
+                  'object': t.object,
+                  'object_type': t.objectType,
+                  'confidence': t.confidence,
+                  'ontology_version': t.ontologyVersion,
+                  'source_record_id': t.sourceRecordId,
+                  'created_at': t.createdAt,
+                  'note': t.note,
+                })
+            .toList(),
+      });
+      defaultName = 'knowledge_graph.json';
+    }
+
+    final path = await FilePicker.platform.saveFile(
+      dialogTitle: '그래프 내보내기',
+      fileName: defaultName,
+      type: FileType.custom,
+      allowedExtensions: [format],
+    );
+    if (path == null) return;
+
+    await File(path).writeAsString(content, encoding: utf8);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('저장됨: $path'),
+          action: SnackBarAction(label: '확인', onPressed: () {}),
+        ),
+      );
+    }
+  }
+
   void _onTapCanvas(Offset localPos, TransformationController tc) {
     // inverse transform from InteractiveViewer
     final scene = MatrixUtils.transformPoint(
@@ -571,6 +661,24 @@ class _KnowledgeGraphScreenState
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w500),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // export button
+                Tooltip(
+                  message: '내보내기 (CSV / JSON)',
+                  child: Material(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: _showExportDialog,
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(Icons.download_outlined,
+                            color: Colors.white, size: 20),
+                      ),
+                    ),
                   ),
                 ),
               ]),

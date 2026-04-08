@@ -35,6 +35,12 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
   late TabController _tabCtrl;
   Triple? _selected;
 
+  // 클라이언트 필터
+  final Set<String> _selectedTypes = {};
+  String _sourceFilter = '';
+  bool _showFilters = false;
+  final _sourceFilterCtrl = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +56,7 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _sourceFilterCtrl.dispose();
     _tabCtrl.dispose();
     super.dispose();
   }
@@ -59,42 +66,208 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
         _searchCtrl.text.trim();
   }
 
+  void _clearAllFilters() {
+    _searchCtrl.clear();
+    _sourceFilterCtrl.clear();
+    setState(() {
+      _selectedTypes.clear();
+      _sourceFilter = '';
+    });
+    ref.read(tripleQueryProvider.notifier).state = '';
+  }
+
+  List<Triple> _applyFilters(List<Triple> triples) {
+    return triples.where((t) {
+      // 클래스 타입 필터
+      if (_selectedTypes.isNotEmpty) {
+        if (!_selectedTypes.contains(t.subjectType) &&
+            !_selectedTypes.contains(t.objectType)) {
+          return false;
+        }
+      }
+      // 출처 필터
+      if (_sourceFilter.isNotEmpty) {
+        if (!t.sourceRecordId
+            .toLowerCase()
+            .contains(_sourceFilter.toLowerCase())) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+  }
+
+  bool get _hasActiveFilters =>
+      _selectedTypes.isNotEmpty || _sourceFilter.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
     final listAsync = ref.watch(tripleListProvider);
+    final searchQuery = ref.watch(tripleQueryProvider);
 
     return Column(children: [
-      // ── 검색바 + 탭 ───────────────────────────────────────────────────
+      // ── 검색바 ────────────────────────────────────────────────────
       Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-        child: TextField(
-          controller: _searchCtrl,
-          decoration: InputDecoration(
-            hintText: '주어 / 술어 / 목적어 검색',
-            prefixIcon: const Icon(Icons.search, size: 18),
-            suffixIcon: _searchCtrl.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 16),
-                    onPressed: () {
-                      _searchCtrl.clear();
-                      ref.read(tripleQueryProvider.notifier).state = '';
-                    },
-                  )
-                : null,
-            isDense: true,
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+        child: Row(children: [
+          Expanded(
+            child: TextField(
+              controller: _searchCtrl,
+              decoration: InputDecoration(
+                hintText: '주어 / 술어 / 목적어 검색',
+                prefixIcon: const Icon(Icons.search, size: 18),
+                suffixIcon: _searchCtrl.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 16),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          ref.read(tripleQueryProvider.notifier).state = '';
+                          setState(() {});
+                        },
+                      )
+                    : null,
+                isDense: true,
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              onSubmitted: (_) => _search(),
+              onChanged: (_) => setState(() {}),
+            ),
           ),
-          onSubmitted: (_) => _search(),
-          onChanged: (_) => setState(() {}),
-        ),
+          const SizedBox(width: 6),
+          // 필터 버튼
+          Stack(
+            children: [
+              IconButton(
+                icon: Icon(
+                  _showFilters ? Icons.filter_list : Icons.filter_list_outlined,
+                  color: _hasActiveFilters
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                ),
+                tooltip: '필터',
+                onPressed: () =>
+                    setState(() => _showFilters = !_showFilters),
+              ),
+              if (_hasActiveFilters)
+                Positioned(
+                  right: 6, top: 6,
+                  child: Container(
+                    width: 8, height: 8,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ]),
       ),
+
+      // ── 필터 패널 (토글) ──────────────────────────────────────────
+      if (_showFilters)
+        Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Theme.of(context)
+                .colorScheme
+                .primary
+                .withValues(alpha: 0.04),
+            border: Border.all(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.15)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 클래스 타입 칩
+              Text('클래스 타입 필터',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade600)),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: _classColors.keys.map((type) {
+                  final sel = _selectedTypes.contains(type);
+                  return FilterChip(
+                    label: Text(type,
+                        style: TextStyle(
+                            fontSize: 10,
+                            color: sel ? Colors.white : null)),
+                    selected: sel,
+                    backgroundColor: Colors.white,
+                    selectedColor: _colorForType(type),
+                    checkmarkColor: Colors.white,
+                    side: BorderSide(
+                        color: _colorForType(type).withValues(alpha: 0.5)),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                    onSelected: (v) => setState(() {
+                      v
+                          ? _selectedTypes.add(type)
+                          : _selectedTypes.remove(type);
+                    }),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 10),
+
+              // 출처 필터
+              Text('출처 ID 필터',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade600)),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _sourceFilterCtrl,
+                decoration: InputDecoration(
+                  hintText: '구술기록 ID 일부 입력',
+                  isDense: true,
+                  border: const OutlineInputBorder(),
+                  suffixIcon: _sourceFilter.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 14),
+                          onPressed: () {
+                            _sourceFilterCtrl.clear();
+                            setState(() => _sourceFilter = '');
+                          },
+                        )
+                      : null,
+                ),
+                onChanged: (v) => setState(() => _sourceFilter = v.trim()),
+              ),
+
+              // 필터 초기화
+              if (_hasActiveFilters || searchQuery.isNotEmpty)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.clear_all, size: 14),
+                    label: const Text('모두 초기화',
+                        style: TextStyle(fontSize: 11)),
+                    onPressed: _clearAllFilters,
+                  ),
+                ),
+            ],
+          ),
+        ),
+
       TabBar(
         controller: _tabCtrl,
         tabs: const [Tab(text: '활성'), Tab(text: '아카이브')],
       ),
 
-      // ── 목록 + 상세 패널 ─────────────────────────────────────────────
+      // ── 목록 + 상세 패널 ─────────────────────────────────────────
       Expanded(
         child: listAsync.when(
           loading: () =>
@@ -111,58 +284,101 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
             ]),
           ),
           data: (data) {
-            final triples = data.triples;
-            if (triples.isEmpty) {
+            final allTriples = data.triples;
+            final filtered   = _applyFilters(allTriples);
+
+            if (allTriples.isEmpty) {
               return const Center(
                 child: Text('저장된 트리플이 없습니다.',
                     style: TextStyle(color: Colors.grey)),
               );
             }
-            return Row(children: [
-              // 목록
-              Expanded(
-                flex: _selected != null ? 3 : 1,
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 6),
-                  itemCount: triples.length,
-                  itemBuilder: (_, i) {
-                    final t = triples[i];
-                    final isSelected = _selected?.id == t.id;
-                    return _TripleRow(
-                      triple: t,
-                      selected: isSelected,
-                      onTap: () => setState(() =>
-                          _selected = isSelected ? null : t),
-                    );
-                  },
-                ),
-              ),
-              // 상세 패널
-              if (_selected != null) ...[
-                const VerticalDivider(width: 1),
-                SizedBox(
-                  width: 300,
-                  child: _DetailPanel(
-                    triple: _selected!,
-                    onClose: () => setState(() => _selected = null),
-                    onArchive: (id) async {
-                      await ref
-                          .read(tripleApiProvider)
-                          .archiveTriple(id);
-                      ref.invalidate(tripleListProvider);
-                      setState(() => _selected = null);
-                    },
-                    onDelete: (id) async {
-                      await ref
-                          .read(tripleApiProvider)
-                          .deleteTriple(id);
-                      ref.invalidate(tripleListProvider);
-                      setState(() => _selected = null);
-                    },
+            return Column(children: [
+              // ── 통계 바 ─────────────────────────────────────────
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 5),
+                color: Colors.grey.shade50,
+                child: Row(children: [
+                  Text(
+                    _hasActiveFilters
+                        ? '총 ${allTriples.length}개  →  필터 적용 후 ${filtered.length}개'
+                        : '총 ${allTriples.length}개',
+                    style: TextStyle(
+                        fontSize: 11, color: Colors.grey.shade600),
                   ),
-                ),
-              ],
+                  if (_hasActiveFilters) ...[
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: _clearAllFilters,
+                      child: Text('필터 초기화',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: Theme.of(context).colorScheme.primary,
+                              decoration: TextDecoration.underline)),
+                    ),
+                  ],
+                ]),
+              ),
+              Expanded(
+                child: filtered.isEmpty
+                    ? Center(
+                        child: Text(
+                          _hasActiveFilters
+                              ? '필터 조건에 맞는 트리플이 없습니다.'
+                              : '검색 결과가 없습니다.',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    : Row(children: [
+                        // 목록
+                        Expanded(
+                          flex: _selected != null ? 3 : 1,
+                          child: ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 6),
+                            itemCount: filtered.length,
+                            itemBuilder: (_, i) {
+                              final t = filtered[i];
+                              final isSelected = _selected?.id == t.id;
+                              return _TripleRow(
+                                triple: t,
+                                selected: isSelected,
+                                onTap: () => setState(() =>
+                                    _selected =
+                                        isSelected ? null : t),
+                              );
+                            },
+                          ),
+                        ),
+                        // 상세 패널
+                        if (_selected != null) ...[
+                          const VerticalDivider(width: 1),
+                          SizedBox(
+                            width: 300,
+                            child: _DetailPanel(
+                              triple: _selected!,
+                              onClose: () =>
+                                  setState(() => _selected = null),
+                              onArchive: (id) async {
+                                await ref
+                                    .read(tripleApiProvider)
+                                    .archiveTriple(id);
+                                ref.invalidate(tripleListProvider);
+                                setState(() => _selected = null);
+                              },
+                              onDelete: (id) async {
+                                await ref
+                                    .read(tripleApiProvider)
+                                    .deleteTriple(id);
+                                ref.invalidate(tripleListProvider);
+                                setState(() => _selected = null);
+                              },
+                            ),
+                          ),
+                        ],
+                      ]),
+              ),
             ]);
           },
         ),
@@ -304,7 +520,7 @@ class _DetailPanelState extends State<_DetailPanel> {
   void didUpdateWidget(_DetailPanel old) {
     super.didUpdateWidget(old);
     if (old.triple.id != widget.triple.id) {
-      _editing    = false;
+      _editing       = false;
       _predCtrl.text = widget.triple.predicate;
       _objCtrl.text  = widget.triple.object;
       _noteCtrl.text = widget.triple.note;
@@ -442,8 +658,10 @@ class _DetailPanelState extends State<_DetailPanel> {
 
                 // 메타
                 _MetaRow('온톨로지', t.ontologyVersion),
-                _MetaRow('출처', t.sourceRecordId),
-                _MetaRow('생성일', t.createdAt.substring(0, 10)),
+                _MetaRow('출처', t.sourceRecordId.isEmpty ? '—' : t.sourceRecordId),
+                _MetaRow('생성일', t.createdAt.length >= 10
+                    ? t.createdAt.substring(0, 10)
+                    : t.createdAt),
                 const SizedBox(height: 20),
 
                 // 액션
