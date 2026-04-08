@@ -239,11 +239,28 @@ class _ListHeader extends ConsumerWidget {
     );
     if (ok != true || !context.mounted) return;
 
+    // 종합 진행 중 안내 SnackBar
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Row(children: [
+          SizedBox(width: 16, height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+          SizedBox(width: 12),
+          Text('AI 분석 중입니다. 잠시 기다려주세요... (최대 2분)'),
+        ]),
+        duration: Duration(seconds: 130),
+      ),
+    );
+
     final result = await ref.read(ontologyProvider.notifier).mergeDrafts(
           state.selectedForMerge.toList(),
           idCtrl.text.trim(),
         );
-    if (result == null && context.mounted) {
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+    if (result == null) {
       _showError(context, ref.read(ontologyProvider).error ?? '종합 실패');
     }
   }
@@ -693,7 +710,7 @@ class _InputMethodBottomSheetState
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.white))
                         : const Icon(Icons.auto_awesome, size: 18),
-                    label: Text(_loading ? 'AI 분석 중...' : 'AI 초안 생성'),
+                    label: Text(_loading ? 'AI 분석 중... (최대 2분)' : 'AI 초안 생성'),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor:

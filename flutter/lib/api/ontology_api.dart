@@ -61,7 +61,8 @@ class OntologyApi {
     String sampleText, {
     String? baseVersionId,
   }) async {
-    final res = await _client.post('/api/ontologies/generate', data: {
+    // AI 호출 — postAI() (120초 타임아웃)
+    final res = await _client.postAI('/api/ontologies/generate', data: {
       'sample_text': sampleText,
       if (baseVersionId != null) 'base_version_id': baseVersionId,
     });
@@ -72,7 +73,8 @@ class OntologyApi {
     List<String> versionIds,
     String newVersionId,
   ) async {
-    final res = await _client.post('/api/ontologies/merge', data: {
+    // AI 호출 — postAI() (120초 타임아웃)
+    final res = await _client.postAI('/api/ontologies/merge', data: {
       'version_ids': versionIds,
       'new_version_id': newVersionId,
     });

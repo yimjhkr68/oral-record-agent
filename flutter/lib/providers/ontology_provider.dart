@@ -1,7 +1,18 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../api/ontology_api.dart';
 import '../models/ontology.dart';
+
+String _aiErrorMessage(Object e) {
+  if (e is DioException && e.type == DioExceptionType.receiveTimeout) {
+    return 'AI 응답이 지연되고 있습니다. 다시 시도해주세요.';
+  }
+  if (e is DioException && e.type == DioExceptionType.connectionTimeout) {
+    return '서버에 연결할 수 없습니다. 서버 설정을 확인해주세요.';
+  }
+  return e.toString();
+}
 
 // ── API 프로바이더 ─────────────────────────────────────────────────────────────
 
@@ -226,7 +237,7 @@ class OntologyNotifier extends StateNotifier<OntologyState> {
       state = state.copyWith(selectedVersion: v, isLoading: false);
       return v;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _aiErrorMessage(e));
       return null;
     }
   }
@@ -246,7 +257,7 @@ class OntologyNotifier extends StateNotifier<OntologyState> {
       );
       return v;
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _aiErrorMessage(e));
       return null;
     }
   }
