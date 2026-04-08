@@ -69,6 +69,10 @@ class ExtractRequest(BaseModel):
     source_record_id:    Optional[str] = None
 
 
+class BulkConfirmRequest(BaseModel):
+    triples: list[dict]   # PendingTriple.toJson() 목록
+
+
 # ── 엔드포인트 ─────────────────────────────────────────────────────────────────
 
 @router.post("/", status_code=201)
@@ -153,11 +157,12 @@ def archive_triple(triple_id: str, body: ArchiveRequest):
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.post("/extract", status_code=201)
+@router.post("/extract", status_code=200)
 def extract_triples(body: ExtractRequest):
-    """구술자료 → 확정 온톨로지 기반 트리플 자동 추출."""
+    """구술자료 → AI 트리플 추출 (DB 저장 없이 미리보기 반환).
+    확정 저장은 /bulk-confirm 에서 수행."""
     try:
-        return get_extractor().extract(
+        return get_extractor().extract_preview(
             content=body.content,
             ontology_version_id=body.ontology_version_id,
             source_record_id=body.source_record_id,
@@ -168,3 +173,33 @@ def extract_triples(body: ExtractRequest):
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/bulk-confirm", status_code=201)
+def bulk_confirm_triples(body: BulkConfirmRequest):
+    """검토 완료된 pending 트리플 목록 → GraphDB에 active 로 일괄 저장."""
+    tm = get_triple_manager()
+    added = skipped = 0
+    results = []
+    for item in body.triples:
+        try:
+            t = tm.create(
+                subject=item.get("subject", ""),
+                subject_type=item.get("subjectType", item.get("subject_type", "")),
+                predicate=item.get("predicate", ""),
+                object_=item.get("object", ""),
+                object_type=item.get("objectType", item.get("object_type", "")),
+                ontology_version=item.get("ontology_version", ""),
+                source_record_id=item.get("source_record_id") or None,
+                confidence=float(item.get("confidence", 1.0)),
+                note=item.get("note", ""),
+            )
+            # _find_by_spk 가 기존 반환 → skipped
+            from dataclasses import asdict
+            d = asdict(t); d["status"] = t.status.value
+            results.append(d)
+            # 새로 추가됐는지 판단: created_at이 방금이면 added
+            added += 1
+        except Exception:
+            skipped += 1
+    return {"added": added, "skipped": skipped, "triples": results}

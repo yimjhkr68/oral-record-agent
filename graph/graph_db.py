@@ -25,6 +25,7 @@ import uuid
 
 
 class TripleStatus(str, Enum):
+    PENDING  = "pending"   # 검토 대기 — graph.json 저장 제외
     ACTIVE   = "active"
     ARCHIVED = "archived"
 
@@ -93,20 +94,22 @@ class GraphDB:
           2. graph.json.tmp → graph.json rename
         """
         ensure_dir(self.graph_file.parent)
-        active_count   = sum(1 for t in self._triples.values()
-                             if t.status == TripleStatus.ACTIVE)
-        archived_count = len(self._triples) - active_count
+        # PENDING 트리플은 graph.json에 저장하지 않음 (확정 후에만 기록)
+        saved = [t for t in self._triples.values()
+                 if t.status != TripleStatus.PENDING]
+        active_count   = sum(1 for t in saved if t.status == TripleStatus.ACTIVE)
+        archived_count = sum(1 for t in saved if t.status == TripleStatus.ARCHIVED)
         data = {
             "version":      "4.0",
             "last_updated": datetime.now().isoformat(),
             "stats": {
                 "nodes":    len(self._nodes),
-                "triples":  len(self._triples),
+                "triples":  len(saved),
                 "active":   active_count,
                 "archived": archived_count,
             },
             "nodes":   self._nodes,
-            "triples": [self._triple_to_dict(t) for t in self._triples.values()],
+            "triples": [self._triple_to_dict(t) for t in saved],
         }
         atomic_write_json(str(self.graph_file), data)
 

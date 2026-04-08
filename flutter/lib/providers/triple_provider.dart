@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../api/triple_api.dart';
@@ -7,15 +8,198 @@ final tripleApiProvider = Provider<TripleApi>((ref) {
   return TripleApi(ref.read(apiClientProvider));
 });
 
-// 검색어 상태
-final tripleQueryProvider = StateProvider<String>((ref) => '');
-
-// 상태 필터: 'active' | 'archived'
+// ── 기존 저장된 트리플 목록 ────────────────────────────────────────────────────
+final tripleQueryProvider  = StateProvider<String>((ref) => '');
 final tripleStatusProvider = StateProvider<String>((ref) => 'active');
 
-// 목록 — query/status 변경 시 자동 갱신
 final tripleListProvider = FutureProvider.autoDispose<GraphData>((ref) async {
-  final q = ref.watch(tripleQueryProvider);
+  final q      = ref.watch(tripleQueryProvider);
   final status = ref.watch(tripleStatusProvider);
   return ref.read(tripleApiProvider).listTriples(q: q, status: status);
+});
+
+// ── 트리플 작업 상태 (Step 1/2) ───────────────────────────────────────────────
+
+class TripleWorkState {
+  final String? selectedVersionId;
+  final List<SourceRecord> sourceRecords;
+  final List<PendingTriple> pendingTriples;
+  final bool isExtracting;
+  final int extractProgress;   // 처리 완료된 레코드 수
+  final int extractTotal;
+  final String extractStatus;  // 현재 처리 중인 레코드 ID
+  final String? error;
+  final int currentStep;       // 0=Step1, 1=Step2, 2=Step3
+
+  const TripleWorkState({
+    this.selectedVersionId,
+    this.sourceRecords = const [],
+    this.pendingTriples = const [],
+    this.isExtracting = false,
+    this.extractProgress = 0,
+    this.extractTotal = 0,
+    this.extractStatus = '',
+    this.error,
+    this.currentStep = 0,
+  });
+
+  bool get canExtract =>
+      selectedVersionId != null && sourceRecords.isNotEmpty && !isExtracting;
+
+  TripleWorkState copyWith({
+    String? selectedVersionId,
+    bool clearVersion = false,
+    List<SourceRecord>? sourceRecords,
+    List<PendingTriple>? pendingTriples,
+    bool? isExtracting,
+    int? extractProgress,
+    int? extractTotal,
+    String? extractStatus,
+    String? error,
+    bool clearError = false,
+    int? currentStep,
+  }) =>
+      TripleWorkState(
+        selectedVersionId:
+            clearVersion ? null : (selectedVersionId ?? this.selectedVersionId),
+        sourceRecords: sourceRecords ?? this.sourceRecords,
+        pendingTriples: pendingTriples ?? this.pendingTriples,
+        isExtracting: isExtracting ?? this.isExtracting,
+        extractProgress: extractProgress ?? this.extractProgress,
+        extractTotal: extractTotal ?? this.extractTotal,
+        extractStatus: extractStatus ?? this.extractStatus,
+        error: clearError ? null : (error ?? this.error),
+        currentStep: currentStep ?? this.currentStep,
+      );
+}
+
+class TripleWorkNotifier extends StateNotifier<TripleWorkState> {
+  final TripleApi _api;
+  TripleWorkNotifier(this._api) : super(const TripleWorkState());
+
+  void setVersion(String versionId) =>
+      state = state.copyWith(selectedVersionId: versionId);
+
+  void addSourceRecord(SourceRecord record) => state = state.copyWith(
+        sourceRecords: [...state.sourceRecords, record],
+      );
+
+  void removeSourceRecord(int index) {
+    final list = List<SourceRecord>.from(state.sourceRecords);
+    list.removeAt(index);
+    state = state.copyWith(sourceRecords: list);
+  }
+
+  void clearSourceRecords() =>
+      state = state.copyWith(sourceRecords: []);
+
+  void setStep(int step) => state = state.copyWith(currentStep: step);
+
+  // ── Step 1 → AI 추출 ────────────────────────────────────────────────────────
+  Future<void> extractAll() async {
+    if (!state.canExtract) return;
+    final records = state.sourceRecords;
+    state = state.copyWith(
+      isExtracting: true,
+      extractProgress: 0,
+      extractTotal: records.length,
+      extractStatus: '',
+      pendingTriples: [],
+      clearError: true,
+    );
+
+    final allPending = <PendingTriple>[];
+    final errors = <String>[];
+
+    for (int i = 0; i < records.length; i++) {
+      final rec = records[i];
+      state = state.copyWith(
+        extractProgress: i,
+        extractStatus: rec.id,
+      );
+      try {
+        final result = await _api.extractTriples(
+          rec.content,
+          state.selectedVersionId!,
+          sourceRecordId: rec.id,
+        );
+        final rawList = result['triples'] as List? ?? [];
+        for (final t in rawList) {
+          allPending.add(PendingTriple.fromJson(t as Map<String, dynamic>));
+        }
+      } on DioException catch (e) {
+        if (e.type == DioExceptionType.receiveTimeout) {
+          errors.add('${rec.id}: AI 응답 지연');
+        } else {
+          errors.add('${rec.id}: ${e.message}');
+        }
+      } catch (e) {
+        errors.add('${rec.id}: $e');
+      }
+    }
+
+    state = state.copyWith(
+      isExtracting: false,
+      extractProgress: records.length,
+      extractStatus: '',
+      pendingTriples: allPending,
+      currentStep: 1, // Step 2로 자동 이동
+      error: errors.isNotEmpty ? errors.join('\n') : null,
+    );
+  }
+
+  // ── Step 2 — pending 편집 ───────────────────────────────────────────────────
+  void updatePending(int index, PendingTriple updated) {
+    final list = List<PendingTriple>.from(state.pendingTriples);
+    list[index] = updated;
+    state = state.copyWith(pendingTriples: list);
+  }
+
+  void removePending(int index) {
+    final list = List<PendingTriple>.from(state.pendingTriples);
+    list.removeAt(index);
+    state = state.copyWith(pendingTriples: list);
+  }
+
+  void addPending(PendingTriple t) => state = state.copyWith(
+        pendingTriples: [...state.pendingTriples, t],
+      );
+
+  // ── Step 2 → 확정 저장 ─────────────────────────────────────────────────────
+  Future<Map<String, dynamic>?> bulkConfirm() async {
+    if (state.pendingTriples.isEmpty) return null;
+    state = state.copyWith(isExtracting: true, clearError: true);
+    try {
+      final result = await _api.bulkConfirm(
+        state.pendingTriples.map((t) => t.toJson()).toList(),
+      );
+      state = state.copyWith(
+        isExtracting: false,
+        pendingTriples: [],
+        sourceRecords: [],
+        currentStep: 2, // Step 3으로 이동
+      );
+      return result;
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isExtracting: false,
+        error: e.type == DioExceptionType.receiveTimeout
+            ? 'AI 응답이 지연되고 있습니다. 다시 시도해주세요.'
+            : e.message ?? e.toString(),
+      );
+      return null;
+    } catch (e) {
+      state = state.copyWith(isExtracting: false, error: e.toString());
+      return null;
+    }
+  }
+
+  void clearError() => state = state.copyWith(clearError: true);
+
+  void reset() => state = const TripleWorkState();
+}
+
+final tripleWorkProvider =
+    StateNotifierProvider<TripleWorkNotifier, TripleWorkState>((ref) {
+  return TripleWorkNotifier(ref.read(tripleApiProvider));
 });

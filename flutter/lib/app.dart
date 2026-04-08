@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/ontology/ontology_list_screen.dart';
-import 'screens/triple/triple_list_screen.dart';
-import 'screens/triple/triple_extract_screen.dart';
+import 'screens/triple/triple_screen.dart';
 import 'screens/graph/knowledge_graph_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -19,10 +18,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               builder: (c, s) => const OntologyListScreen()),
           GoRoute(
               path: '/triple',
-              builder: (c, s) => const TripleListScreen()),
-          GoRoute(
-              path: '/triple/extract',
-              builder: (c, s) => const TripleExtractScreen()),
+              builder: (c, s) => const TripleScreen()),
           GoRoute(
               path: '/graph',
               builder: (c, s) => const KnowledgeGraphScreen()),

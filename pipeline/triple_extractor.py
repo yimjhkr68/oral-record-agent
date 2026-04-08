@@ -24,26 +24,17 @@ class TripleExtractor:
         self.tm     = triple_manager
         self.client = anthropic.Anthropic()
 
-    def extract(self,
-                content: str,
-                ontology_version_id: str,
-                source_record_id: Optional[str] = None) -> dict:
-        """
-        1. version_id 로 OntologyVersion 조회 → Confirmed 아니면 ValueError
-        2. 클래스/속성을 프롬프트에 주입
-        3. AI 호출 → 트리플 JSON 파싱
-        4. TripleManager.bulk_create() 저장
-        반환: {"added": N, "skipped": N, "triples": [...]}
-        """
+    def _call_ai(self, content: str, ontology_version_id: str,
+                 source_record_id: Optional[str]) -> tuple[list[dict], str]:
+        """공통: 온톨로지 검증 + AI 호출 + JSON 파싱.
+        반환: (triples_data, ontology_version_id)"""
         version = self.om.get(ontology_version_id)
         if version.status != OntologyStatus.CONFIRMED:
             raise ValueError(
                 f"Confirmed 상태의 온톨로지만 사용 가능합니다. "
                 f"현재 상태: {version.status} (version_id={ontology_version_id!r})"
             )
-
         system_prompt = self._build_system_prompt(version)
-
         try:
             response = self.client.messages.create(
                 model="claude-sonnet-4-6",
@@ -55,23 +46,51 @@ class TripleExtractor:
             raise RuntimeError(f"AI API 호출 실패: {e}") from e
 
         raw = response.content[0].text.strip()
-        # JSON 블록 추출
         if "```" in raw:
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
-
         try:
             parsed = json.loads(raw)
         except json.JSONDecodeError as e:
             raise RuntimeError(
                 f"AI 응답 JSON 파싱 실패 — 원문: {raw[:200]!r}"
             ) from e
-        triples_data: list[dict] = parsed.get("triples", [])
+        return parsed.get("triples", []), ontology_version_id
 
+    def extract_preview(self,
+                        content: str,
+                        ontology_version_id: str,
+                        source_record_id: Optional[str] = None) -> dict:
+        """AI 추출만 수행, DB 저장 없이 반환 (검토 전 미리보기).
+        반환: {"triples": [...], "count": N, "source_record_id": "..."}
+        """
+        triples_data, version_id = self._call_ai(
+            content, ontology_version_id, source_record_id
+        )
+        # source_record_id · ontology_version 주입
+        for t in triples_data:
+            t["ontology_version"] = version_id
+            t["source_record_id"] = source_record_id or ""
+        return {
+            "triples": triples_data,
+            "count": len(triples_data),
+            "source_record_id": source_record_id or "",
+        }
+
+    def extract(self,
+                content: str,
+                ontology_version_id: str,
+                source_record_id: Optional[str] = None) -> dict:
+        """AI 추출 + DB 즉시 저장 (레거시용).
+        반환: {"added": N, "skipped": N, "triples": [...]}
+        """
+        triples_data, version_id = self._call_ai(
+            content, ontology_version_id, source_record_id
+        )
         return self.tm.bulk_create(
             triples=triples_data,
-            ontology_version=ontology_version_id,
+            ontology_version=version_id,
             source_record_id=source_record_id,
         )
 
