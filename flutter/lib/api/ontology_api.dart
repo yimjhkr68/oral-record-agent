@@ -96,6 +96,14 @@ class OntologyApi {
   }
 }
 
+/// v3.0 Hive 서버 쿼리 결과 (AI 답변 + 소스 목록)
+class HiveQueryResult {
+  final String answer;
+  final List<HiveRecord> sources;
+
+  const HiveQueryResult({required this.answer, required this.sources});
+}
+
 /// v3.0 Hive 서버 클라이언트 (별도 baseUrl)
 class HiveApi {
   final Dio _dio;
@@ -104,18 +112,20 @@ class HiveApi {
       : _dio = Dio(BaseOptions(
           baseUrl: baseUrl,
           connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 30),
+          receiveTimeout: const Duration(seconds: 60), // v3.0 AI 응답 포함
           headers: {'Content-Type': 'application/json'},
         ));
 
-  /// v3.0 POST /query/ → sources[].text 수집
-  Future<List<HiveRecord>> searchRecords(String query,
-      {int topK = 5}) async {
-    final res = await _dio.post('/query/', data: {'query': query, 'top_k': topK});
-    final sources = (res.data['sources'] as List? ?? []);
-    return sources
+  /// v3.0 POST /query/ → AI 답변 + 소스 목록
+  Future<HiveQueryResult> query(String queryText, {int topK = 5}) async {
+    final res = await _dio.post('/query/', data: {'query': queryText, 'top_k': topK});
+    final sources = (res.data['sources'] as List? ?? [])
         .map((s) => HiveRecord.fromJson(s as Map<String, dynamic>))
         .toList();
+    return HiveQueryResult(
+      answer: res.data['answer'] as String? ?? '',
+      sources: sources,
+    );
   }
 
   Future<bool> checkConnection() async {

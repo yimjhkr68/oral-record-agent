@@ -9,6 +9,22 @@ import '../../providers/hive_provider.dart';
 import '../../providers/ontology_provider.dart';
 import '../../providers/triple_provider.dart';
 
+// ── 파일 업로드 결과 모델 ─────────────────────────────────────────────────────
+class _ExtractedFile {
+  final String filename;
+  final String? text;
+  final String? error;
+  bool added = false;
+
+  _ExtractedFile({
+    required this.filename,
+    this.text,
+    this.error,
+  });
+
+  bool get isOk => text != null && error == null;
+}
+
 class TripleStep1Extract extends ConsumerStatefulWidget {
   const TripleStep1Extract({super.key});
 
@@ -24,18 +40,19 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
   final _textCtrl   = TextEditingController();
   final _sourceCtrl = TextEditingController();
 
-  // 파일 업로드 탭
-  String? _pickedFileName;
-  String? _extractedFileText;
-  String? _extractedFileSourceId;
-  bool    _fileExtracting = false;
+  // 파일 업로드 탭 — 복수 파일 지원
+  List<_ExtractedFile> _extractedFiles = [];
+  bool _fileExtracting = false;
+  int  _fileProgress   = 0;   // 현재 처리 중인 파일 번호 (1-based)
+  int  _fileTotal      = 0;
 
   // Hive DB 탭
   final _hiveUrlCtrl   = TextEditingController();
   final _hiveQueryCtrl = TextEditingController();
-  bool _hiveConnected  = false;
-  bool _hiveSearching  = false;
-  List<HiveRecord> _hiveResults = [];
+  bool? _hiveConnected;           // null=미확인, true=연결됨, false=실패
+  bool  _hiveSearching  = false;
+  String? _hiveAnswer;            // v3.0 AI 답변
+  List<HiveRecord> _hiveResults  = [];
   final Set<String> _selectedHiveIds = {};
 
   @override
@@ -68,80 +85,123 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
     _sourceCtrl.clear();
   }
 
-  // ── 파일 탭: 파일 선택 + 텍스트 추출 ─────────────────────────────────────────
-  Future<void> _pickFile() async {
+  // ── 파일 탭: 복수 파일 선택 + 텍스트 추출 ─────────────────────────────────────
+  Future<void> _pickFiles() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['txt', 'pdf', 'docx'],
+      allowMultiple: true,
     );
     if (result == null || result.files.isEmpty) return;
-    final file = result.files.first;
-    if (file.path == null) return;
+
+    final files = result.files.where((f) => f.path != null).toList();
+    if (files.isEmpty) return;
 
     setState(() {
-      _pickedFileName = file.name;
-      _extractedFileText = null;
-      _extractedFileSourceId = null;
       _fileExtracting = true;
+      _fileTotal      = files.length;
+      _fileProgress   = 0;
+      _extractedFiles = [];
     });
-    try {
-      final api = OntologyApi(ref.read(apiClientProvider));
-      final res = await api.extractTextFromFile(file.path!, file.name);
-      setState(() {
-        _extractedFileText     = res['text'] as String?;
-        _extractedFileSourceId = file.name;
-        _fileExtracting        = false;
-      });
-    } catch (e) {
-      setState(() => _fileExtracting = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('텍스트 추출 실패: $e'),
-              backgroundColor: Colors.red),
-        );
+
+    final api = OntologyApi(ref.read(apiClientProvider));
+
+    for (int i = 0; i < files.length; i++) {
+      final file = files[i];
+      setState(() => _fileProgress = i + 1);
+
+      try {
+        final res = await api.extractTextFromFile(file.path!, file.name);
+        setState(() {
+          _extractedFiles.add(_ExtractedFile(
+            filename: file.name,
+            text: res['text'] as String?,
+          ));
+        });
+      } catch (e) {
+        setState(() {
+          _extractedFiles.add(_ExtractedFile(
+            filename: file.name,
+            error: e.toString(),
+          ));
+        });
       }
     }
+
+    setState(() => _fileExtracting = false);
   }
 
-  void _addFileRecord() {
-    final text = _extractedFileText;
-    final id   = _extractedFileSourceId ?? _pickedFileName ?? '파일업로드';
-    if (text == null || text.isEmpty) return;
+  void _addFileRecord(_ExtractedFile ef) {
+    if (!ef.isOk) return;
     ref.read(tripleWorkProvider.notifier)
-        .addSourceRecord(SourceRecord(id: id, content: text));
-    setState(() {
-      _pickedFileName        = null;
-      _extractedFileText     = null;
-      _extractedFileSourceId = null;
-    });
+        .addSourceRecord(SourceRecord(id: ef.filename, content: ef.text!));
+    setState(() => ef.added = true);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('"$id" 추가됨')),
+      SnackBar(content: Text('"${ef.filename}" 추가됨')),
+    );
+  }
+
+  void _addAllFileRecords() {
+    final pending = _extractedFiles.where((f) => f.isOk && !f.added).toList();
+    for (final ef in pending) {
+      ref.read(tripleWorkProvider.notifier)
+          .addSourceRecord(SourceRecord(id: ef.filename, content: ef.text!));
+      ef.added = true;
+    }
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${pending.length}개 파일 추가됨')),
     );
   }
 
   // ── Hive DB 탭: 연결 확인 ────────────────────────────────────────────────────
-  Future<void> _checkHiveConnection() async {
+  Future<bool> _ensureConnected() async {
     final url = _hiveUrlCtrl.text.trim();
     ref.read(hiveUrlProvider.notifier).state = url;
     await saveHiveUrl(url);
-    setState(() => _hiveSearching = true);
     final ok = await HiveApi(url).checkConnection();
-    setState(() {
-      _hiveConnected = ok;
-      _hiveSearching = false;
-    });
+    setState(() => _hiveConnected = ok);
+    return ok;
   }
 
-  // ── Hive DB 탭: 검색 ─────────────────────────────────────────────────────────
+  Future<void> _checkHiveConnection() async {
+    setState(() => _hiveSearching = true);
+    await _ensureConnected();
+    setState(() => _hiveSearching = false);
+  }
+
+  // ── Hive DB 탭: 검색 (연결 확인 자동 포함) ──────────────────────────────────
   Future<void> _searchHive() async {
     if (_hiveQueryCtrl.text.trim().isEmpty) return;
-    setState(() => _hiveSearching = true);
+    setState(() {
+      _hiveSearching = true;
+      _hiveAnswer    = null;
+    });
+
+    // 미확인 상태면 연결 먼저 확인
+    if (_hiveConnected != true) {
+      final ok = await _ensureConnected();
+      if (!ok) {
+        setState(() => _hiveSearching = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Hive 서버에 연결할 수 없습니다. 서버 주소를 확인해주세요.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     try {
-      final url     = _hiveUrlCtrl.text.trim();
-      final records = await HiveApi(url)
-          .searchRecords(_hiveQueryCtrl.text.trim(), topK: 5);
+      final url    = _hiveUrlCtrl.text.trim();
+      final result = await HiveApi(url)
+          .query(_hiveQueryCtrl.text.trim(), topK: 5);
       setState(() {
-        _hiveResults  = records;
+        _hiveAnswer    = result.answer;
+        _hiveResults   = result.sources;
         _hiveSearching = false;
         _selectedHiveIds.clear();
       });
@@ -253,18 +313,22 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
                 onAdd: _addTextRecord,
               ),
               _FileTab(
-                pickedFileName: _pickedFileName,
-                extractedText: _extractedFileText,
+                extractedFiles: _extractedFiles,
                 extracting: _fileExtracting,
-                onPickFile: _pickFile,
-                onAddRecord:
-                    _extractedFileText != null ? _addFileRecord : null,
+                fileProgress: _fileProgress,
+                fileTotal: _fileTotal,
+                onPickFiles: _pickFiles,
+                onAddFile: _addFileRecord,
+                onAddAll: _extractedFiles.any((f) => f.isOk && !f.added)
+                    ? _addAllFileRecords
+                    : null,
               ),
               _HiveTab(
                 urlCtrl: _hiveUrlCtrl,
                 queryCtrl: _hiveQueryCtrl,
                 connected: _hiveConnected,
                 searching: _hiveSearching,
+                answer: _hiveAnswer,
                 results: _hiveResults,
                 selectedIds: _selectedHiveIds,
                 onCheckConnection: _checkHiveConnection,
@@ -399,20 +463,25 @@ class _TextTab extends StatelessWidget {
   }
 }
 
-// ── 파일 업로드 탭 ────────────────────────────────────────────────────────────
+// ── 파일 업로드 탭 (복수 파일 지원) ──────────────────────────────────────────
 
 class _FileTab extends StatelessWidget {
-  final String? pickedFileName;
-  final String? extractedText;
+  final List<_ExtractedFile> extractedFiles;
   final bool extracting;
-  final VoidCallback onPickFile;
-  final VoidCallback? onAddRecord;
+  final int fileProgress;
+  final int fileTotal;
+  final VoidCallback onPickFiles;
+  final ValueChanged<_ExtractedFile> onAddFile;
+  final VoidCallback? onAddAll;
+
   const _FileTab({
-    required this.pickedFileName,
-    required this.extractedText,
+    required this.extractedFiles,
     required this.extracting,
-    required this.onPickFile,
-    required this.onAddRecord,
+    required this.fileProgress,
+    required this.fileTotal,
+    required this.onPickFiles,
+    required this.onAddFile,
+    required this.onAddAll,
   });
 
   @override
@@ -422,75 +491,138 @@ class _FileTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('파일 선택 (txt / pdf / docx)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          const SizedBox(height: 8),
           Row(children: [
             ElevatedButton.icon(
               icon: const Icon(Icons.upload_file, size: 18),
-              label: const Text('파일 선택'),
-              onPressed: extracting ? null : onPickFile,
+              label: const Text('파일 선택 (복수 가능)'),
+              onPressed: extracting ? null : onPickFiles,
             ),
-            if (pickedFileName != null) ...[
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(pickedFileName!,
-                    style: const TextStyle(fontSize: 13),
-                    overflow: TextOverflow.ellipsis),
-              ),
-            ],
+            const SizedBox(width: 8),
+            const Text('txt / pdf / docx',
+                style: TextStyle(fontSize: 12, color: Colors.grey)),
           ]),
-          const SizedBox(height: 12),
-          if (extracting)
-            const Row(children: [
-              SizedBox(
-                  width: 16, height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2)),
-              SizedBox(width: 10),
-              Text('텍스트 추출 중...', style: TextStyle(fontSize: 13)),
-            ])
-          else if (extractedText != null) ...[
+          const SizedBox(height: 10),
+
+          // 진행 상황
+          if (extracting) ...[
             Row(children: [
-              const Icon(Icons.check_circle, color: Colors.green, size: 16),
-              const SizedBox(width: 6),
-              Text('추출 완료 — ${extractedText!.length}자',
-                  style: const TextStyle(fontSize: 13, color: Colors.green)),
-              const Spacer(),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('목록에 추가'),
-                onPressed: onAddRecord,
-              ),
+              const SizedBox(
+                  width: 14, height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2)),
+              const SizedBox(width: 8),
+              Text('텍스트 추출 중 ($fileProgress / $fileTotal)...',
+                  style: const TextStyle(fontSize: 13)),
             ]),
-            const SizedBox(height: 8),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey.shade50,
-                ),
-                child: SingleChildScrollView(
-                  child: Text(
-                    extractedText!.length > 2000
-                        ? '${extractedText!.substring(0, 2000)}…'
-                        : extractedText!,
-                    style: const TextStyle(fontSize: 12),
+            const SizedBox(height: 6),
+            LinearProgressIndicator(
+              value: fileTotal > 0 ? fileProgress / fileTotal : null,
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          // 추출 결과 목록
+          if (extractedFiles.isNotEmpty) ...[
+            // 전체 추가 버튼
+            if (onAddAll != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.playlist_add, size: 16),
+                    label: Text(
+                      '미추가 파일 전체 추가 (${extractedFiles.where((f) => f.isOk && !f.added).length}개)',
+                    ),
+                    onPressed: onAddAll,
                   ),
                 ),
               ),
+            Expanded(
+              child: ListView.separated(
+                itemCount: extractedFiles.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 6),
+                itemBuilder: (_, i) {
+                  final ef = extractedFiles[i];
+                  return Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: ef.added
+                            ? Colors.green.shade300
+                            : ef.isOk
+                                ? Colors.grey.shade300
+                                : Colors.red.shade300,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      color: ef.added
+                          ? Colors.green.shade50
+                          : ef.isOk
+                              ? null
+                              : Colors.red.shade50,
+                    ),
+                    child: Row(children: [
+                      Icon(
+                        ef.added
+                            ? Icons.check_circle
+                            : ef.isOk
+                                ? Icons.description_outlined
+                                : Icons.error_outline,
+                        size: 16,
+                        color: ef.added
+                            ? Colors.green
+                            : ef.isOk
+                                ? Colors.grey
+                                : Colors.red,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(ef.filename,
+                                style: const TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.bold),
+                                overflow: TextOverflow.ellipsis),
+                            if (ef.isOk)
+                              Text('${ef.text!.length}자 추출됨',
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Colors.grey))
+                            else if (ef.error != null)
+                              Text('오류: ${ef.error}',
+                                  style: const TextStyle(
+                                      fontSize: 11, color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                      if (ef.isOk && !ef.added)
+                        TextButton.icon(
+                          icon: const Icon(Icons.add, size: 14),
+                          label: const Text('추가', style: TextStyle(fontSize: 12)),
+                          onPressed: () => onAddFile(ef),
+                        )
+                      else if (ef.added)
+                        const Text('추가됨',
+                            style: TextStyle(
+                                fontSize: 11, color: Colors.green)),
+                    ]),
+                  );
+                },
+              ),
             ),
-          ] else
+          ] else if (!extracting)
             const Expanded(
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.description_outlined, size: 48, color: Colors.grey),
+                    Icon(Icons.description_outlined,
+                        size: 48, color: Colors.grey),
                     SizedBox(height: 8),
                     Text('파일을 선택하면 텍스트를 자동 추출합니다.',
                         style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    SizedBox(height: 4),
+                    Text('txt / pdf / docx 복수 선택 가능',
+                        style: TextStyle(color: Colors.grey, fontSize: 11)),
                   ],
                 ),
               ),
@@ -506,8 +638,9 @@ class _FileTab extends StatelessWidget {
 class _HiveTab extends StatelessWidget {
   final TextEditingController urlCtrl;
   final TextEditingController queryCtrl;
-  final bool connected;
+  final bool? connected;       // null=미확인, true=연결됨, false=실패
   final bool searching;
+  final String? answer;        // v3.0 AI 답변
   final List<HiveRecord> results;
   final Set<String> selectedIds;
   final VoidCallback onCheckConnection;
@@ -520,6 +653,7 @@ class _HiveTab extends StatelessWidget {
     required this.queryCtrl,
     required this.connected,
     required this.searching,
+    required this.answer,
     required this.results,
     required this.selectedIds,
     required this.onCheckConnection,
@@ -530,6 +664,22 @@ class _HiveTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final connColor = connected == null
+        ? Colors.grey
+        : connected!
+            ? Colors.green
+            : Colors.red;
+    final connIcon  = connected == null
+        ? Icons.help_outline
+        : connected!
+            ? Icons.check_circle
+            : Icons.error_outline;
+    final connLabel = connected == null
+        ? '미확인 (검색 시 자동 연결 시도)'
+        : connected!
+            ? '연결됨'
+            : '연결 실패';
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -548,6 +698,7 @@ class _HiveTab extends StatelessWidget {
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
+                onSubmitted: (_) => onCheckConnection(),
               ),
             ),
             const SizedBox(width: 8),
@@ -558,18 +709,10 @@ class _HiveTab extends StatelessWidget {
           ]),
           const SizedBox(height: 4),
           Row(children: [
-            Icon(
-              connected ? Icons.check_circle : Icons.error_outline,
-              size: 13,
-              color: connected ? Colors.green : Colors.grey,
-            ),
+            Icon(connIcon, size: 13, color: connColor),
             const SizedBox(width: 4),
-            Text(
-              connected ? '연결됨' : '미연결',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: connected ? Colors.green : Colors.grey),
-            ),
+            Text(connLabel,
+                style: TextStyle(fontSize: 12, color: connColor)),
           ]),
           const SizedBox(height: 12),
 
@@ -586,20 +729,30 @@ class _HiveTab extends StatelessWidget {
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
-                onSubmitted: (_) => onSearch(),
+                onSubmitted: (_) => searching ? null : onSearch(),
               ),
             ),
             const SizedBox(width: 8),
             ElevatedButton(
-              onPressed: (searching || !connected) ? null : onSearch,
+              onPressed: searching ? null : onSearch,
               child: const Text('검색'),
             ),
           ]),
           const SizedBox(height: 10),
 
-          // 결과 목록
+          // 결과
           if (searching)
-            const Center(child: CircularProgressIndicator())
+            const Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 8),
+                  Text('Hive DB 검색 중... (AI 답변 생성 포함, 최대 60초)',
+                      style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            )
           else if (results.isEmpty)
             const Expanded(
               child: Center(
@@ -607,85 +760,124 @@ class _HiveTab extends StatelessWidget {
                     style: TextStyle(color: Colors.grey, fontSize: 13)),
               ),
             )
-          else ...[
-            // 선택 추가 버튼
-            if (selectedIds.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.add, size: 16),
-                    label: Text('선택 ${selectedIds.length}개 추가'),
-                    onPressed: onAddSelected,
-                  ),
-                ),
-              ),
+          else
             Expanded(
-              child: ListView.separated(
-                itemCount: results.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 6),
-                itemBuilder: (_, i) {
-                  final r = results[i];
-                  final isSelected = selectedIds.contains(r.displayId);
-                  return InkWell(
-                    onTap: () => onToggleSelect(r.displayId),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // AI 답변 (있을 경우)
+                  if (answer != null && answer!.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        border: Border.all(
-                          color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey.shade300,
-                          width: isSelected ? 2 : 1,
-                        ),
+                        color: Colors.blue.shade50,
+                        border: Border.all(color: Colors.blue.shade200),
                         borderRadius: BorderRadius.circular(8),
-                        color: isSelected
-                            ? Theme.of(context)
-                                .colorScheme
-                                .primary
-                                .withValues(alpha: 0.07)
-                            : null,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(children: [
-                            if (isSelected)
-                              const Icon(Icons.check_circle,
-                                  size: 13, color: Colors.green),
-                            if (isSelected) const SizedBox(width: 4),
-                            Text(r.displayId,
-                                style: const TextStyle(
+                            const Icon(Icons.auto_awesome,
+                                size: 13, color: Colors.blue),
+                            const SizedBox(width: 4),
+                            Text('AI 요약',
+                                style: TextStyle(
+                                    fontSize: 11,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 13)),
-                            const SizedBox(width: 8),
-                            Text(r.narratorName,
-                                style: const TextStyle(
-                                    fontSize: 12, color: Colors.grey)),
-                            const Spacer(),
-                            Text(
-                                '관련도 ${(r.score * 100).toStringAsFixed(0)}%',
-                                style: const TextStyle(
-                                    fontSize: 11, color: Colors.grey)),
+                                    color: Colors.blue.shade700)),
                           ]),
                           const SizedBox(height: 4),
-                          Text(
-                            r.text.length > 120
-                                ? '${r.text.substring(0, 120)}…'
-                                : r.text,
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.grey),
-                          ),
+                          Text(answer!,
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.black87)),
                         ],
                       ),
                     ),
-                  );
-                },
+
+                  // 선택 추가 버튼
+                  if (selectedIds.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.add, size: 16),
+                          label: Text('선택 ${selectedIds.length}개 추가'),
+                          onPressed: onAddSelected,
+                        ),
+                      ),
+                    ),
+
+                  // 레코드 목록
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: results.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 6),
+                      itemBuilder: (_, i) {
+                        final r = results[i];
+                        final isSelected = selectedIds.contains(r.displayId);
+                        return InkWell(
+                          onTap: () => onToggleSelect(r.displayId),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Colors.grey.shade300,
+                                width: isSelected ? 2 : 1,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              color: isSelected
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withValues(alpha: 0.07)
+                                  : null,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  if (isSelected)
+                                    const Icon(Icons.check_circle,
+                                        size: 13, color: Colors.green),
+                                  if (isSelected) const SizedBox(width: 4),
+                                  Text(r.displayId,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13)),
+                                  const SizedBox(width: 8),
+                                  Text(r.narratorName,
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.grey)),
+                                  const Spacer(),
+                                  Text(
+                                      '관련도 ${(r.score * 100).toStringAsFixed(0)}%',
+                                      style: const TextStyle(
+                                          fontSize: 11, color: Colors.grey)),
+                                ]),
+                                const SizedBox(height: 4),
+                                Text(
+                                  r.text.length > 120
+                                      ? '${r.text.substring(0, 120)}…'
+                                      : r.text,
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
         ],
       ),
     );

@@ -570,10 +570,10 @@ class _InputMethodBottomSheetState
     setState(() => _hiveSearching = true);
     try {
       final url = _hiveUrlCtrl.text.trim();
-      final records = await HiveApi(url)
-          .searchRecords(_hiveQueryCtrl.text.trim(), topK: 5);
+      final result = await HiveApi(url)
+          .query(_hiveQueryCtrl.text.trim(), topK: 5);
       setState(() {
-        _hiveResults = records;
+        _hiveResults = result.sources;
         _hiveSearching = false;
         _selectedRecord = null;
       });
