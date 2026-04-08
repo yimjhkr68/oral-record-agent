@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../api/ontology_api.dart';
 
 const String _hivePrefKey = 'hive_server_url';
-const String defaultHiveUrl = 'http://127.0.0.1:8000';
+const String defaultHiveUrl = 'http://127.0.0.1:9000';
 
 // Hive 서버 URL — 설정 화면에서 변경 가능
 final hiveUrlProvider = StateProvider<String>((ref) => defaultHiveUrl);
