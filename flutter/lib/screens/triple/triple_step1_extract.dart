@@ -893,37 +893,92 @@ class _RecordsSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Text(
+            '선택된 구술기록 (${records.length}개)',
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary),
+          ),
+        ),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 200),
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: records.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 5),
+            itemBuilder: (_, i) => _RecordCard(
+              record: records[i],
+              onRemove: () => onRemove(i),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecordCard extends StatelessWidget {
+  final SourceRecord record;
+  final VoidCallback onRemove;
+  const _RecordCard({required this.record, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = record.content.isEmpty
+        ? '(내용 없음)'
+        : record.content.length > 120
+            ? '${record.content.replaceAll('\n', ' ').substring(0, 120)}…'
+            : record.content.replaceAll('\n', ' ');
+
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04),
         border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)),
-        borderRadius: BorderRadius.circular(8),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18)),
+        borderRadius: BorderRadius.circular(6),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('선택된 구술기록 (${records.length}개)',
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary)),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: records.asMap().entries.map((e) {
-              return Chip(
-                label: Text(e.value.id,
-                    style: const TextStyle(fontSize: 11)),
-                deleteIcon: const Icon(Icons.close, size: 14),
-                onDeleted: () => onRemove(e.key),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                padding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
-              );
-            }).toList(),
+          const Padding(
+            padding: EdgeInsets.only(top: 1),
+            child: Icon(Icons.description_outlined,
+                size: 14, color: Colors.grey),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  record.id,
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  preview,
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 14),
+            onPressed: onRemove,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+            tooltip: '제거',
           ),
         ],
       ),
