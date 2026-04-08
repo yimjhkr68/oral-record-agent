@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../models/ontology.dart';
 import '../../models/triple.dart';
+import '../../providers/ontology_provider.dart';
 import '../../providers/triple_provider.dart';
 
 // ── 클래스별 색상 ─────────────────────────────────────────────────────────────
@@ -41,6 +43,10 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
   bool _showFilters = false;
   final _sourceFilterCtrl = TextEditingController();
 
+  // 다중 선택
+  final Set<String> _checkedIds = {};
+  bool _isSelecting = false;
+
   @override
   void initState() {
     super.initState();
@@ -74,36 +80,114 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
       _sourceFilter = '';
     });
     ref.read(tripleQueryProvider.notifier).state = '';
+    ref.read(tripleVersionFilterProvider.notifier).state = null;
   }
 
   List<Triple> _applyFilters(List<Triple> triples) {
     return triples.where((t) {
-      // 클래스 타입 필터
-      if (_selectedTypes.isNotEmpty) {
-        if (!_selectedTypes.contains(t.subjectType) &&
-            !_selectedTypes.contains(t.objectType)) {
-          return false;
-        }
+      if (_selectedTypes.isNotEmpty &&
+          !_selectedTypes.contains(t.subjectType) &&
+          !_selectedTypes.contains(t.objectType)) {
+        return false;
       }
-      // 출처 필터
-      if (_sourceFilter.isNotEmpty) {
-        if (!t.sourceRecordId
-            .toLowerCase()
-            .contains(_sourceFilter.toLowerCase())) {
-          return false;
-        }
+      if (_sourceFilter.isNotEmpty &&
+          !t.sourceRecordId.toLowerCase().contains(_sourceFilter.toLowerCase())) {
+        return false;
       }
       return true;
     }).toList();
   }
 
-  bool get _hasActiveFilters =>
-      _selectedTypes.isNotEmpty || _sourceFilter.isNotEmpty;
+  bool get _hasActiveFilters {
+    final version = ref.read(tripleVersionFilterProvider);
+    return _selectedTypes.isNotEmpty || _sourceFilter.isNotEmpty || version != null;
+  }
+
+  // ── 다중 선택 액션 ─────────────────────────────────────────────────────────
+  Future<void> _archiveSelected() async {
+    final ids = Set<String>.from(_checkedIds);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('선택 아카이브'),
+        content: Text('선택한 ${ids.length}개 트리플을 아카이브하시겠습니까?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('취소')),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('아카이브')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    for (final id in ids) {
+      try {
+        await ref.read(tripleApiProvider).archiveTriple(id);
+      } catch (_) {}
+    }
+    ref.invalidate(tripleListProvider);
+    setState(() {
+      _checkedIds.clear();
+      _isSelecting = false;
+      _selected = null;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${ids.length}개 아카이브됨')),
+      );
+    }
+  }
+
+  Future<void> _deleteSelected() async {
+    final ids = Set<String>.from(_checkedIds);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('선택 삭제'),
+        content: Text('선택한 ${ids.length}개 트리플을 영구 삭제하시겠습니까?\n되돌릴 수 없습니다.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('취소')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    for (final id in ids) {
+      try {
+        await ref.read(tripleApiProvider).deleteTriple(id);
+      } catch (_) {}
+    }
+    ref.invalidate(tripleListProvider);
+    setState(() {
+      _checkedIds.clear();
+      _isSelecting = false;
+      _selected = null;
+    });
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${ids.length}개 삭제됨')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final listAsync = ref.watch(tripleListProvider);
-    final searchQuery = ref.watch(tripleQueryProvider);
+    final listAsync    = ref.watch(tripleListProvider);
+    final searchQuery  = ref.watch(tripleQueryProvider);
+    final selVersion   = ref.watch(tripleVersionFilterProvider);
+    final allVersions  = ref.watch(ontologyProvider).versions
+        .where((v) => v.status == OntologyStatus.confirmed)
+        .toList();
+    final hasFilter = _hasActiveFilters;
 
     return Column(children: [
       // ── 검색바 ────────────────────────────────────────────────────
@@ -134,33 +218,49 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
               onChanged: (_) => setState(() {}),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           // 필터 버튼
-          Stack(
-            children: [
-              IconButton(
-                icon: Icon(
-                  _showFilters ? Icons.filter_list : Icons.filter_list_outlined,
-                  color: _hasActiveFilters
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                ),
-                tooltip: '필터',
-                onPressed: () =>
-                    setState(() => _showFilters = !_showFilters),
+          Stack(children: [
+            IconButton(
+              icon: Icon(
+                _showFilters ? Icons.filter_list : Icons.filter_list_outlined,
+                color: hasFilter
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
               ),
-              if (_hasActiveFilters)
-                Positioned(
-                  right: 6, top: 6,
-                  child: Container(
-                    width: 8, height: 8,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      shape: BoxShape.circle,
-                    ),
+              tooltip: '필터',
+              onPressed: () => setState(() => _showFilters = !_showFilters),
+            ),
+            if (hasFilter)
+              Positioned(
+                right: 6, top: 6,
+                child: Container(
+                  width: 8, height: 8,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    shape: BoxShape.circle,
                   ),
                 ),
-            ],
+              ),
+          ]),
+          // 다중 선택 토글 버튼
+          IconButton(
+            icon: Icon(
+              _isSelecting
+                  ? Icons.check_box
+                  : Icons.check_box_outline_blank,
+              color: _isSelecting
+                  ? Theme.of(context).colorScheme.primary
+                  : null,
+            ),
+            tooltip: _isSelecting ? '선택 모드 해제' : '다중 선택',
+            onPressed: () => setState(() {
+              _isSelecting = !_isSelecting;
+              if (!_isSelecting) {
+                _checkedIds.clear();
+                _selected = null;
+              }
+            }),
           ),
         ]),
       ),
@@ -171,22 +271,50 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
           margin: const EdgeInsets.fromLTRB(12, 0, 12, 6),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context)
-                .colorScheme
-                .primary
-                .withValues(alpha: 0.04),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04),
             border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.15)),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 온톨로지 버전 필터
+              Text('온톨로지 버전',
+                  style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade600)),
+              const SizedBox(height: 6),
+              InputDecorator(
+                decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
+                child: DropdownButton<String?>(
+                  value: selVersion,
+                  isExpanded: true,
+                  underline: const SizedBox(),
+                  hint: const Text('전체 버전', style: TextStyle(fontSize: 12)),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text('전체 버전', style: TextStyle(fontSize: 12))),
+                    ...allVersions.map((v) => DropdownMenuItem<String?>(
+                          value: v.versionId,
+                          child: Text(v.versionId,
+                              style: const TextStyle(fontSize: 12)),
+                        )),
+                  ],
+                  onChanged: (v) =>
+                      ref.read(tripleVersionFilterProvider.notifier).state = v,
+                ),
+              ),
+              const SizedBox(height: 10),
+
               // 클래스 타입 칩
-              Text('클래스 타입 필터',
+              Text('클래스 타입',
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -210,7 +338,8 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                         color: _colorForType(type).withValues(alpha: 0.5)),
                     padding: EdgeInsets.zero,
                     visualDensity: VisualDensity.compact,
-                    labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+                    labelPadding:
+                        const EdgeInsets.symmetric(horizontal: 6),
                     onSelected: (v) => setState(() {
                       v
                           ? _selectedTypes.add(type)
@@ -221,8 +350,8 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
               ),
               const SizedBox(height: 10),
 
-              // 출처 필터
-              Text('출처 ID 필터',
+              // 출처 ID 필터
+              Text('출처 ID',
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
@@ -247,8 +376,7 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                 onChanged: (v) => setState(() => _sourceFilter = v.trim()),
               ),
 
-              // 필터 초기화
-              if (_hasActiveFilters || searchQuery.isNotEmpty)
+              if (hasFilter || searchQuery.isNotEmpty)
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
@@ -270,12 +398,10 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
       // ── 목록 + 상세 패널 ─────────────────────────────────────────
       Expanded(
         child: listAsync.when(
-          loading: () =>
-              const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text('오류: $e',
-                  style: const TextStyle(color: Colors.red)),
+              Text('오류: $e', style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 8),
               ElevatedButton(
                 onPressed: () => ref.invalidate(tripleListProvider),
@@ -301,13 +427,36 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                 color: Colors.grey.shade50,
                 child: Row(children: [
                   Text(
-                    _hasActiveFilters
-                        ? '총 ${allTriples.length}개  →  필터 적용 후 ${filtered.length}개'
+                    hasFilter
+                        ? '총 ${allTriples.length}개  →  ${filtered.length}개 표시'
                         : '총 ${allTriples.length}개',
                     style: TextStyle(
                         fontSize: 11, color: Colors.grey.shade600),
                   ),
-                  if (_hasActiveFilters) ...[
+                  if (_isSelecting && filtered.isNotEmpty) ...[
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () => setState(() {
+                        if (_checkedIds.length == filtered.length) {
+                          _checkedIds.clear();
+                        } else {
+                          _checkedIds
+                            ..clear()
+                            ..addAll(filtered.map((t) => t.id));
+                        }
+                      }),
+                      child: Text(
+                        _checkedIds.length == filtered.length
+                            ? '전체 해제'
+                            : '전체 선택',
+                        style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context).colorScheme.primary,
+                            decoration: TextDecoration.underline),
+                      ),
+                    ),
+                  ],
+                  if (hasFilter) ...[
                     const Spacer(),
                     GestureDetector(
                       onTap: _clearAllFilters,
@@ -320,20 +469,21 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                   ],
                 ]),
               ),
+
+              // ── 목록 영역 ────────────────────────────────────────
               Expanded(
                 child: filtered.isEmpty
                     ? Center(
                         child: Text(
-                          _hasActiveFilters
+                          hasFilter
                               ? '필터 조건에 맞는 트리플이 없습니다.'
                               : '검색 결과가 없습니다.',
                           style: const TextStyle(color: Colors.grey),
                         ),
                       )
                     : Row(children: [
-                        // 목록
                         Expanded(
-                          flex: _selected != null ? 3 : 1,
+                          flex: (!_isSelecting && _selected != null) ? 3 : 1,
                           child: ListView.builder(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 6),
@@ -341,18 +491,28 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                             itemBuilder: (_, i) {
                               final t = filtered[i];
                               final isSelected = _selected?.id == t.id;
+                              final isChecked = _checkedIds.contains(t.id);
                               return _TripleRow(
                                 triple: t,
-                                selected: isSelected,
-                                onTap: () => setState(() =>
-                                    _selected =
-                                        isSelected ? null : t),
+                                selected: !_isSelecting && isSelected,
+                                checkMode: _isSelecting,
+                                checked: isChecked,
+                                onTap: () {
+                                  if (_isSelecting) {
+                                    setState(() => isChecked
+                                        ? _checkedIds.remove(t.id)
+                                        : _checkedIds.add(t.id));
+                                  } else {
+                                    setState(() =>
+                                        _selected = isSelected ? null : t);
+                                  }
+                                },
                               );
                             },
                           ),
                         ),
-                        // 상세 패널
-                        if (_selected != null) ...[
+                        // 상세 패널 — 선택 모드일 때 숨김
+                        if (!_isSelecting && _selected != null) ...[
                           const VerticalDivider(width: 1),
                           SizedBox(
                             width: 300,
@@ -379,6 +539,58 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                         ],
                       ]),
               ),
+
+              // ── 하단 액션 바 (다중 선택 시) ──────────────────────
+              if (_isSelecting)
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border(
+                        top: BorderSide(color: Colors.grey.shade300)),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 4,
+                          offset: const Offset(0, -2)),
+                    ],
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 10),
+                  child: Row(children: [
+                    Text(
+                      _checkedIds.isEmpty
+                          ? '트리플을 선택하세요'
+                          : '${_checkedIds.length}개 선택됨',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: _checkedIds.isEmpty
+                              ? Colors.grey
+                              : Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    const Spacer(),
+                    if (_checkedIds.isNotEmpty) ...[
+                      // 아카이브 버튼 — 활성 탭에서만
+                      if (_tabCtrl.index == 0)
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.archive_outlined,
+                              size: 16),
+                          label: const Text('아카이브'),
+                          onPressed: _archiveSelected,
+                        ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.delete_outline,
+                            size: 16),
+                        label: const Text('삭제'),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white),
+                        onPressed: _deleteSelected,
+                      ),
+                    ],
+                  ]),
+                ),
             ]);
           },
         ),
@@ -392,38 +604,50 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
 class _TripleRow extends StatelessWidget {
   final Triple triple;
   final bool selected;
+  final bool checkMode;
+  final bool checked;
   final VoidCallback onTap;
-  const _TripleRow(
-      {required this.triple,
-      required this.selected,
-      required this.onTap});
+
+  const _TripleRow({
+    required this.triple,
+    required this.selected,
+    required this.onTap,
+    this.checkMode = false,
+    this.checked = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final t = triple;
+    final highlight = checkMode ? checked : selected;
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
-      color: selected
-          ? Theme.of(context)
-              .colorScheme
-              .primary
-              .withValues(alpha: 0.08)
+      color: highlight
+          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
           : null,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: selected
+        side: highlight
             ? BorderSide(
-                color: Theme.of(context).colorScheme.primary,
-                width: 1.5)
+                color: Theme.of(context).colorScheme.primary, width: 1.5)
             : BorderSide.none,
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(children: [
+            // 체크박스 (선택 모드)
+            if (checkMode) ...[
+              Checkbox(
+                value: checked,
+                onChanged: (_) => onTap(),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              const SizedBox(width: 4),
+            ],
             // 주어
             Expanded(
               flex: 3,
@@ -470,8 +694,7 @@ class _TripleRow extends StatelessWidget {
               width: 36,
               child: Text(
                 t.confidence.toStringAsFixed(1),
-                style: const TextStyle(
-                    fontSize: 11, color: Colors.grey),
+                style: const TextStyle(fontSize: 11, color: Colors.grey),
                 textAlign: TextAlign.right,
               ),
             ),

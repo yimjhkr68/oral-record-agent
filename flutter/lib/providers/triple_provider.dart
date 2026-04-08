@@ -9,13 +9,16 @@ final tripleApiProvider = Provider<TripleApi>((ref) {
 });
 
 // ── 기존 저장된 트리플 목록 ────────────────────────────────────────────────────
-final tripleQueryProvider  = StateProvider<String>((ref) => '');
-final tripleStatusProvider = StateProvider<String>((ref) => 'active');
+final tripleQueryProvider         = StateProvider<String>((ref) => '');
+final tripleStatusProvider        = StateProvider<String>((ref) => 'active');
+final tripleVersionFilterProvider = StateProvider<String?>((ref) => null);
 
 final tripleListProvider = FutureProvider.autoDispose<GraphData>((ref) async {
-  final q      = ref.watch(tripleQueryProvider);
-  final status = ref.watch(tripleStatusProvider);
-  return ref.read(tripleApiProvider).listTriples(q: q, status: status);
+  final q       = ref.watch(tripleQueryProvider);
+  final status  = ref.watch(tripleStatusProvider);
+  final version = ref.watch(tripleVersionFilterProvider);
+  return ref.read(tripleApiProvider).listTriples(
+      q: q, status: status, version: version);
 });
 
 // ── 트리플 작업 상태 (Step 1/2) ───────────────────────────────────────────────
@@ -30,6 +33,10 @@ class TripleWorkState {
   final String extractStatus;  // 현재 처리 중인 레코드 ID
   final String? error;
   final int currentStep;       // 0=Step1, 1=Step2, 2=Step3
+  // Step 2 검토 카운터
+  final int editedCount;       // updatePending 호출 횟수
+  final int deletedCount;      // removePending 호출 횟수
+  final int addedCount;        // addPending 호출 횟수 (수동 추가)
 
   const TripleWorkState({
     this.selectedVersionId,
@@ -41,6 +48,9 @@ class TripleWorkState {
     this.extractStatus = '',
     this.error,
     this.currentStep = 0,
+    this.editedCount = 0,
+    this.deletedCount = 0,
+    this.addedCount = 0,
   });
 
   bool get canExtract =>
@@ -58,6 +68,10 @@ class TripleWorkState {
     String? error,
     bool clearError = false,
     int? currentStep,
+    int? editedCount,
+    int? deletedCount,
+    int? addedCount,
+    bool resetCounters = false,
   }) =>
       TripleWorkState(
         selectedVersionId:
@@ -70,6 +84,9 @@ class TripleWorkState {
         extractStatus: extractStatus ?? this.extractStatus,
         error: clearError ? null : (error ?? this.error),
         currentStep: currentStep ?? this.currentStep,
+        editedCount:  resetCounters ? 0 : (editedCount  ?? this.editedCount),
+        deletedCount: resetCounters ? 0 : (deletedCount ?? this.deletedCount),
+        addedCount:   resetCounters ? 0 : (addedCount   ?? this.addedCount),
       );
 }
 
@@ -106,6 +123,7 @@ class TripleWorkNotifier extends StateNotifier<TripleWorkState> {
       extractStatus: '',
       pendingTriples: [],
       clearError: true,
+      resetCounters: true,
     );
 
     final allPending = <PendingTriple>[];
@@ -152,17 +170,22 @@ class TripleWorkNotifier extends StateNotifier<TripleWorkState> {
   void updatePending(int index, PendingTriple updated) {
     final list = List<PendingTriple>.from(state.pendingTriples);
     list[index] = updated;
-    state = state.copyWith(pendingTriples: list);
+    state = state.copyWith(
+        pendingTriples: list,
+        editedCount: state.editedCount + 1);
   }
 
   void removePending(int index) {
     final list = List<PendingTriple>.from(state.pendingTriples);
     list.removeAt(index);
-    state = state.copyWith(pendingTriples: list);
+    state = state.copyWith(
+        pendingTriples: list,
+        deletedCount: state.deletedCount + 1);
   }
 
   void addPending(PendingTriple t) => state = state.copyWith(
         pendingTriples: [...state.pendingTriples, t],
+        addedCount: state.addedCount + 1,
       );
 
   // ── Step 2 → 확정 저장 ─────────────────────────────────────────────────────

@@ -66,11 +66,22 @@ class TripleStep2Review extends ConsumerWidget {
           padding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(children: [
-            _StatChip(Icons.hub_outlined, '$added개 트리플',
+            _StatChip(Icons.hub_outlined, '생성 $added개',
                 Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 10),
-            _StatChip(Icons.description_outlined,
-                '${bySource.length}개 레코드', Colors.teal),
+            const SizedBox(width: 6),
+            if (state.editedCount > 0) ...[
+              _StatChip(Icons.edit_outlined, '수정 ${state.editedCount}개',
+                  Colors.orange),
+              const SizedBox(width: 6),
+            ],
+            if (state.deletedCount > 0) ...[
+              _StatChip(Icons.delete_outline, '삭제 ${state.deletedCount}개',
+                  Colors.red),
+              const SizedBox(width: 6),
+            ],
+            if (state.addedCount > 0)
+              _StatChip(Icons.add_circle_outline, '추가 ${state.addedCount}개',
+                  Colors.green),
             const Spacer(),
             OutlinedButton.icon(
               icon: const Icon(Icons.add, size: 16),
