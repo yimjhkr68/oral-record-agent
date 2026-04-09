@@ -5,6 +5,8 @@ import 'screens/settings/settings_screen.dart';
 import 'screens/ontology/ontology_list_screen.dart';
 import 'screens/triple/triple_screen.dart';
 import 'screens/graph/knowledge_graph_screen.dart';
+import 'screens/records/record_list_screen.dart';
+import 'screens/history/history_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -22,6 +24,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/graph',
               builder: (c, s) => const KnowledgeGraphScreen()),
+          GoRoute(
+              path: '/records',
+              builder: (c, s) => const RecordListScreen()),
+          GoRoute(
+              path: '/history',
+              builder: (c, s) => const HistoryScreen()),
           GoRoute(
               path: '/settings',
               builder: (c, s) => const SettingsScreen()),
@@ -88,6 +96,14 @@ class AppShell extends ConsumerWidget {
                   selectedIcon: Icon(Icons.hub),
                   label: Text('지식그래프')),
               NavigationRailDestination(
+                  icon: Icon(Icons.library_books_outlined),
+                  selectedIcon: Icon(Icons.library_books),
+                  label: Text('기록')),
+              NavigationRailDestination(
+                  icon: Icon(Icons.history_outlined),
+                  selectedIcon: Icon(Icons.history),
+                  label: Text('이력')),
+              NavigationRailDestination(
                   icon: Icon(Icons.settings_outlined),
                   selectedIcon: Icon(Icons.settings),
                   label: Text('설정')),
@@ -102,22 +118,22 @@ class AppShell extends ConsumerWidget {
 
   int _selectedIndex(String location) {
     if (location.startsWith('/ontology')) return 0;
-    if (location.startsWith('/triple')) return 1;
-    if (location.startsWith('/graph')) return 2;
-    if (location.startsWith('/settings')) return 3;
+    if (location.startsWith('/triple'))   return 1;
+    if (location.startsWith('/graph'))    return 2;
+    if (location.startsWith('/records'))  return 3;
+    if (location.startsWith('/history'))  return 4;
+    if (location.startsWith('/settings')) return 5;
     return 0;
   }
 
   void _navigate(BuildContext context, int index) {
     switch (index) {
-      case 0:
-        context.go('/ontology');
-      case 1:
-        context.go('/triple');
-      case 2:
-        context.go('/graph');
-      case 3:
-        context.go('/settings');
+      case 0: context.go('/ontology');
+      case 1: context.go('/triple');
+      case 2: context.go('/graph');
+      case 3: context.go('/records');
+      case 4: context.go('/history');
+      case 5: context.go('/settings');
     }
   }
 }

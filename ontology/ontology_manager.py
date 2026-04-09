@@ -60,7 +60,9 @@ class OntologyManager:
 
     def __init__(self, store=None) -> None:
         from ontology.ontology_store import OntologyStore
+        from core.history_store import HistoryStore
         self._store: OntologyStore = store or OntologyStore()
+        self._history: HistoryStore = HistoryStore()
         # 인메모리 캐시: version_id → OntologyVersion
         self._cache: dict[str, OntologyVersion] = {}
         self._load_all()
@@ -78,6 +80,14 @@ class OntologyManager:
         version = OntologyVersion(version_id=version_id, description=description)
         self._cache[version_id] = version
         self._store.save_draft(version)
+        try:
+            self._history.record_ontology_event(
+                event_type="created",
+                version_id=version_id,
+                detail=f"Draft 생성{': ' + description if description else ''}",
+            )
+        except Exception:
+            pass
         return version
 
     def get(self, version_id: str) -> OntologyVersion:
@@ -100,11 +110,13 @@ class OntologyManager:
                predicates: list[OntologyPredicate] | None = None,
                description: str | None = None) -> OntologyVersion:
         """Draft 상태만 수정 가능. 그 외 PermissionError."""
+        import dataclasses
         version = self.get(version_id)
         if version.status != OntologyStatus.DRAFT:
             raise PermissionError(
                 f"Draft 상태만 수정 가능합니다. 현재 상태: {version.status}"
             )
+        before = dataclasses.asdict(version)
         if classes is not None:
             version.classes = classes
         if predicates is not None:
@@ -112,6 +124,21 @@ class OntologyManager:
         if description is not None:
             version.description = description
         self._store.save_draft(version)
+        try:
+            changes = []
+            if classes is not None:
+                changes.append(f"클래스 {len(classes)}개")
+            if predicates is not None:
+                changes.append(f"속성 {len(predicates)}개")
+            self._history.record_ontology_event(
+                event_type="updated",
+                version_id=version_id,
+                detail="수정: " + ", ".join(changes) if changes else "수정",
+                before=before,
+                after=dataclasses.asdict(version),
+            )
+        except Exception:
+            pass
         return version
 
     def delete(self, version_id: str) -> None:
@@ -123,6 +150,14 @@ class OntologyManager:
             )
         self._store.delete_draft(version_id)
         del self._cache[version_id]
+        try:
+            self._history.record_ontology_event(
+                event_type="deleted",
+                version_id=version_id,
+                detail="Draft 삭제",
+            )
+        except Exception:
+            pass
 
     def archive(self, version_id: str) -> OntologyVersion:
         """Confirmed → Archived. 비가역."""
@@ -134,6 +169,14 @@ class OntologyManager:
         version.status      = OntologyStatus.ARCHIVED
         version.archived_at = datetime.now().isoformat()
         self._store.save_confirmed(version)
+        try:
+            self._history.record_ontology_event(
+                event_type="archived",
+                version_id=version_id,
+                detail="아카이브 처리",
+            )
+        except Exception:
+            pass
         return version
 
     # ── AI 자동 생성 (F2) ──────────────────────────────────────────────────────
@@ -231,6 +274,17 @@ class OntologyManager:
         )
         self._cache[version_id] = version
         self._store.save_draft(version)
+        try:
+            self._history.record_ontology_event(
+                event_type="generated",
+                version_id=version_id,
+                detail=(
+                    f"샘플 텍스트 {len(sample_text)}자 기반 AI 생성"
+                    + (f" (기반: {base_version_id})" if base_version_id else "")
+                ),
+            )
+        except Exception:
+            pass
         return version
 
     # ── Draft 종합 병합 ────────────────────────────────────────────────────────
@@ -331,6 +385,14 @@ class OntologyManager:
         )
         self._cache[new_version_id] = version
         self._store.save_draft(version)
+        try:
+            self._history.record_ontology_event(
+                event_type="merged",
+                version_id=new_version_id,
+                detail=f"병합 소스: {', '.join(version_ids)} → 클래스 {len(classes)}개, 속성 {len(predicates)}개",
+            )
+        except Exception:
+            pass
         return version
 
     # ── 버전 확정 (F3) ──────────────────────────────────────────────────────────
@@ -341,6 +403,7 @@ class OntologyManager:
         data/ontologies/confirmed/{version_id}.json 에 복사본 저장.
         draft 파일은 OntologyStore.save_confirmed() 에서 자동 삭제.
         """
+        import dataclasses
         version = self.get(version_id)
         if version.status != OntologyStatus.DRAFT:
             raise PermissionError(
@@ -349,6 +412,18 @@ class OntologyManager:
         version.status       = OntologyStatus.CONFIRMED
         version.confirmed_at = datetime.now().isoformat()
         self._store.save_confirmed(version)
+        try:
+            self._history.record_ontology_event(
+                event_type="confirmed",
+                version_id=version_id,
+                detail=(
+                    f"클래스 {len(version.classes)}개, "
+                    f"속성 {len(version.predicates)}개 확정"
+                ),
+                after=dataclasses.asdict(version),
+            )
+        except Exception:
+            pass
         return version
 
     def get_confirmed_versions(self) -> list[OntologyVersion]:

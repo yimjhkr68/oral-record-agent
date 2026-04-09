@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../models/ontology.dart';
 import '../../providers/ontology_provider.dart';
-import '../../providers/hive_provider.dart';
 import '../../api/api_client.dart';
 import '../../api/ontology_api.dart';
+import '../../api/record_api.dart';
+import '../../models/oral_record.dart';
 import 'ontology_detail_panel.dart';
 
 class OntologyListScreen extends ConsumerWidget {
@@ -454,13 +455,10 @@ class _InputMethodBottomSheetState
   String? _extractedText;
   bool _extracting = false;
 
-  // Hive 탭
-  final _hiveUrlCtrl = TextEditingController();
-  final _hiveQueryCtrl = TextEditingController();
-  List<HiveRecord> _hiveResults = [];
-  HiveRecord? _selectedRecord;
-  bool _hiveConnected = false;
-  bool _hiveSearching = false;
+  // 저장된 기록 탭
+  List<OralRecord> _storedRecords = [];
+  OralRecord? _selectedRecord;
+  bool _recordsLoading = false;
 
   bool _loading = false; // AI 생성 중
 
@@ -468,16 +466,18 @@ class _InputMethodBottomSheetState
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
-    _tabCtrl.addListener(() => setState(() {}));
-    _hiveUrlCtrl.text = ref.read(hiveUrlProvider);
+    _tabCtrl.addListener(() {
+      setState(() {});
+      if (_tabCtrl.index == 2 && _storedRecords.isEmpty) {
+        _loadStoredRecords('');
+      }
+    });
   }
 
   @override
   void dispose() {
     _tabCtrl.dispose();
     _textCtrl.dispose();
-    _hiveUrlCtrl.dispose();
-    _hiveQueryCtrl.dispose();
     super.dispose();
   }
 
@@ -489,7 +489,7 @@ class _InputMethodBottomSheetState
       case 1:
         return _extractedText;
       case 2:
-        return _selectedRecord?.text;
+        return _selectedRecord?.content ?? _selectedRecord?.contentPreview;
       default:
         return null;
     }
@@ -551,37 +551,23 @@ class _InputMethodBottomSheetState
     }
   }
 
-  // ── Hive 연결 확인 ────────────────────────────────────────────────────────────
-  Future<void> _checkHiveConnection() async {
-    final url = _hiveUrlCtrl.text.trim();
-    ref.read(hiveUrlProvider.notifier).state = url;
-    await saveHiveUrl(url);
-    setState(() => _hiveSearching = true);
-    final ok = await HiveApi(url).checkConnection();
-    setState(() {
-      _hiveConnected = ok;
-      _hiveSearching = false;
-    });
-  }
-
-  // ── Hive 검색 ─────────────────────────────────────────────────────────────────
-  Future<void> _searchHive() async {
-    if (_hiveQueryCtrl.text.trim().isEmpty) return;
-    setState(() => _hiveSearching = true);
+  // ── 저장된 기록 로드 ──────────────────────────────────────────────────────────
+  Future<void> _loadStoredRecords(String q) async {
+    setState(() => _recordsLoading = true);
     try {
-      final url = _hiveUrlCtrl.text.trim();
-      final result = await HiveApi(url)
-          .query(_hiveQueryCtrl.text.trim(), topK: 5);
+      final records =
+          await RecordApi(ref.read(apiClientProvider)).list(q: q, limit: 100);
       setState(() {
-        _hiveResults = result.sources;
-        _hiveSearching = false;
-        _selectedRecord = null;
+        _storedRecords  = records;
+        _recordsLoading = false;
       });
     } catch (e) {
-      setState(() => _hiveSearching = false);
+      setState(() => _recordsLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('검색 실패: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('기록 로드 실패: $e'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -626,7 +612,7 @@ class _InputMethodBottomSheetState
             tabs: const [
               Tab(text: '텍스트 입력'),
               Tab(text: '파일 업로드'),
-              Tab(text: 'Hive DB'),
+              Tab(text: '저장된 기록'),
             ],
           ),
           Expanded(
@@ -647,16 +633,13 @@ class _InputMethodBottomSheetState
                   extracting: _extracting,
                   onPickFile: _pickFile,
                 ),
-                // ── Hive DB 탭 ──────────────────────────────────────────────
-                _HiveTab(
-                  urlCtrl: _hiveUrlCtrl,
-                  queryCtrl: _hiveQueryCtrl,
-                  connected: _hiveConnected,
-                  searching: _hiveSearching,
-                  results: _hiveResults,
+                // ── 저장된 기록 탭 ────────────────────────────────────────
+                _StoredRecordsTab(
+                  records: _storedRecords,
+                  loading: _recordsLoading,
                   selectedRecord: _selectedRecord,
-                  onCheckConnection: _checkHiveConnection,
-                  onSearch: _searchHive,
+                  onRefresh: () => _loadStoredRecords(''),
+                  onSearch: _loadStoredRecords,
                   onSelectRecord: (r) => setState(() => _selectedRecord = r),
                 ),
               ],
@@ -901,126 +884,139 @@ class _FileTab extends StatelessWidget {
   }
 }
 
-// ── Hive DB 탭 ────────────────────────────────────────────────────────────────
+// ── 저장된 기록 탭 ────────────────────────────────────────────────────────────
 
-class _HiveTab extends StatelessWidget {
-  final TextEditingController urlCtrl;
-  final TextEditingController queryCtrl;
-  final bool connected;
-  final bool searching;
-  final List<HiveRecord> results;
-  final HiveRecord? selectedRecord;
-  final VoidCallback onCheckConnection;
-  final VoidCallback onSearch;
-  final ValueChanged<HiveRecord> onSelectRecord;
+class _StoredRecordsTab extends StatefulWidget {
+  final List<OralRecord> records;
+  final bool loading;
+  final OralRecord? selectedRecord;
+  final VoidCallback onRefresh;
+  final ValueChanged<String> onSearch;
+  final ValueChanged<OralRecord> onSelectRecord;
 
-  const _HiveTab({
-    required this.urlCtrl,
-    required this.queryCtrl,
-    required this.connected,
-    required this.searching,
-    required this.results,
+  const _StoredRecordsTab({
+    required this.records,
+    required this.loading,
     required this.selectedRecord,
-    required this.onCheckConnection,
+    required this.onRefresh,
     required this.onSearch,
     required this.onSelectRecord,
   });
 
   @override
+  State<_StoredRecordsTab> createState() => _StoredRecordsTabState();
+}
+
+class _StoredRecordsTabState extends State<_StoredRecordsTab> {
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 서버 URL + 연결 확인
-          const Text('v3.0 Hive 서버 주소',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          const SizedBox(height: 6),
           Row(children: [
             Expanded(
               child: TextField(
-                controller: urlCtrl,
-                decoration: const InputDecoration(
-                  hintText: 'http://192.168.0.x:8000',
-                  border: OutlineInputBorder(),
+                controller: _searchCtrl,
+                decoration: InputDecoration(
+                  hintText: '제목 또는 내용 검색',
+                  prefixIcon: const Icon(Icons.search, size: 16),
                   isDense: true,
+                  border: const OutlineInputBorder(),
+                  suffixIcon: _searchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 14),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            widget.onSearch('');
+                            setState(() {});
+                          },
+                        )
+                      : null,
                 ),
+                onChanged: (_) => setState(() {}),
+                onSubmitted: widget.onSearch,
               ),
             ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: searching ? null : onCheckConnection,
-              child: const Text('연결 확인'),
+            const SizedBox(width: 6),
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 18),
+              tooltip: '새로고침',
+              onPressed: widget.onRefresh,
             ),
           ]),
-          const SizedBox(height: 6),
-          Row(children: [
-            Icon(
-              searching
-                  ? Icons.sync
-                  : connected
-                      ? Icons.check_circle
-                      : Icons.error_outline,
-              size: 14,
-              color: connected ? Colors.green : Colors.grey,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              searching
-                  ? '확인 중...'
-                  : connected
-                      ? '연결됨'
-                      : '미연결 — 서버 주소를 확인하세요',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: connected ? Colors.green : Colors.grey),
-            ),
-          ]),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
-          // 검색
-          const Text('레코드 검색',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          const SizedBox(height: 6),
-          Row(children: [
-            Expanded(
-              child: TextField(
-                controller: queryCtrl,
-                decoration: const InputDecoration(
-                  hintText: '예) 제주 4.3 경험',
-                  border: OutlineInputBorder(),
-                  isDense: true,
-                ),
-                onSubmitted: (_) => onSearch(),
+          if (widget.selectedRecord != null) ...[
+            Container(
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.07),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primary
+                        .withValues(alpha: 0.3)),
               ),
+              child: Row(children: [
+                const Icon(Icons.check_circle, size: 14, color: Colors.green),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '선택됨: ${widget.selectedRecord!.title}',
+                    style: const TextStyle(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ]),
             ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: (searching || !connected) ? null : onSearch,
-              child: const Text('검색'),
-            ),
-          ]),
-          const SizedBox(height: 10),
+          ],
 
-          // 결과 목록
-          if (searching)
-            const Center(child: CircularProgressIndicator())
-          else if (results.isEmpty)
-            const Center(
-              child: Text('검색 결과가 여기에 표시됩니다.',
-                  style: TextStyle(color: Colors.grey, fontSize: 13)),
+          if (widget.loading)
+            const Expanded(
+                child: Center(child: CircularProgressIndicator()))
+          else if (widget.records.isEmpty)
+            const Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.library_books_outlined,
+                        size: 40, color: Colors.grey),
+                    SizedBox(height: 8),
+                    Text('저장된 구술기록이 없습니다.',
+                        style: TextStyle(color: Colors.grey, fontSize: 13)),
+                    SizedBox(height: 4),
+                    Text('"기록" 탭에서 먼저 기록을 등록해 주세요.',
+                        style: TextStyle(color: Colors.grey, fontSize: 11)),
+                  ],
+                ),
+              ),
             )
           else
             Expanded(
               child: ListView.separated(
-                itemCount: results.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 6),
+                itemCount: widget.records.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 4),
                 itemBuilder: (_, i) {
-                  final r = results[i];
-                  final isSelected = selectedRecord?.displayId == r.displayId;
+                  final r = widget.records[i];
+                  final isSelected = widget.selectedRecord?.id == r.id;
                   return InkWell(
-                    onTap: () => onSelectRecord(r),
+                    onTap: () => widget.onSelectRecord(r),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.all(10),
@@ -1039,37 +1035,41 @@ class _HiveTab extends StatelessWidget {
                                 .withValues(alpha: 0.07)
                             : null,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(children: [
-                            if (isSelected)
-                              const Icon(Icons.check_circle,
-                                  size: 14, color: Colors.green),
-                            if (isSelected) const SizedBox(width: 4),
-                            Text(r.displayId,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13)),
-                            const SizedBox(width: 8),
-                            Text(r.narratorName,
-                                style: const TextStyle(
-                                    fontSize: 12, color: Colors.grey)),
-                            const Spacer(),
-                            Text(
-                                '관련도 ${(r.score * 100).toStringAsFixed(0)}%',
-                                style: const TextStyle(
-                                    fontSize: 11, color: Colors.grey)),
-                          ]),
-                          const SizedBox(height: 4),
-                          Text(
-                            r.text.length > 120
-                                ? '${r.text.substring(0, 120)}…'
-                                : r.text,
-                            style: const TextStyle(fontSize: 12),
+                      child: Row(children: [
+                        Icon(
+                          isSelected
+                              ? Icons.check_circle
+                              : r.isFile
+                                  ? Icons.description_outlined
+                                  : Icons.text_snippet_outlined,
+                          size: 16,
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(r.title,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis),
+                              if (r.contentPreview != null)
+                                Text(r.contentPreview!,
+                                    style: const TextStyle(
+                                        fontSize: 11, color: Colors.grey),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        Text(r.dateLabel,
+                            style: const TextStyle(
+                                fontSize: 10, color: Colors.grey)),
+                      ]),
                     ),
                   );
                 },

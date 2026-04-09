@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_client.dart';
 import '../../api/ontology_api.dart';
+import '../../api/record_api.dart';
 import '../../models/ontology.dart';
+import '../../models/oral_record.dart';
 import '../../models/triple.dart';
-import '../../providers/hive_provider.dart';
 import '../../providers/ontology_provider.dart';
 import '../../providers/triple_provider.dart';
 
@@ -16,11 +17,7 @@ class _ExtractedFile {
   final String? error;
   bool added = false;
 
-  _ExtractedFile({
-    required this.filename,
-    this.text,
-    this.error,
-  });
+  _ExtractedFile({required this.filename, this.text, this.error});
 
   bool get isOk => text != null && error == null;
 }
@@ -40,26 +37,27 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
   final _textCtrl   = TextEditingController();
   final _sourceCtrl = TextEditingController();
 
-  // 파일 업로드 탭 — 복수 파일 지원
+  // 파일 업로드 탭
   List<_ExtractedFile> _extractedFiles = [];
   bool _fileExtracting = false;
-  int  _fileProgress   = 0;   // 현재 처리 중인 파일 번호 (1-based)
+  int  _fileProgress   = 0;
   int  _fileTotal      = 0;
 
-  // Hive DB 탭
-  final _hiveUrlCtrl   = TextEditingController();
-  final _hiveQueryCtrl = TextEditingController();
-  bool? _hiveConnected;           // null=미확인, true=연결됨, false=실패
-  bool  _hiveSearching  = false;
-  String? _hiveAnswer;            // v3.0 AI 답변
-  List<HiveRecord> _hiveResults  = [];
-  final Set<String> _selectedHiveIds = {};
+  // 저장된 기록 탭
+  List<OralRecord> _storedRecords = [];
+  bool  _recordsLoading = false;
+  String _recordsQuery  = '';
+  final Set<String> _selectedRecordIds = {};
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
-    _hiveUrlCtrl.text = ref.read(hiveUrlProvider);
+    _tabCtrl.addListener(() {
+      if (_tabCtrl.index == 2 && _storedRecords.isEmpty) {
+        _loadStoredRecords('');
+      }
+    });
   }
 
   @override
@@ -67,12 +65,10 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
     _tabCtrl.dispose();
     _textCtrl.dispose();
     _sourceCtrl.dispose();
-    _hiveUrlCtrl.dispose();
-    _hiveQueryCtrl.dispose();
     super.dispose();
   }
 
-  // ── 텍스트 탭: 목록에 추가 ────────────────────────────────────────────────────
+  // ── 텍스트 탭 ────────────────────────────────────────────────────────────────
   void _addTextRecord() {
     final text = _textCtrl.text.trim();
     if (text.isEmpty) return;
@@ -85,7 +81,7 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
     _sourceCtrl.clear();
   }
 
-  // ── 파일 탭: 복수 파일 선택 + 텍스트 추출 ─────────────────────────────────────
+  // ── 파일 탭 ──────────────────────────────────────────────────────────────────
   Future<void> _pickFiles() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -93,7 +89,6 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
       allowMultiple: true,
     );
     if (result == null || result.files.isEmpty) return;
-
     final files = result.files.where((f) => f.path != null).toList();
     if (files.isEmpty) return;
 
@@ -109,25 +104,19 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
     for (int i = 0; i < files.length; i++) {
       final file = files[i];
       setState(() => _fileProgress = i + 1);
-
       try {
         final res = await api.extractTextFromFile(file.path!, file.name);
         setState(() {
           _extractedFiles.add(_ExtractedFile(
-            filename: file.name,
-            text: res['text'] as String?,
-          ));
+              filename: file.name, text: res['text'] as String?));
         });
       } catch (e) {
         setState(() {
           _extractedFiles.add(_ExtractedFile(
-            filename: file.name,
-            error: e.toString(),
-          ));
+              filename: file.name, error: e.toString()));
         });
       }
     }
-
     setState(() => _fileExtracting = false);
   }
 
@@ -136,9 +125,8 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
     ref.read(tripleWorkProvider.notifier)
         .addSourceRecord(SourceRecord(id: ef.filename, content: ef.text!));
     setState(() => ef.added = true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('"${ef.filename}" 추가됨')),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('"${ef.filename}" 추가됨')));
   }
 
   void _addAllFileRecords() {
@@ -150,85 +138,45 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
     }
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${pending.length}개 파일 추가됨')),
-    );
+        SnackBar(content: Text('${pending.length}개 파일 추가됨')));
   }
 
-  // ── Hive DB 탭: 연결 확인 ────────────────────────────────────────────────────
-  Future<bool> _ensureConnected() async {
-    final url = _hiveUrlCtrl.text.trim();
-    ref.read(hiveUrlProvider.notifier).state = url;
-    await saveHiveUrl(url);
-    final ok = await HiveApi(url).checkConnection();
-    setState(() => _hiveConnected = ok);
-    return ok;
-  }
-
-  Future<void> _checkHiveConnection() async {
-    setState(() => _hiveSearching = true);
-    await _ensureConnected();
-    setState(() => _hiveSearching = false);
-  }
-
-  // ── Hive DB 탭: 검색 (연결 확인 자동 포함) ──────────────────────────────────
-  Future<void> _searchHive() async {
-    if (_hiveQueryCtrl.text.trim().isEmpty) return;
+  // ── 저장된 기록 탭 ────────────────────────────────────────────────────────────
+  Future<void> _loadStoredRecords(String q) async {
     setState(() {
-      _hiveSearching = true;
-      _hiveAnswer    = null;
+      _recordsLoading = true;
+      _recordsQuery   = q;
     });
-
-    // 미확인 상태면 연결 먼저 확인
-    if (_hiveConnected != true) {
-      final ok = await _ensureConnected();
-      if (!ok) {
-        setState(() => _hiveSearching = false);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Hive 서버에 연결할 수 없습니다. 서버 주소를 확인해주세요.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return;
-      }
-    }
-
     try {
-      final url    = _hiveUrlCtrl.text.trim();
-      final result = await HiveApi(url)
-          .query(_hiveQueryCtrl.text.trim(), topK: 5);
+      final records = await RecordApi(ref.read(apiClientProvider))
+          .list(q: q, limit: 100);
       setState(() {
-        _hiveAnswer    = result.answer;
-        _hiveResults   = result.sources;
-        _hiveSearching = false;
-        _selectedHiveIds.clear();
+        _storedRecords  = records;
+        _recordsLoading = false;
       });
     } catch (e) {
-      setState(() => _hiveSearching = false);
+      setState(() => _recordsLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('검색 실패: $e'),
-              backgroundColor: Colors.red),
-        );
+            SnackBar(content: Text('기록 로드 실패: $e'),
+                backgroundColor: Colors.red));
       }
     }
   }
 
-  // ── Hive DB 탭: 선택 레코드 추가 ─────────────────────────────────────────────
-  void _addHiveRecords() {
+  void _addSelectedRecords() {
     final selected =
-        _hiveResults.where((r) => _selectedHiveIds.contains(r.displayId));
+        _storedRecords.where((r) => _selectedRecordIds.contains(r.id));
     for (final r in selected) {
       ref.read(tripleWorkProvider.notifier).addSourceRecord(
-            SourceRecord(id: r.displayId, content: r.text),
+            SourceRecord(
+                id: r.id,
+                content: r.contentPreview ?? r.content ?? ''),
           );
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${_selectedHiveIds.length}개 레코드 추가됨')),
-    );
-    setState(() => _selectedHiveIds.clear());
+        SnackBar(content: Text('${_selectedRecordIds.length}개 기록 추가됨')));
+    setState(() => _selectedRecordIds.clear());
   }
 
   @override
@@ -241,7 +189,7 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
 
     return Column(
       children: [
-        // ── 온톨로지 선택 + 선택된 레코드 요약 ──────────────────────────────
+        // ── 온톨로지 선택 + 선택된 레코드 요약 ────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Column(
@@ -278,7 +226,6 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
                   ),
                 ),
               const SizedBox(height: 10),
-              // 선택된 레코드 요약
               if (state.sourceRecords.isNotEmpty)
                 _RecordsSummary(
                   records: state.sourceRecords,
@@ -300,7 +247,7 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
           tabs: const [
             Tab(text: '텍스트 입력'),
             Tab(text: '파일 업로드'),
-            Tab(text: 'Hive DB'),
+            Tab(text: '저장된 기록'),
           ],
         ),
         Expanded(
@@ -323,22 +270,18 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
                     ? _addAllFileRecords
                     : null,
               ),
-              _HiveTab(
-                urlCtrl: _hiveUrlCtrl,
-                queryCtrl: _hiveQueryCtrl,
-                connected: _hiveConnected,
-                searching: _hiveSearching,
-                answer: _hiveAnswer,
-                results: _hiveResults,
-                selectedIds: _selectedHiveIds,
-                onCheckConnection: _checkHiveConnection,
-                onSearch: _searchHive,
-                onToggleSelect: (id) =>
-                    setState(() => _selectedHiveIds.contains(id)
-                        ? _selectedHiveIds.remove(id)
-                        : _selectedHiveIds.add(id)),
+              _StoredRecordsTab(
+                records: _storedRecords,
+                loading: _recordsLoading,
+                selectedIds: _selectedRecordIds,
+                onRefresh: () => _loadStoredRecords(_recordsQuery),
+                onSearch: (q) => _loadStoredRecords(q),
+                onToggleSelect: (id) => setState(() =>
+                    _selectedRecordIds.contains(id)
+                        ? _selectedRecordIds.remove(id)
+                        : _selectedRecordIds.add(id)),
                 onAddSelected:
-                    _selectedHiveIds.isNotEmpty ? _addHiveRecords : null,
+                    _selectedRecordIds.isNotEmpty ? _addSelectedRecords : null,
               ),
             ],
           ),
@@ -346,7 +289,7 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
 
         const Divider(height: 1),
 
-        // ── 하단: 진행 상황 + 트리플 생성 버튼 ───────────────────────────
+        // ── 하단: 트리플 생성 버튼 ────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
           child: Column(
@@ -368,10 +311,8 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
                       : null,
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'AI 분석 중... (레코드당 최대 2분)',
-                  style: TextStyle(fontSize: 11, color: Colors.grey),
-                ),
+                const Text('AI 분석 중... (레코드당 최대 2분)',
+                    style: TextStyle(fontSize: 11, color: Colors.grey)),
                 const SizedBox(height: 8),
               ],
               if (state.error != null)
@@ -398,8 +339,7 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
                     foregroundColor: Colors.white,
                   ),
                   onPressed: state.canExtract
-                      ? () =>
-                          ref.read(tripleWorkProvider.notifier).extractAll()
+                      ? () => ref.read(tripleWorkProvider.notifier).extractAll()
                       : null,
                 ),
               ),
@@ -463,7 +403,7 @@ class _TextTab extends StatelessWidget {
   }
 }
 
-// ── 파일 업로드 탭 (복수 파일 지원) ──────────────────────────────────────────
+// ── 파일 업로드 탭 ────────────────────────────────────────────────────────────
 
 class _FileTab extends StatelessWidget {
   final List<_ExtractedFile> extractedFiles;
@@ -503,7 +443,6 @@ class _FileTab extends StatelessWidget {
           ]),
           const SizedBox(height: 10),
 
-          // 진행 상황
           if (extracting) ...[
             Row(children: [
               const SizedBox(
@@ -515,14 +454,11 @@ class _FileTab extends StatelessWidget {
             ]),
             const SizedBox(height: 6),
             LinearProgressIndicator(
-              value: fileTotal > 0 ? fileProgress / fileTotal : null,
-            ),
+                value: fileTotal > 0 ? fileProgress / fileTotal : null),
             const SizedBox(height: 10),
           ],
 
-          // 추출 결과 목록
           if (extractedFiles.isNotEmpty) ...[
-            // 전체 추가 버튼
             if (onAddAll != null)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -531,7 +467,8 @@ class _FileTab extends StatelessWidget {
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.playlist_add, size: 16),
                     label: Text(
-                      '미추가 파일 전체 추가 (${extractedFiles.where((f) => f.isOk && !f.added).length}개)',
+                      '미추가 파일 전체 추가 '
+                      '(${extractedFiles.where((f) => f.isOk && !f.added).length}개)',
                     ),
                     onPressed: onAddAll,
                   ),
@@ -581,7 +518,8 @@ class _FileTab extends StatelessWidget {
                           children: [
                             Text(ef.filename,
                                 style: const TextStyle(
-                                    fontSize: 13, fontWeight: FontWeight.bold),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold),
                                 overflow: TextOverflow.ellipsis),
                             if (ef.isOk)
                               Text('${ef.text!.length}자 추출됨',
@@ -597,7 +535,8 @@ class _FileTab extends StatelessWidget {
                       if (ef.isOk && !ef.added)
                         TextButton.icon(
                           icon: const Icon(Icons.add, size: 14),
-                          label: const Text('추가', style: TextStyle(fontSize: 12)),
+                          label: const Text('추가',
+                              style: TextStyle(fontSize: 12)),
                           onPressed: () => onAddFile(ef),
                         )
                       else if (ef.added)
@@ -619,10 +558,12 @@ class _FileTab extends StatelessWidget {
                         size: 48, color: Colors.grey),
                     SizedBox(height: 8),
                     Text('파일을 선택하면 텍스트를 자동 추출합니다.',
-                        style: TextStyle(color: Colors.grey, fontSize: 13)),
+                        style: TextStyle(
+                            color: Colors.grey, fontSize: 13)),
                     SizedBox(height: 4),
                     Text('txt / pdf / docx 복수 선택 가능',
-                        style: TextStyle(color: Colors.grey, fontSize: 11)),
+                        style: TextStyle(
+                            color: Colors.grey, fontSize: 11)),
                   ],
                 ),
               ),
@@ -633,249 +574,193 @@ class _FileTab extends StatelessWidget {
   }
 }
 
-// ── Hive DB 탭 ────────────────────────────────────────────────────────────────
+// ── 저장된 기록 탭 ────────────────────────────────────────────────────────────
 
-class _HiveTab extends StatelessWidget {
-  final TextEditingController urlCtrl;
-  final TextEditingController queryCtrl;
-  final bool? connected;       // null=미확인, true=연결됨, false=실패
-  final bool searching;
-  final String? answer;        // v3.0 AI 답변
-  final List<HiveRecord> results;
+class _StoredRecordsTab extends StatefulWidget {
+  final List<OralRecord> records;
+  final bool loading;
   final Set<String> selectedIds;
-  final VoidCallback onCheckConnection;
-  final VoidCallback onSearch;
+  final VoidCallback onRefresh;
+  final ValueChanged<String> onSearch;
   final ValueChanged<String> onToggleSelect;
   final VoidCallback? onAddSelected;
 
-  const _HiveTab({
-    required this.urlCtrl,
-    required this.queryCtrl,
-    required this.connected,
-    required this.searching,
-    required this.answer,
-    required this.results,
+  const _StoredRecordsTab({
+    required this.records,
+    required this.loading,
     required this.selectedIds,
-    required this.onCheckConnection,
+    required this.onRefresh,
     required this.onSearch,
     required this.onToggleSelect,
     required this.onAddSelected,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final connColor = connected == null
-        ? Colors.grey
-        : connected!
-            ? Colors.green
-            : Colors.red;
-    final connIcon  = connected == null
-        ? Icons.help_outline
-        : connected!
-            ? Icons.check_circle
-            : Icons.error_outline;
-    final connLabel = connected == null
-        ? '미확인 (검색 시 자동 연결 시도)'
-        : connected!
-            ? '연결됨'
-            : '연결 실패';
+  State<_StoredRecordsTab> createState() => _StoredRecordsTabState();
+}
 
+class _StoredRecordsTabState extends State<_StoredRecordsTab> {
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 서버 URL
-          const Text('v3.0 Hive 서버 주소',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          const SizedBox(height: 6),
+          // 검색 + 새로고침
           Row(children: [
             Expanded(
               child: TextField(
-                controller: urlCtrl,
-                decoration: const InputDecoration(
-                  hintText: 'http://192.168.0.x:9000',
-                  border: OutlineInputBorder(),
+                controller: _searchCtrl,
+                decoration: InputDecoration(
+                  hintText: '제목 또는 내용 검색',
+                  prefixIcon: const Icon(Icons.search, size: 16),
                   isDense: true,
+                  border: const OutlineInputBorder(),
+                  suffixIcon: _searchCtrl.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 14),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            widget.onSearch('');
+                            setState(() {});
+                          },
+                        )
+                      : null,
                 ),
-                onSubmitted: (_) => onCheckConnection(),
+                onChanged: (_) => setState(() {}),
+                onSubmitted: widget.onSearch,
               ),
             ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: searching ? null : onCheckConnection,
-              child: const Text('연결 확인'),
+            const SizedBox(width: 6),
+            IconButton(
+              icon: const Icon(Icons.refresh, size: 18),
+              tooltip: '새로고침',
+              onPressed: widget.onRefresh,
             ),
           ]),
-          const SizedBox(height: 4),
-          Row(children: [
-            Icon(connIcon, size: 13, color: connColor),
-            const SizedBox(width: 4),
-            Text(connLabel,
-                style: TextStyle(fontSize: 12, color: connColor)),
-          ]),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
-          // 검색
-          const Text('레코드 검색',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          const SizedBox(height: 6),
-          Row(children: [
-            Expanded(
-              child: TextField(
-                controller: queryCtrl,
-                decoration: const InputDecoration(
-                  hintText: '예) 제주 4.3 경험',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+          // 선택 추가 버튼
+          if (widget.selectedIds.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.add, size: 16),
+                  label: Text('선택 ${widget.selectedIds.length}개 추가'),
+                  onPressed: widget.onAddSelected,
                 ),
-                onSubmitted: (_) => searching ? null : onSearch(),
               ),
             ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: searching ? null : onSearch,
-              child: const Text('검색'),
-            ),
-          ]),
-          const SizedBox(height: 10),
 
-          // 결과
-          if (searching)
-            const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 8),
-                  Text('Hive DB 검색 중... (AI 답변 생성 포함, 최대 60초)',
-                      style: TextStyle(fontSize: 12, color: Colors.grey)),
-                ],
-              ),
-            )
-          else if (results.isEmpty)
+          // 목록
+          if (widget.loading)
+            const Expanded(
+                child: Center(child: CircularProgressIndicator()))
+          else if (widget.records.isEmpty)
             const Expanded(
               child: Center(
-                child: Text('검색 결과가 여기에 표시됩니다.',
-                    style: TextStyle(color: Colors.grey, fontSize: 13)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.library_books_outlined,
+                        size: 40, color: Colors.grey),
+                    SizedBox(height: 8),
+                    Text('저장된 구술기록이 없습니다.',
+                        style:
+                            TextStyle(color: Colors.grey, fontSize: 13)),
+                    SizedBox(height: 4),
+                    Text('"기록" 탭에서 먼저 기록을 등록해 주세요.',
+                        style:
+                            TextStyle(color: Colors.grey, fontSize: 11)),
+                  ],
+                ),
               ),
             )
           else
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // AI 답변 (있을 경우)
-                  if (answer != null && answer!.isNotEmpty)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 10),
+              child: ListView.separated(
+                itemCount: widget.records.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 4),
+                itemBuilder: (_, i) {
+                  final r = widget.records[i];
+                  final isSelected = widget.selectedIds.contains(r.id);
+                  return InkWell(
+                    onTap: () => widget.onToggleSelect(r.id),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        border: Border.all(color: Colors.blue.shade200),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(children: [
-                            const Icon(Icons.auto_awesome,
-                                size: 13, color: Colors.blue),
-                            const SizedBox(width: 4),
-                            Text('AI 요약',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue.shade700)),
-                          ]),
-                          const SizedBox(height: 4),
-                          Text(answer!,
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.black87)),
-                        ],
-                      ),
-                    ),
-
-                  // 선택 추가 버튼
-                  if (selectedIds.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.add, size: 16),
-                          label: Text('선택 ${selectedIds.length}개 추가'),
-                          onPressed: onAddSelected,
+                        border: Border.all(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey.shade300,
+                          width: isSelected ? 2 : 1,
                         ),
+                        borderRadius: BorderRadius.circular(8),
+                        color: isSelected
+                            ? Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.07)
+                            : null,
                       ),
-                    ),
-
-                  // 레코드 목록
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: results.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 6),
-                      itemBuilder: (_, i) {
-                        final r = results[i];
-                        final isSelected = selectedIds.contains(r.displayId);
-                        return InkWell(
-                          onTap: () => onToggleSelect(r.displayId),
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Colors.grey.shade300,
-                                width: isSelected ? 2 : 1,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              color: isSelected
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withValues(alpha: 0.07)
-                                  : null,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(children: [
-                                  if (isSelected)
-                                    const Icon(Icons.check_circle,
-                                        size: 13, color: Colors.green),
-                                  if (isSelected) const SizedBox(width: 4),
-                                  Text(r.displayId,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13)),
-                                  const SizedBox(width: 8),
-                                  Text(r.narratorName,
-                                      style: const TextStyle(
-                                          fontSize: 12, color: Colors.grey)),
-                                  const Spacer(),
-                                  Text(
-                                      '관련도 ${(r.score * 100).toStringAsFixed(0)}%',
-                                      style: const TextStyle(
-                                          fontSize: 11, color: Colors.grey)),
-                                ]),
-                                const SizedBox(height: 4),
-                                Text(
-                                  r.text.length > 120
-                                      ? '${r.text.substring(0, 120)}…'
-                                      : r.text,
+                      child: Row(children: [
+                        Icon(
+                          isSelected
+                              ? Icons.check_circle
+                              : r.isFile
+                                  ? Icons.description_outlined
+                                  : Icons.text_snippet_outlined,
+                          size: 16,
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Colors.grey,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(r.title,
                                   style: const TextStyle(
-                                      fontSize: 12, color: Colors.grey),
-                                ),
-                              ],
-                            ),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis),
+                              if (r.contentPreview != null)
+                                Text(r.contentPreview!,
+                                    style: const TextStyle(
+                                        fontSize: 11, color: Colors.grey),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                            ],
                           ),
-                        );
-                      },
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(r.dateLabel,
+                                style: const TextStyle(
+                                    fontSize: 10, color: Colors.grey)),
+                            Text('${r.charCount}자',
+                                style: const TextStyle(
+                                    fontSize: 10, color: Colors.grey)),
+                          ],
+                        ),
+                      ]),
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
         ],
@@ -939,9 +824,15 @@ class _RecordCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04),
+        color: Theme.of(context)
+            .colorScheme
+            .primary
+            .withValues(alpha: 0.04),
         border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18)),
+            color: Theme.of(context)
+                .colorScheme
+                .primary
+                .withValues(alpha: 0.18)),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -957,19 +848,16 @@ class _RecordCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  record.id,
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(record.id,
+                    style: const TextStyle(
+                        fontSize: 12, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
-                Text(
-                  preview,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                Text(preview,
+                    style: const TextStyle(
+                        fontSize: 11, color: Colors.grey),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -977,7 +865,8 @@ class _RecordCard extends StatelessWidget {
             icon: const Icon(Icons.close, size: 14),
             onPressed: onRemove,
             padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+            constraints:
+                const BoxConstraints(minWidth: 24, minHeight: 24),
             tooltip: '제거',
           ),
         ],
@@ -1009,8 +898,7 @@ class _WarningBox extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: Colors.orange.withValues(alpha: 0.1),
-          border:
-              Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+          border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(children: [
@@ -1041,7 +929,8 @@ class _ErrorBox extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
               child: Text(message,
-                  style: const TextStyle(color: Colors.red, fontSize: 12))),
+                  style: const TextStyle(
+                      color: Colors.red, fontSize: 12))),
         ]),
       );
 }

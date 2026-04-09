@@ -5,3 +5,4 @@ __pycache__/
 .env
 data/triples/graph.json
 data/triples/archive/
+data/*.db

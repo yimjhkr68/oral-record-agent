@@ -10,6 +10,15 @@ from graph.graph_db import GraphDB, TripleStatus
 from graph.triple_manager import TripleManager
 from pipeline.triple_extractor import TripleExtractor
 from api.router_ontology import get_manager as get_ontology_manager
+from core.history_store import HistoryStore
+
+_history: Optional[HistoryStore] = None
+
+def get_history() -> HistoryStore:
+    global _history
+    if _history is None:
+        _history = HistoryStore()
+    return _history
 
 router = APIRouter(prefix="/api/triples", tags=["트리플"])
 
@@ -67,10 +76,14 @@ class ExtractRequest(BaseModel):
     content:             str
     ontology_version_id: str
     source_record_id:    Optional[str] = None
+    session_id:          Optional[str] = None  # 기존 세션에 추가 시
 
 
 class BulkConfirmRequest(BaseModel):
-    triples: list[dict]   # PendingTriple.toJson() 목록
+    triples:        list[dict]        # PendingTriple.toJson() 목록
+    session_id:     Optional[str] = None
+    rejected_count: int = 0
+    modified_count: int = 0
 
 
 # ── 엔드포인트 ─────────────────────────────────────────────────────────────────
@@ -161,17 +174,59 @@ def archive_triple(triple_id: str, body: ArchiveRequest):
 def extract_triples(body: ExtractRequest):
     """구술자료 → AI 트리플 추출 (DB 저장 없이 미리보기 반환).
     확정 저장은 /bulk-confirm 에서 수행."""
+    # 세션 생성 (source_record_id 있을 때만)
+    session_id = body.session_id
+    history = get_history()
+    if not session_id and body.source_record_id:
+        try:
+            session = history.create_session(
+                ontology_version_id=body.ontology_version_id,
+                record_ids=[body.source_record_id],
+            )
+            session_id = session["id"]
+        except Exception:
+            pass
+
     try:
-        return get_extractor().extract_preview(
+        result = get_extractor().extract_preview(
             content=body.content,
             ontology_version_id=body.ontology_version_id,
             source_record_id=body.source_record_id,
         )
+        # 추출 진행 업데이트
+        if session_id:
+            try:
+                extracted = result.get("added", 0) + result.get("skipped", 0)
+                if isinstance(result.get("triples"), list):
+                    extracted = len(result["triples"])
+                history.update_session_progress(
+                    session_id=session_id,
+                    processed_records=1,
+                    extracted_count=extracted,
+                )
+            except Exception:
+                pass
+        return {**result, "session_id": session_id}
     except KeyError as e:
+        if session_id:
+            try:
+                history.fail_session(session_id, str(e))
+            except Exception:
+                pass
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
+        if session_id:
+            try:
+                history.fail_session(session_id, str(e))
+            except Exception:
+                pass
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
+        if session_id:
+            try:
+                history.fail_session(session_id, str(e))
+            except Exception:
+                pass
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -194,12 +249,24 @@ def bulk_confirm_triples(body: BulkConfirmRequest):
                 confidence=float(item.get("confidence", 1.0)),
                 note=item.get("note", ""),
             )
-            # _find_by_spk 가 기존 반환 → skipped
             from dataclasses import asdict
             d = asdict(t); d["status"] = t.status.value
             results.append(d)
-            # 새로 추가됐는지 판단: created_at이 방금이면 added
             added += 1
         except Exception:
             skipped += 1
-    return {"added": added, "skipped": skipped, "triples": results}
+
+    # 세션 완료 처리
+    if body.session_id:
+        try:
+            get_history().complete_session(
+                session_id=body.session_id,
+                confirmed=added,
+                rejected=body.rejected_count,
+                modified=body.modified_count,
+            )
+        except Exception:
+            pass
+
+    return {"added": added, "skipped": skipped, "triples": results,
+            "session_id": body.session_id}

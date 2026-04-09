@@ -11,9 +11,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from core.database import init_db
 from api.router_ontology import router as ontology_router
 from api.router_triple   import router as triple_router
 from api.router_search   import router as search_router
+from api.router_records  import router as records_router
+from api.router_history  import router as history_router
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -30,9 +33,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# DB 초기화 (테이블 없으면 생성)
+init_db()
+
 app.include_router(ontology_router)
 app.include_router(triple_router)
 app.include_router(search_router)
+app.include_router(records_router)
+app.include_router(history_router)
 
 
 @app.get("/health", tags=["서버"])

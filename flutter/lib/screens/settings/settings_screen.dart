@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_client.dart';
-import '../../api/ontology_api.dart';
-import '../../providers/hive_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -13,25 +11,20 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _fastApiUrlCtrl = TextEditingController();
-  final _hiveUrlCtrl = TextEditingController();
 
   bool _fastApiConnected = false;
   bool _fastApiChecking = false;
-  bool _hiveConnected = false;
-  bool _hiveChecking = false;
 
   @override
   void initState() {
     super.initState();
     _fastApiUrlCtrl.text = ref.read(apiClientProvider).baseUrl;
-    _hiveUrlCtrl.text = ref.read(hiveUrlProvider);
     _checkFastApi();
   }
 
   @override
   void dispose() {
     _fastApiUrlCtrl.dispose();
-    _hiveUrlCtrl.dispose();
     super.dispose();
   }
 
@@ -44,30 +37,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
   }
 
-  Future<void> _checkHive() async {
-    setState(() => _hiveChecking = true);
-    final url = _hiveUrlCtrl.text.trim();
-    final ok = await HiveApi(url).checkConnection();
-    setState(() {
-      _hiveConnected = ok;
-      _hiveChecking = false;
-    });
-  }
-
   Future<void> _save() async {
-    // FastAPI URL 저장
-    await ref
-        .read(apiClientProvider)
-        .setBaseUrl(_fastApiUrlCtrl.text.trim());
-
-    // Hive URL 저장
-    final hiveUrl = _hiveUrlCtrl.text.trim();
-    ref.read(hiveUrlProvider.notifier).state = hiveUrl;
-    await saveHiveUrl(hiveUrl);
-
-    // 연결 재확인
-    await Future.wait([_checkFastApi(), _checkHive()]);
-
+    await ref.read(apiClientProvider).setBaseUrl(_fastApiUrlCtrl.text.trim());
+    await _checkFastApi();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('설정이 저장됐습니다.')),
@@ -84,7 +56,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── FastAPI 서버 ───────────────────────────────────────────────
+            // ── FastAPI 서버 ─────────────────────────────────────────────
             _SectionTitle('FastAPI 서버 (v4.0)'),
             const SizedBox(height: 6),
             _ConnectionStatus(
@@ -108,34 +80,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
 
-            const SizedBox(height: 28),
-            const Divider(),
-            const SizedBox(height: 16),
-
-            // ── Hive DB 서버 (v3.0) ───────────────────────────────────────
-            _SectionTitle('Hive DB 서버 (v3.0)'),
-            const SizedBox(height: 6),
-            _ConnectionStatus(
-              checking: _hiveChecking,
-              connected: _hiveConnected,
-              label: 'Hive DB',
-              onRecheck: _checkHive,
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              '구술기록 입력 시 Hive DB 탭에서 사용합니다.\n'
-              '미사용 시 빈칸으로 두세요.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _hiveUrlCtrl,
-              decoration: const InputDecoration(
-                hintText: 'http://192.168.0.x:8000',
-                border: OutlineInputBorder(),
-              ),
-            ),
-
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
@@ -152,11 +96,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const Divider(),
             const SizedBox(height: 16),
 
-            // ── 앱 정보 ───────────────────────────────────────────────────
+            // ── 앱 정보 ─────────────────────────────────────────────────
             _SectionTitle('앱 정보'),
             const SizedBox(height: 12),
             _InfoRow('버전', 'v4.0.0'),
-            _InfoRow('백엔드', 'FastAPI + uvicorn'),
+            _InfoRow('백엔드', 'FastAPI + SQLite'),
             _InfoRow('AI 모델', 'Claude Sonnet 4.6'),
             _InfoRow('플랫폼', 'Windows / Android / iOS'),
           ],

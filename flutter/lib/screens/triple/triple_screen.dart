@@ -38,10 +38,15 @@ class _TripleScreenState extends ConsumerState<TripleScreen>
 
   @override
   Widget build(BuildContext context) {
-    // provider step 변경 → 탭 자동 이동 (Step 1→2: 추출 완료 후)
+    // provider step 변경 → 탭 자동 이동 (Step 1→2: 추출 완료 후, Step 2→3: 확정 저장 후)
+    // addPostFrameCallback: build 도중 animateTo 호출 방지 (블랙스크린 버그 수정)
     ref.listen(tripleWorkProvider.select((s) => s.currentStep), (_, step) {
       if (_tabCtrl.index != step) {
-        _tabCtrl.animateTo(step);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _tabCtrl.index != step) {
+            _tabCtrl.animateTo(step);
+          }
+        });
       }
     });
 
