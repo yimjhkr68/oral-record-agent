@@ -1,5 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../api/api_client.dart';
 import '../../models/ontology.dart';
 import '../../providers/ontology_provider.dart';
 
@@ -61,6 +66,38 @@ class _VersionDetailState extends ConsumerState<_VersionDetail>
 
   OntologyVersion get v => ref.watch(ontologyProvider).selectedVersion ?? widget.version;
 
+  Future<void> _downloadJson() async {
+    final versionId = v.versionId;
+    final messenger = ScaffoldMessenger.of(context);
+    final savePath = await FilePicker.platform.saveFile(
+      dialogTitle: 'JSON 저장',
+      fileName: '$versionId.json',
+      allowedExtensions: ['json'],
+      type: FileType.custom,
+    );
+    if (savePath == null) return;
+
+    try {
+      final client = ref.read(apiClientProvider);
+      final res = await client.get('/api/ontologies/$versionId/download');
+      final content = const JsonEncoder.withIndent('  ').convert(res.data);
+      await File(savePath).writeAsString(content, encoding: utf8);
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('저장됨: $savePath')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+              content: Text('다운로드 실패: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDraft = v.status == OntologyStatus.draft;
@@ -93,6 +130,11 @@ class _VersionDetailState extends ConsumerState<_VersionDetail>
                 ),
               ),
               // 액션 버튼
+              IconButton(
+                icon: const Icon(Icons.download_outlined),
+                tooltip: 'JSON 다운로드',
+                onPressed: _downloadJson,
+              ),
               if (isDraft) ...[
                 OutlinedButton(
                   onPressed: () => _confirmVersion(context, ref),
@@ -391,6 +433,23 @@ class _ClassCard extends ConsumerWidget {
                     .toList(),
               ),
             ],
+            if (cls.standardTag.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: cls.standardTag.split('·').map((tag) => Chip(
+                      label: Text(tag.trim(),
+                          style: const TextStyle(fontSize: 10)),
+                      backgroundColor: Colors.blue.withValues(alpha: 0.08),
+                      side: BorderSide(
+                          color: Colors.blue.withValues(alpha: 0.25)),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    )).toList(),
+              ),
+            ],
           ],
         ),
       ),
@@ -532,6 +591,23 @@ class _PredicateCard extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(pred.description,
                   style: const TextStyle(fontSize: 13)),
+            ],
+            if (pred.standardTag.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: pred.standardTag.split('·').map((tag) => Chip(
+                      label: Text(tag.trim(),
+                          style: const TextStyle(fontSize: 10)),
+                      backgroundColor: Colors.teal.withValues(alpha: 0.08),
+                      side: BorderSide(
+                          color: Colors.teal.withValues(alpha: 0.25)),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    )).toList(),
+              ),
             ],
           ],
         ),

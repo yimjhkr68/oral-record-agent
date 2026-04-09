@@ -1,16 +1,17 @@
-"""ontology/ontology_manager.py — 온톨로지 CRUDA + AI 생성 + 버전 확정 (F1·F2·F3)"""
+"""ontology/ontology_manager.py — 온톨로지 CRUDA + AI 생성 + 버전 확정"""
 
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-import json
-
 import anthropic
+
+logger = logging.getLogger(__name__)
 
 
 # ── 데이터 모델 ────────────────────────────────────────────────────────────────
@@ -23,21 +24,56 @@ class OntologyStatus(str, Enum):
 
 @dataclass
 class OntologyClass:
-    name:        str
-    label_ko:    str
-    color:       str
-    description: str = ""
-    examples:    list[str] = field(default_factory=list)
-    note:        str = ""
+    name:         str
+    label_ko:     str
+    color:        str
+    description:  str = ""
+    examples:     list[str] = field(default_factory=list)
+    note:         str = ""
+    standard_tag: str = ""   # "foaf:Person · cidoc:E21_Person · schema:Person"
+    merge_note:   str = ""   # 종합 시 처리 내역
 
 
 @dataclass
 class OntologyPredicate:
-    name:        str
-    domain:      list[str] = field(default_factory=list)
-    range_:      list[str] = field(default_factory=list)
-    description: str = ""
-    note:        str = ""
+    name:         str
+    domain:       list[str] = field(default_factory=list)
+    range_:       list[str] = field(default_factory=list)
+    description:  str = ""
+    note:         str = ""
+    standard_tag: str = ""   # "dc:relation · schema:relatedTo"
+    merge_note:   str = ""   # 종합 시 처리 내역
+
+
+# ── AI 종합 시스템 프롬프트 ───────────────────────────────────────────────────
+
+MERGE_SYSTEM_PROMPT = """당신은 구술기록 아카이브 온톨로지 전문가입니다.
+여러 Draft 온톨로지를 하나로 통합해주세요.
+
+종합 원칙:
+1. 동일/유사 클래스 통합: 같은 개념을 다르게 표현한 클래스는 하나로 합침
+   예) Person + Person → Person (중복 제거)
+   예) Victim + ColonialViolenceVictim → Victim (상위 개념으로 통일)
+2. 독자 클래스 보존: 한쪽에만 있는 클래스는 합집합으로 포함
+3. 구술 도메인 부적합 클래스 제거: 구술기록과 무관한 지나치게 구체적 클래스 제거
+4. 속성(predicate) 도메인/범위 재정의: 통합된 클래스 기준으로 재설정
+
+반드시 다음 JSON 형식으로만 응답하세요:
+{
+  "merge_report": {
+    "merged":  [{"result": "클래스명", "sources": ["원본1", "원본2"], "reason": "이유"}],
+    "added":   [{"name": "클래스명", "from": "draft-xxx", "reason": "이유"}],
+    "removed": [{"name": "클래스명", "reason": "이유"}]
+  },
+  "classes": [
+    {"name": "영문PascalCase", "label_ko": "한국어", "color": "#hex",
+     "description": "정의", "examples": [], "merge_note": "처리내역"}
+  ],
+  "predicates": [
+    {"name": "속성명", "domain": [], "range_": [], "description": "설명",
+     "merge_note": "처리내역"}
+  ]
+}"""
 
 
 @dataclass
@@ -53,6 +89,40 @@ class OntologyVersion:
     based_on:     Optional[str] = None   # 이전 버전 ID
 
 
+# ── 공통 필터링 함수 ───────────────────────────────────────────────────────────
+
+_ALLOWED_CLASS_FIELDS = {
+    "name", "label_ko", "color", "description",
+    "examples", "note", "standard_tag", "merge_note",
+}
+_ALLOWED_PRED_FIELDS = {
+    "name", "domain", "range_", "description",
+    "note", "standard_tag", "merge_note",
+}
+
+
+def _safe_class(data: dict) -> "OntologyClass | None":
+    """dict → OntologyClass. 알 수 없는 필드·필수 필드 누락 시 None."""
+    if not isinstance(data, dict):
+        return None
+    filtered = {k: v for k, v in data.items() if k in _ALLOWED_CLASS_FIELDS}
+    try:
+        return OntologyClass(**filtered)
+    except TypeError:
+        return None
+
+
+def _safe_predicate(data: dict) -> "OntologyPredicate | None":
+    """dict → OntologyPredicate. 알 수 없는 필드·필수 필드 누락 시 None."""
+    if not isinstance(data, dict):
+        return None
+    filtered = {k: v for k, v in data.items() if k in _ALLOWED_PRED_FIELDS}
+    try:
+        return OntologyPredicate(**filtered)
+    except TypeError:
+        return None
+
+
 # ── OntologyManager ────────────────────────────────────────────────────────────
 
 class OntologyManager:
@@ -63,6 +133,7 @@ class OntologyManager:
         from core.history_store import HistoryStore
         self._store: OntologyStore = store or OntologyStore()
         self._history: HistoryStore = HistoryStore()
+        self.client = anthropic.Anthropic()
         # 인메모리 캐시: version_id → OntologyVersion
         self._cache: dict[str, OntologyVersion] = {}
         self._load_all()
@@ -250,15 +321,13 @@ class OntologyManager:
                 f"AI 응답 JSON 파싱 실패 — 원문: {raw[:200]!r}"
             ) from e
 
-        _cls_fields  = {"name", "label_ko", "color", "description", "examples", "note"}
-        _pred_fields = {"name", "domain", "range_", "description", "note"}
         classes = [
-            OntologyClass(**{k: v for k, v in c.items() if k in _cls_fields})
-            for c in parsed.get("classes", [])
+            c for c in (_safe_class(d) for d in parsed.get("classes", []))
+            if c is not None
         ]
         predicates = [
-            OntologyPredicate(**{k: v for k, v in p.items() if k in _pred_fields})
-            for p in parsed.get("predicates", [])
+            p for p in (_safe_predicate(d) for d in parsed.get("predicates", []))
+            if p is not None
         ]
 
         # 새 버전 ID 자동 생성 (타임스탬프 기반)
@@ -272,6 +341,8 @@ class OntologyManager:
             based_on=base_version_id,
             description=f"AI 자동 생성 (샘플 기반{', 기반: ' + base_version_id if base_version_id else ''})",
         )
+        from ontology.standard_tags import apply_standard_tags
+        apply_standard_tags(version)
         self._cache[version_id] = version
         self._store.save_draft(version)
         try:
@@ -291,112 +362,117 @@ class OntologyManager:
 
     def merge_drafts(self,
                      version_ids: list[str],
-                     new_version_id: str) -> OntologyVersion:
+                     new_version_id: str,
+                     description: str = "") -> OntologyVersion:
         """
-        지정된 Draft 버전들의 클래스/속성을 수집 → AI로 중복 제거 + 정리 → 새 Draft 저장.
+        지정된 버전들의 클래스/속성을 수집 → AI로 중복 제거 + 정리 → 새 Draft 저장.
         Draft/Confirmed/Archived 모두 병합 소스로 사용 가능.
         new_version_id 중복 시 ValueError.
         """
-        if new_version_id in self._cache:
-            raise ValueError(f"이미 존재하는 version_id: {new_version_id!r}")
         if not version_ids:
             raise ValueError("병합할 버전을 1개 이상 지정해야 합니다.")
+        if new_version_id in self._cache:
+            raise ValueError(f"이미 존재하는 version_id: {new_version_id!r}")
 
-        # 소스 버전들 수집
-        import dataclasses
-        sources = []
+        # 1. 대상 버전 수집
+        drafts = []
         for vid in version_ids:
-            v = self.get(vid)  # KeyError면 그대로 전파
-            sources.append(dataclasses.asdict(v))
+            try:
+                drafts.append(self.get(vid))
+            except KeyError:
+                raise ValueError(f"버전을 찾을 수 없습니다: {vid!r}")
 
-        sources_json = json.dumps(sources, ensure_ascii=False, indent=2)
+        # 2. 클래스/속성 1차 수집
+        all_classes    = [c for d in drafts for c in d.classes]
+        all_predicates = [p for d in drafts for p in d.predicates]
 
-        system_prompt = f"""당신은 구술기록 아카이브 온톨로지 전문가다.
-아래에 여러 온톨로지 버전 초안(Draft)이 주어진다.
-이 초안들을 분석하여 중복을 제거하고, 의미가 유사한 클래스/속성은 통합하여
-하나의 완성도 높은 온톨로지를 만들어라.
-
-원칙:
-- 클래스 name 은 영문 PascalCase
-- 속성 name 은 한국어 동사형
-- 초안에 없는 새 항목은 추가하지 말 것
-- 의미 중복 항목은 더 구체적인 쪽을 살리고 나머지 제거
-
-반드시 다음 JSON 형식으로만 응답해:
-{{
-  "classes": [
-    {{
-      "name": "영문 PascalCase",
-      "label_ko": "한국어 레이블",
-      "color": "#hex",
-      "description": "정의",
-      "examples": ["예시1", "예시2"]
-    }}
-  ],
-  "predicates": [
-    {{
-      "name": "속성명 (한국어 동사형)",
-      "domain": ["허용 주어 클래스"],
-      "range_": ["허용 목적어 클래스"],
-      "description": "의미 설명"
-    }}
-  ]
-}}
-
-병합 대상 초안들:
-{sources_json}"""
-
-        client = anthropic.Anthropic()
-        try:
-            response = client.messages.create(
-                model="claude-sonnet-4-6",
-                max_tokens=8192,
-                messages=[{"role": "user", "content": system_prompt}],
-            )
-        except Exception as e:
-            raise RuntimeError(f"AI API 호출 실패: {e}") from e
-
-        raw = response.content[0].text.strip()
-        # ``` 코드 펜스 제거 (있어도 없어도 동작)
-        clean = raw.replace("```json", "").replace("```", "").strip()
-        try:
-            parsed = json.loads(clean)
-        except json.JSONDecodeError as e:
-            raise RuntimeError(
-                f"AI 응답 JSON 파싱 실패 (응답이 너무 길거나 형식 오류): {e}\n"
-                f"응답 앞부분: {clean[:300]!r}"
-            ) from e
-
-        _cls_fields  = {"name", "label_ko", "color", "description", "examples", "note"}
-        _pred_fields = {"name", "domain", "range_", "description", "note"}
-        classes = [
-            OntologyClass(**{k: v for k, v in c.items() if k in _cls_fields})
-            for c in parsed.get("classes", [])
-            if isinstance(c, dict)
-        ]
-        predicates = [
-            OntologyPredicate(**{k: v for k, v in p.items() if k in _pred_fields})
-            for p in parsed.get("predicates", [])
-            if isinstance(p, dict)
-        ]
-
-        version = OntologyVersion(
-            version_id=new_version_id,
-            classes=classes,
-            predicates=predicates,
-            description=f"AI 종합 병합 ({', '.join(version_ids)})",
+        # 3. AI 종합
+        merged_classes, merged_predicates = self._ai_merge(
+            all_classes, all_predicates, version_ids
         )
-        self._cache[new_version_id] = version
-        self._store.save_draft(version)
+
+        # 4. 새 Draft 생성
+        new_version = OntologyVersion(
+            version_id=new_version_id,
+            status=OntologyStatus.DRAFT,
+            classes=merged_classes,
+            predicates=merged_predicates,
+            description=description or f"AI 종합 병합 ({', '.join(version_ids)})",
+            based_on=version_ids[0] if version_ids else None,
+        )
+        from ontology.standard_tags import apply_standard_tags
+        apply_standard_tags(new_version)
+        self._cache[new_version_id] = new_version
+        self._store.save_draft(new_version)
+
+        # 5. 이력 기록 (실패해도 merge 자체는 성공)
         try:
             self._history.record_ontology_event(
                 event_type="merged",
                 version_id=new_version_id,
-                detail=f"병합 소스: {', '.join(version_ids)} → 클래스 {len(classes)}개, 속성 {len(predicates)}개",
+                detail=(
+                    f"Draft {version_ids} 종합 → "
+                    f"클래스 {len(merged_classes)}개, 속성 {len(merged_predicates)}개"
+                ),
             )
-        except Exception:
-            pass
-        return version
+        except Exception as e:
+            logger.warning(f"이력 기록 실패 (무시): {e}")
+
+        return new_version
+
+    def _ai_merge(self,
+                  classes: list[OntologyClass],
+                  predicates: list[OntologyPredicate],
+                  source_ids: list[str]) -> tuple[list, list]:
+        """AI 종합 + 방어적 파싱"""
+        prompt = self._build_merge_prompt(classes, predicates, source_ids)
+
+        try:
+            message = self.client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=8192,
+                system=MERGE_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": prompt}],
+            )
+        except Exception as e:
+            raise RuntimeError(f"AI API 호출 실패: {e}") from e
+
+        text = "".join(b.text for b in message.content if hasattr(b, "text"))
+        clean = text.replace("```json", "").replace("```", "").strip()
+
+        try:
+            parsed = json.loads(clean)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"AI 응답 파싱 실패: {e}\n응답 앞부분: {clean[:300]!r}"
+            ) from e
+
+        merged_classes = [
+            c for c in (_safe_class(d) for d in parsed.get("classes", []))
+            if c is not None
+        ]
+        merged_predicates = [
+            p for p in (_safe_predicate(d) for d in parsed.get("predicates", []))
+            if p is not None
+        ]
+
+        return merged_classes, merged_predicates
+
+    def _build_merge_prompt(self,
+                            classes: list[OntologyClass],
+                            predicates: list[OntologyPredicate],
+                            source_ids: list[str]) -> str:
+        """AI 종합용 사용자 프롬프트 생성"""
+        import dataclasses
+        cls_list  = [dataclasses.asdict(c) for c in classes]
+        pred_list = [dataclasses.asdict(p) for p in predicates]
+        return (
+            f"병합 소스: {', '.join(source_ids)}\n\n"
+            f"수집된 클래스 ({len(cls_list)}개):\n"
+            f"{json.dumps(cls_list, ensure_ascii=False, indent=2)}\n\n"
+            f"수집된 속성 ({len(pred_list)}개):\n"
+            f"{json.dumps(pred_list, ensure_ascii=False, indent=2)}"
+        )
 
     # ── 버전 확정 (F3) ──────────────────────────────────────────────────────────
 

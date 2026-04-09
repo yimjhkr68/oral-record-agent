@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import io
+import dataclasses
 import tempfile
 import os
 from typing import Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from ontology.ontology_manager import OntologyClass, OntologyManager, OntologyPredicate
@@ -45,6 +46,7 @@ class GenerateRequest(BaseModel):
 class MergeRequest(BaseModel):
     version_ids:    list[str]
     new_version_id: str
+    description:    str = ""
 
 
 # ── 엔드포인트 ─────────────────────────────────────────────────────────────────
@@ -69,11 +71,16 @@ def list_all():
 def merge_drafts(body: MergeRequest):
     """여러 Draft 버전 → AI 종합 병합 → 새 Draft 생성."""
     try:
-        return get_manager().merge_drafts(body.version_ids, body.new_version_id)
+        return get_manager().merge_drafts(
+            body.version_ids, body.new_version_id, body.description
+        )
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        # AI API 호출 실패 (크레딧 부족, 네트워크 오류 등)
+        raise HTTPException(status_code=502, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -135,6 +142,23 @@ def confirm_version(version_id: str):
         raise HTTPException(status_code=403, detail=str(e))
 
 
+@router.get("/{version_id}/download")
+def download_ontology(version_id: str):
+    """온톨로지 JSON 파일 다운로드 (Draft 포함 전체)."""
+    try:
+        v = get_manager().get(version_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    data = dataclasses.asdict(v)
+    data["status"] = v.status.value  # Enum → str
+    return JSONResponse(
+        content=data,
+        headers={
+            "Content-Disposition": f'attachment; filename="{version_id}.json"',
+        },
+    )
+
+
 @router.post("/{version_id}/archive")
 def archive_version(version_id: str):
     """Confirmed → Archived 전환."""
@@ -146,54 +170,27 @@ def archive_version(version_id: str):
 
 @router.post("/extract-text")
 async def extract_text_from_file(file: UploadFile = File(...)):
-    """파일(txt/pdf/docx) → 텍스트 추출.
+    """파일(txt/pdf/docx) → 텍스트 추출 (8000자 제한).
     반환: {"text": "추출된 텍스트", "filename": "파일명", "chars": N}
     """
+    from utils.file_extractor import extract_text_from_file as _extract
+
     filename = file.filename or ""
     ext = os.path.splitext(filename)[1].lower()
-
     content_bytes = await file.read()
 
-    if ext == ".txt":
+    suffix = ext or ".tmp"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(content_bytes)
+        tmp_path = tmp.name
+
+    try:
         try:
-            text = content_bytes.decode("utf-8")
-        except UnicodeDecodeError:
-            text = content_bytes.decode("cp949", errors="replace")
-
-    elif ext == ".pdf":
-        try:
-            from pypdf import PdfReader
-            reader = PdfReader(io.BytesIO(content_bytes))
-            text = "\n".join(
-                page.extract_text() or "" for page in reader.pages
-            )
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"PDF 파싱 실패: {e}")
-
-    elif ext == ".docx":
-        try:
-            from docx import Document
-            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
-                tmp.write(content_bytes)
-                tmp_path = tmp.name
-            try:
-                doc = Document(tmp_path)
-                text = "\n".join(
-                    p.text for p in doc.paragraphs if p.text.strip()
-                )
-            finally:
-                os.unlink(tmp_path)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"DOCX 파싱 실패: {e}")
-
-    else:
-        raise HTTPException(
-            status_code=415,
-            detail=f"지원하지 않는 파일 형식: {ext!r}. txt / pdf / docx만 지원합니다.",
-        )
-
-    text = text.strip()
-    if not text:
-        raise HTTPException(status_code=400, detail="파일에서 텍스트를 추출할 수 없습니다.")
+            text = _extract(tmp_path, filename)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
     return {"text": text, "filename": filename, "chars": len(text)}

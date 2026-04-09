@@ -196,6 +196,7 @@ class _ListHeader extends ConsumerWidget {
     final state = ref.read(ontologyProvider);
     final idCtrl = TextEditingController(
         text: 'merged-${DateTime.now().millisecondsSinceEpoch ~/ 1000}');
+    final descCtrl = TextEditingController();
 
     final ok = await showDialog<bool>(
       context: context,
@@ -219,6 +220,16 @@ class _ListHeader extends ConsumerWidget {
               controller: idCtrl,
               decoration: const InputDecoration(
                 labelText: '새 버전 ID',
+                hintText: '예: v2.0, oral-history-v2',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descCtrl,
+              decoration: const InputDecoration(
+                labelText: '설명 (선택)',
+                hintText: '예: 제주 4·3 구술 샘플 3개 종합',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -256,6 +267,7 @@ class _ListHeader extends ConsumerWidget {
     final result = await ref.read(ontologyProvider.notifier).mergeDrafts(
           state.selectedForMerge.toList(),
           idCtrl.text.trim(),
+          descCtrl.text.trim(),
         );
 
     if (!context.mounted) return;

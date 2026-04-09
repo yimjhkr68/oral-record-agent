@@ -6,6 +6,7 @@ class OntologyClass {
   final String color;
   final String description;
   final List<String> examples;
+  final String standardTag;
 
   const OntologyClass({
     required this.name,
@@ -13,6 +14,7 @@ class OntologyClass {
     required this.color,
     this.description = '',
     this.examples = const [],
+    this.standardTag = '',
   });
 
   factory OntologyClass.fromJson(Map<String, dynamic> json) => OntologyClass(
@@ -21,6 +23,7 @@ class OntologyClass {
     color: json['color'] ?? '#888888',
     description: json['description'] ?? '',
     examples: List<String>.from(json['examples'] ?? []),
+    standardTag: json['standard_tag'] ?? '',
   );
 
   Map<String, dynamic> toJson() => {
@@ -29,6 +32,7 @@ class OntologyClass {
     'color': color,
     'description': description,
     'examples': examples,
+    'standard_tag': standardTag,
   };
 }
 
@@ -37,12 +41,14 @@ class OntologyPredicate {
   final List<String> domain;
   final List<String> range;
   final String description;
+  final String standardTag;
 
   const OntologyPredicate({
     required this.name,
     this.domain = const [],
     this.range = const [],
     this.description = '',
+    this.standardTag = '',
   });
 
   factory OntologyPredicate.fromJson(Map<String, dynamic> json) =>
@@ -51,6 +57,7 @@ class OntologyPredicate {
         domain: List<String>.from(json['domain'] ?? []),
         range: List<String>.from(json['range_'] ?? []),
         description: json['description'] ?? '',
+        standardTag: json['standard_tag'] ?? '',
       );
 
   Map<String, dynamic> toJson() => {
@@ -58,6 +65,7 @@ class OntologyPredicate {
     'domain': domain,
     'range_': range,
     'description': description,
+    'standard_tag': standardTag,
   };
 }
 

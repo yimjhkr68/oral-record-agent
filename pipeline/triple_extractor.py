@@ -24,6 +24,8 @@ class TripleExtractor:
         self.tm     = triple_manager
         self.client = anthropic.Anthropic()
 
+    _MAX_CHARS = 8000  # AI 컨텍스트 초과 방지
+
     def _call_ai(self, content: str, ontology_version_id: str,
                  source_record_id: Optional[str]) -> tuple[list[dict], str]:
         """공통: 온톨로지 검증 + AI 호출 + JSON 파싱.
@@ -34,6 +36,16 @@ class TripleExtractor:
                 f"Confirmed 상태의 온톨로지만 사용 가능합니다. "
                 f"현재 상태: {version.status} (version_id={ontology_version_id!r})"
             )
+
+        # 텍스트 길이 제한
+        if len(content) > self._MAX_CHARS:
+            import logging
+            logging.getLogger(__name__).warning(
+                "텍스트 %d자 → %d자로 잘림 (source: %s)",
+                len(content), self._MAX_CHARS, source_record_id or "-",
+            )
+            content = content[: self._MAX_CHARS]
+
         system_prompt = self._build_system_prompt(version)
         try:
             response = self.client.messages.create(

@@ -221,6 +221,14 @@ def extract_triples(body: ExtractRequest):
             except Exception:
                 pass
         raise HTTPException(status_code=422, detail=str(e))
+    except RuntimeError as e:
+        # AI API 호출 실패 (크레딧 부족, 네트워크 오류 등)
+        if session_id:
+            try:
+                history.fail_session(session_id, str(e))
+            except Exception:
+                pass
+        raise HTTPException(status_code=502, detail=str(e))
     except Exception as e:
         if session_id:
             try:

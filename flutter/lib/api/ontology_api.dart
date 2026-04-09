@@ -71,12 +71,14 @@ class OntologyApi {
 
   Future<OntologyVersion> mergeDrafts(
     List<String> versionIds,
-    String newVersionId,
-  ) async {
+    String newVersionId, [
+    String description = '',
+  ]) async {
     // AI 호출 — postAI() (120초 타임아웃)
     final res = await _client.postAI('/api/ontologies/merge', data: {
       'version_ids': versionIds,
       'new_version_id': newVersionId,
+      if (description.isNotEmpty) 'description': description,
     });
     return OntologyVersion.fromJson(res.data as Map<String, dynamic>);
   }

@@ -245,10 +245,10 @@ class OntologyNotifier extends StateNotifier<OntologyState> {
   // ── Draft 종합 ───────────────────────────────────────────────────────────────
 
   Future<OntologyVersion?> mergeDrafts(
-      List<String> versionIds, String newVersionId) async {
+      List<String> versionIds, String newVersionId, [String description = '']) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final v = await _api.mergeDrafts(versionIds, newVersionId);
+      final v = await _api.mergeDrafts(versionIds, newVersionId, description);
       await loadVersions();
       state = state.copyWith(
         selectedVersion: v,
