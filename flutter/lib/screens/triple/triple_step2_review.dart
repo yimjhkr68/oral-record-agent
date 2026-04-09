@@ -175,7 +175,10 @@ class TripleStep2Review extends ConsumerWidget {
             '${result['skipped'] > 0 ? ' (중복 ${result['skipped']}개 건너뜀)' : ''}'),
         backgroundColor: const Color(0xFF2e7d32),
       ));
-      ref.invalidate(tripleListProvider);
+      // addPostFrameCallback: 탭 이동 애니메이션 완료 후 invalidate → 블랙스크린 방지
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.invalidate(tripleListProvider);
+      });
     } else {
       final err = ref.read(tripleWorkProvider).error ?? '저장 실패';
       ScaffoldMessenger.of(context).showSnackBar(

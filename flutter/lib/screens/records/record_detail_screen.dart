@@ -136,11 +136,12 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen>
               child: const Text('취소')),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              final nav = Navigator.of(context);
+              nav.pop();
               final ok = await ref
                   .read(recordListProvider.notifier)
                   .delete(_record!.id);
-              if (ok && mounted) Navigator.pop(context);
+              if (ok && mounted) nav.pop();
             },
             child: const Text('삭제',
                 style: TextStyle(color: Colors.red)),
@@ -321,9 +322,10 @@ class _EditDialogState extends State<_EditDialog> {
               ? null
               : () async {
                   setState(() => _saving = true);
+                  final nav = Navigator.of(context);
                   await widget.onSaved(
                       _titleCtrl.text.trim(), _noteCtrl.text.trim());
-                  if (mounted) Navigator.pop(context);
+                  if (mounted) nav.pop();
                 },
           child: _saving
               ? const SizedBox(

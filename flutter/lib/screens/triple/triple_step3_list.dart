@@ -53,9 +53,13 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
     _tabCtrl = TabController(length: 2, vsync: this);
     _tabCtrl.addListener(() {
       if (_tabCtrl.indexIsChanging) return;
-      ref.read(tripleStatusProvider.notifier).state =
-          _tabCtrl.index == 0 ? 'active' : 'archived';
-      setState(() => _selected = null);
+      // addPostFrameCallback: build 완료 후 provider 변경 → 블랙스크린 방지
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref.read(tripleStatusProvider.notifier).state =
+            _tabCtrl.index == 0 ? 'active' : 'archived';
+        setState(() => _selected = null);
+      });
     });
   }
 
