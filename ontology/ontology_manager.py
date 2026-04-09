@@ -350,31 +350,34 @@ class OntologyManager:
         try:
             response = client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=4096,
+                max_tokens=8192,
                 messages=[{"role": "user", "content": system_prompt}],
             )
         except Exception as e:
             raise RuntimeError(f"AI API 호출 실패: {e}") from e
 
         raw = response.content[0].text.strip()
-        if "```" in raw:
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
+        # ``` 코드 펜스 제거 (있어도 없어도 동작)
+        clean = raw.replace("```json", "").replace("```", "").strip()
         try:
-            parsed = json.loads(raw)
+            parsed = json.loads(clean)
         except json.JSONDecodeError as e:
-            raise RuntimeError(f"AI 응답 JSON 파싱 실패 — 원문: {raw[:200]!r}") from e
+            raise RuntimeError(
+                f"AI 응답 JSON 파싱 실패 (응답이 너무 길거나 형식 오류): {e}\n"
+                f"응답 앞부분: {clean[:300]!r}"
+            ) from e
 
         _cls_fields  = {"name", "label_ko", "color", "description", "examples", "note"}
         _pred_fields = {"name", "domain", "range_", "description", "note"}
         classes = [
             OntologyClass(**{k: v for k, v in c.items() if k in _cls_fields})
             for c in parsed.get("classes", [])
+            if isinstance(c, dict)
         ]
         predicates = [
             OntologyPredicate(**{k: v for k, v in p.items() if k in _pred_fields})
             for p in parsed.get("predicates", [])
+            if isinstance(p, dict)
         ]
 
         version = OntologyVersion(
