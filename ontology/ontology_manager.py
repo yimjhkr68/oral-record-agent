@@ -39,21 +39,23 @@ class OntologyClass:
     color:        str
     description:  str = ""
     examples:     list[str] = field(default_factory=list)
-    note:         str = ""
-    standard_tag: str = ""   # "foaf:Person · cidoc:E21_Person · schema:Person"
-    merge_note:   str = ""   # 종합 시 처리 내역
-    mappings:     list[ClassMapping] = field(default_factory=list)  # 공표 클래스 매핑
+    note:              str = ""
+    standard_tag:      str = ""   # "foaf:Person · cidoc:E21_Person · schema:Person"
+    merge_note:        str = ""   # 종합 시 처리 내역
+    mappings:          list[ClassMapping] = field(default_factory=list)  # 공표 클래스 매핑
+    mapping_confirmed: bool = False  # 관리자가 standard_tag 확정 여부
 
 
 @dataclass
 class OntologyPredicate:
-    name:         str
-    domain:       list[str] = field(default_factory=list)
-    range_:       list[str] = field(default_factory=list)
-    description:  str = ""
-    note:         str = ""
-    standard_tag: str = ""   # "dc:relation · schema:relatedTo"
-    merge_note:   str = ""   # 종합 시 처리 내역
+    name:              str
+    domain:            list[str] = field(default_factory=list)
+    range_:            list[str] = field(default_factory=list)
+    description:       str = ""
+    note:              str = ""
+    standard_tag:      str = ""   # "dc:relation · schema:relatedTo"
+    merge_note:        str = ""   # 종합 시 처리 내역
+    mapping_confirmed: bool = False  # 관리자가 standard_tag 확정 여부
 
 
 # ── AI 종합 시스템 프롬프트 ───────────────────────────────────────────────────
@@ -105,10 +107,12 @@ class OntologyVersion:
 _ALLOWED_CLASS_FIELDS = {
     "name", "label_ko", "color", "description",
     "examples", "note", "standard_tag", "merge_note", "mappings",
+    "mapping_confirmed",
 }
 _ALLOWED_PRED_FIELDS = {
     "name", "domain", "range_", "description",
     "note", "standard_tag", "merge_note",
+    "mapping_confirmed",
 }
 _ALLOWED_MAPPING_FIELDS = {"curie", "ontology_id", "is_primary", "confidence", "note"}
 
@@ -204,13 +208,74 @@ class OntologyManager:
             raise KeyError(f"온톨로지 버전을 찾을 수 없습니다: {version_id!r}")
         return self._cache[version_id]
 
-    def list_all(self) -> list[OntologyVersion]:
-        """전체 버전 목록, 최신순."""
-        return sorted(
+    def list_all(
+        self,
+        status: str | None = None,
+        has_standard_tag: bool | None = None,
+    ) -> list[OntologyVersion]:
+        """전체 버전 목록, 최신순. status / has_standard_tag 필터 지원."""
+        versions: list[OntologyVersion] = sorted(
             self._cache.values(),
             key=lambda v: v.created_at,
             reverse=True,
         )
+        if status is not None:
+            try:
+                status_enum = OntologyStatus(status)
+            except ValueError:
+                return []
+            versions = [v for v in versions if v.status == status_enum]
+        if has_standard_tag is not None:
+            versions = [
+                v for v in versions
+                if has_standard_tag == any(c.standard_tag for c in v.classes)
+            ]
+        return versions
+
+    def rename(self, version_id: str, new_version_id: str) -> OntologyVersion:
+        """버전 ID(이름) 변경. 중복 시 ValueError, 없으면 KeyError.
+
+        - 파일 rename (old 삭제 → new 저장)
+        - 메모리 캐시 업데이트
+        - 이력 기록: "renamed" 이벤트
+        """
+        if version_id not in self._cache:
+            raise KeyError(f"온톨로지 버전을 찾을 수 없습니다: {version_id!r}")
+        if new_version_id in self._cache:
+            raise ValueError(f"이미 존재하는 version_id: {new_version_id!r}")
+
+        version = self._cache[version_id]
+        version.version_id = new_version_id
+
+        # 파일 저장 (old 파일 삭제 → new 파일 저장)
+        if version.status == OntologyStatus.DRAFT:
+            try:
+                self._store.delete_draft(version_id)
+            except KeyError:
+                pass
+            self._store.save_draft(version)
+        else:
+            # CONFIRMED or ARCHIVED — confirmed 디렉토리
+            try:
+                self._store.delete_confirmed(version_id)
+            except KeyError:
+                pass
+            self._store.save_confirmed(version)
+
+        # 캐시 갱신
+        del self._cache[version_id]
+        self._cache[new_version_id] = version
+
+        try:
+            self._history.record_ontology_event(
+                event_type="renamed",
+                version_id=new_version_id,
+                detail=f"이름 변경: {version_id!r} → {new_version_id!r}",
+            )
+        except Exception:
+            pass
+
+        return version
 
     def update(self,
                version_id: str,
@@ -377,16 +442,13 @@ class OntologyManager:
             raise RuntimeError(f"AI API 호출 실패: {e}") from e
 
         raw = response.content[0].text.strip()
-        # JSON 블록만 추출
-        if "```" in raw:
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
+        # 코드 펜스 전체 제거 (```json ... ``` / ``` ... ``` 모두 처리)
+        clean = raw.replace("```json", "").replace("```", "").strip()
         try:
-            parsed = json.loads(raw)
+            parsed = json.loads(clean)
         except json.JSONDecodeError as e:
-            raise RuntimeError(
-                f"AI 응답 JSON 파싱 실패 — 원문: {raw[:200]!r}"
+            raise ValueError(
+                f"AI 응답 파싱 실패: {e}\n응답 앞부분: {clean[:300]!r}"
             ) from e
 
         classes = [

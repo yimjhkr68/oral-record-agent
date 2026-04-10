@@ -24,14 +24,21 @@ def _to_dict(version: "OntologyVersion") -> dict:
     return asdict(version)
 
 
+_ALLOWED_VERSION_FIELDS = {
+    "version_id", "status", "classes", "predicates",
+    "created_at", "confirmed_at", "archived_at", "description", "based_on",
+}
+
+
 def _from_dict(data: dict) -> "OntologyVersion":
-    """dict → OntologyVersion 역직렬화."""
+    """dict → OntologyVersion 역직렬화. 알 수 없는 필드는 무시."""
     from ontology.ontology_manager import (
         OntologyStatus, OntologyVersion,
         _safe_class, _safe_predicate,
     )
-    data = dict(data)
-    data["status"] = OntologyStatus(data["status"])
+    # OntologyVersion에 없는 필드(구 버전 잔재 등) 무시
+    data = {k: v for k, v in data.items() if k in _ALLOWED_VERSION_FIELDS}
+    data["status"] = OntologyStatus(data.get("status", "draft"))
     # _safe_class/_safe_predicate 로 역직렬화 — ClassMapping 중첩 포함 처리
     data["classes"] = [
         c for c in (_safe_class(d) for d in data.get("classes", []))
@@ -123,4 +130,11 @@ class OntologyStore:
         path = self.drafts_dir / f"{version_id}.json"
         if not path.exists():
             raise KeyError(f"Draft 파일 없음: {version_id!r}")
+        path.unlink()
+
+    def delete_confirmed(self, version_id: str) -> None:
+        """confirmed/{version_id}.json 삭제. 없으면 KeyError."""
+        path = self.confirmed_dir / f"{version_id}.json"
+        if not path.exists():
+            raise KeyError(f"Confirmed 파일 없음: {version_id!r}")
         path.unlink()

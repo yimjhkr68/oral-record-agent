@@ -52,6 +52,10 @@ class MergeRequest(BaseModel):
     description:    str = ""
 
 
+class RenameRequest(BaseModel):
+    new_version_id: str
+
+
 # ── 엔드포인트 ─────────────────────────────────────────────────────────────────
 
 @router.post("/", status_code=201)
@@ -65,9 +69,12 @@ def create_draft(body: CreateRequest):
 
 
 @router.get("/")
-def list_all():
-    """전체 버전 목록 (최신순)."""
-    return get_manager().list_all()
+def list_all(
+    status: Optional[str] = None,
+    has_standard_tag: Optional[bool] = None,
+):
+    """전체 버전 목록 (최신순). status / has_standard_tag 필터 지원."""
+    return get_manager().list_all(status=status, has_standard_tag=has_standard_tag)
 
 
 @router.post("/merge", status_code=201)
@@ -81,6 +88,9 @@ def merge_drafts(body: MergeRequest):
         raise HTTPException(status_code=409, detail=str(e))
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        # AI 응답 파싱 실패
+        raise HTTPException(status_code=422, detail=str(e))
     except RuntimeError as e:
         # AI API 호출 실패 (크레딧 부족, 네트워크 오류 등)
         raise HTTPException(status_code=502, detail=str(e))
@@ -95,8 +105,162 @@ def generate_from_sample(body: GenerateRequest):
         return get_manager().generate_from_sample(
             body.sample_text, body.base_version_id
         )
+    except ValueError as e:
+        # AI 응답 파싱 실패 — 재시도 가능한 클라이언트 오류
+        raise HTTPException(status_code=422, detail=str(e))
+    except RuntimeError as e:
+        # AI API 호출 실패 (크레딧, 네트워크 등)
+        raise HTTPException(status_code=502, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── 일괄 내보내기 ──────────────────────────────────────────────────────────────
+
+class ExportRequest(BaseModel):
+    version_ids: list[str]
+
+
+@router.post("/export")
+def export_ontologies(body: ExportRequest):
+    """선택한 버전들을 JSON 파일로 내보내기. 최대 100건 제한."""
+    import json
+    from datetime import datetime
+    from fastapi.responses import Response
+
+    if not body.version_ids:
+        raise HTTPException(status_code=400, detail="version_ids 필요")
+    if len(body.version_ids) > 100:
+        raise HTTPException(status_code=400, detail="최대 100건까지 선택 가능합니다")
+
+    manager = get_manager()
+    items = []
+    for vid in body.version_ids:
+        try:
+            v = manager.get(vid)
+        except KeyError:
+            continue  # 없는 버전은 건너뜀
+        items.append({
+            "version_id":   v.version_id,
+            "status":       v.status.value,
+            "description":  v.description,
+            "created_at":   v.created_at,
+            "confirmed_at": v.confirmed_at,
+            "classes": [
+                {
+                    "name":         c.name,
+                    "label_ko":     c.label_ko,
+                    "color":        c.color,
+                    "description":  c.description,
+                    "examples":     c.examples,
+                    "standard_tag": c.standard_tag,
+                }
+                for c in v.classes
+            ],
+            "predicates": [
+                {
+                    "name":         p.name,
+                    "domain":       p.domain,
+                    "range_":       p.range_,
+                    "description":  p.description,
+                    "standard_tag": p.standard_tag,
+                }
+                for p in v.predicates
+            ],
+        })
+
+    export_data = {
+        "export_type": "ontologies",
+        "exported_at": datetime.now().isoformat(),
+        "total":       len(items),
+        "items":       items,
+    }
+    filename = f"ontologies_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    return Response(
+        content=json.dumps(export_data, ensure_ascii=False, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/{version_id}/mappings")
+def get_mappings(version_id: str):
+    """클래스·속성별 표준 매핑 추천 + 현재 저장값 + 확정 여부 반환."""
+    from ontology.standard_mappings import get_class_suggestions, get_predicate_suggestions
+
+    try:
+        v = get_manager().get(version_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    classes = [
+        {
+            "name":         c.name,
+            "label_ko":     c.label_ko,
+            "color":        c.color,
+            "current_tag":  c.standard_tag,
+            "suggestions":  get_class_suggestions(c.name),
+            "is_confirmed": c.mapping_confirmed,
+        }
+        for c in v.classes
+    ]
+    predicates = [
+        {
+            "name":         p.name,
+            "label_ko":     p.name,  # predicate에는 label_ko 없음 — name으로 대체
+            "current_tag":  p.standard_tag,
+            "suggestions":  get_predicate_suggestions(p.name),
+            "is_confirmed": p.mapping_confirmed,
+        }
+        for p in v.predicates
+    ]
+    return {"classes": classes, "predicates": predicates}
+
+
+class MappingPatchItem(BaseModel):
+    name:      str
+    tag:       str
+    confirmed: bool = False
+
+
+class MappingPatchRequest(BaseModel):
+    classes:    list[MappingPatchItem] = []
+    predicates: list[MappingPatchItem] = []
+
+
+@router.patch("/{version_id}/mappings")
+def patch_mappings(version_id: str, body: MappingPatchRequest):
+    """클래스·속성의 standard_tag 및 mapping_confirmed 일괄 업데이트."""
+    manager = get_manager()
+    try:
+        v = manager.get(version_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    # 클래스 업데이트
+    class_index = {c.name: c for c in v.classes}
+    for item in body.classes:
+        if item.name in class_index:
+            class_index[item.name].standard_tag      = item.tag
+            class_index[item.name].mapping_confirmed = item.confirmed
+
+    # 속성 업데이트
+    pred_index = {p.name: p for p in v.predicates}
+    for item in body.predicates:
+        if item.name in pred_index:
+            pred_index[item.name].standard_tag      = item.tag
+            pred_index[item.name].mapping_confirmed = item.confirmed
+
+    # 저장 (status 체크 없이 직접 save — confirmed/archived도 매핑 확정 가능)
+    manager._store.save_draft(v)
+
+    updated_classes    = sum(1 for item in body.classes    if item.name in class_index)
+    updated_predicates = sum(1 for item in body.predicates if item.name in pred_index)
+    return {
+        "version_id":         version_id,
+        "updated_classes":    updated_classes,
+        "updated_predicates": updated_predicates,
+    }
 
 
 @router.get("/{version_id}")
@@ -138,6 +302,29 @@ def delete_draft(version_id: str):
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
+
+
+@router.patch("/{version_id}/rename")
+def rename_version(version_id: str, body: RenameRequest):
+    """버전 ID(이름) 변경. 참조 트리플의 ontology_version 필드도 함께 업데이트."""
+    try:
+        result = get_manager().rename(version_id, body.new_version_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+
+    # 이 버전을 참조하는 트리플의 ontology_version 업데이트
+    try:
+        from api.router_triple import get_triple_manager
+        tm = get_triple_manager()
+        for t in tm.db.all_triples(include_archived=True):
+            if t.ontology_version == version_id:
+                tm.db.update(t.id, ontology_version=body.new_version_id)
+    except Exception:
+        pass  # 트리플 미존재 시 무시
+
+    return result
 
 
 @router.post("/{version_id}/confirm")
