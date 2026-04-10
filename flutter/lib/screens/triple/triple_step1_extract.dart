@@ -183,9 +183,27 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
   Widget build(BuildContext context) {
     final state     = ref.watch(tripleWorkProvider);
     final versions  = ref.watch(ontologyProvider).versions;
+    // confirmed + archived 모두 포함 (archived가 선택된 채 남아 있을 때 assertion 방지)
+    final available = versions
+        .where((v) =>
+            v.status == OntologyStatus.confirmed ||
+            v.status == OntologyStatus.archived)
+        .toList();
     final confirmed = versions
         .where((v) => v.status == OntologyStatus.confirmed)
         .toList();
+
+    // 선택된 버전이 archived인지 확인
+    final selectedVersion = available.cast<OntologyVersion?>().firstWhere(
+          (v) => v?.versionId == state.selectedVersionId,
+          orElse: () => null);
+    final isArchived =
+        selectedVersion?.status == OntologyStatus.archived;
+
+    // 선택된 versionId가 available 목록에 없으면 null로 표시 (assertion 방지)
+    final safeValue = available.any((v) => v.versionId == state.selectedVersionId)
+        ? state.selectedVersionId
+        : null;
 
     return Column(
       children: [
@@ -195,9 +213,9 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _SectionTitle('1. 온톨로지 버전 (Confirmed)'),
+              _SectionTitle('1. 온톨로지 버전'),
               const SizedBox(height: 6),
-              if (confirmed.isEmpty)
+              if (available.isEmpty)
                 _WarningBox('Confirmed 온톨로지가 없습니다. 온톨로지 탭에서 먼저 확정해 주세요.')
               else
                 InputDecorator(
@@ -208,15 +226,22 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
                         EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   ),
                   child: DropdownButton<String>(
-                    value: state.selectedVersionId,
+                    value: safeValue,
                     isExpanded: true,
                     underline: const SizedBox(),
                     hint: const Text('버전 선택'),
-                    items: confirmed
-                        .map((v) => DropdownMenuItem(
-                              value: v.versionId,
-                              child: Text(v.versionId),
-                            ))
+                    items: available
+                        .map((v) {
+                          final arc = v.status == OntologyStatus.archived;
+                          return DropdownMenuItem(
+                            value: v.versionId,
+                            child: Text(
+                              arc ? '${v.versionId} (아카이브)' : v.versionId,
+                              style: TextStyle(
+                                  color: arc ? Colors.grey : null),
+                            ),
+                          );
+                        })
                         .toList(),
                     onChanged: (v) {
                       if (v != null) {
@@ -225,6 +250,16 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
                     },
                   ),
                 ),
+              // archived 선택 시 안내
+              if (isArchived) ...[
+                const SizedBox(height: 6),
+                _WarningBox('아카이브된 온톨로지입니다. 트리플 조회만 가능합니다.'),
+              ],
+              // confirmed 온톨로지가 없고 archived만 있을 때
+              if (!isArchived && confirmed.isEmpty && available.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                _WarningBox('Confirmed 온톨로지가 없습니다. 온톨로지 탭에서 먼저 확정해 주세요.'),
+              ],
               const SizedBox(height: 10),
               if (state.sourceRecords.isNotEmpty)
                 _RecordsSummary(
@@ -338,7 +373,7 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
                     backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: state.canExtract
+                  onPressed: (state.canExtract && !isArchived)
                       ? () => ref.read(tripleWorkProvider.notifier).extractAll()
                       : null,
                 ),
