@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'api_client.dart';
 import '../models/ontology.dart';
+import '../models/published_ontology.dart';
 
 class OntologyApi {
   final ApiClient _client;
@@ -80,6 +81,19 @@ class OntologyApi {
       'new_version_id': newVersionId,
       if (description.isNotEmpty) 'description': description,
     });
+    return OntologyVersion.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  /// Draft 클래스의 공표 온톨로지 매핑 전체 교체
+  Future<OntologyVersion> updateClassMappings(
+    String versionId,
+    String className,
+    List<ClassMapping> mappings,
+  ) async {
+    final res = await _client.put(
+      '/api/ontologies/$versionId/classes/$className/mappings',
+      data: {'mappings': mappings.map((m) => m.toJson()).toList()},
+    );
     return OntologyVersion.fromJson(res.data as Map<String, dynamic>);
   }
 

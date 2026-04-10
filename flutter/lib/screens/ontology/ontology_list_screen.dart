@@ -8,38 +8,75 @@ import '../../api/ontology_api.dart';
 import '../../api/record_api.dart';
 import '../../models/oral_record.dart';
 import 'ontology_detail_panel.dart';
+import 'published_ontology_screen.dart';
 
-class OntologyListScreen extends ConsumerWidget {
+class OntologyListScreen extends StatelessWidget {
   const OntologyListScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        body: Column(
+          children: [
+            Material(
+              color: Theme.of(context).colorScheme.surface,
+              elevation: 1,
+              child: const TabBar(
+                tabs: [
+                  Tab(text: '자체 온톨로지'),
+                  Tab(text: '공표 온톨로지 관리'),
+                ],
+              ),
+            ),
+            const Expanded(
+              child: TabBarView(
+                physics: NeverScrollableScrollPhysics(),
+                children: [
+                  _SelfOntologyTab(),
+                  PublishedOntologyScreen(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── 자체 온톨로지 탭 (기존 목록+상세 패널) ────────────────────────────────────
+
+class _SelfOntologyTab extends ConsumerWidget {
+  const _SelfOntologyTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(ontologyProvider);
 
-    return Scaffold(
-      body: Row(
-        children: [
-          // ── 좌측: 버전 목록 패널 ────────────────────────────────────────
-          SizedBox(
-            width: 280,
-            child: Column(
-              children: [
-                _ListHeader(),
-                if (state.isLoading && state.versions.isEmpty)
-                  const Expanded(
-                      child: Center(child: CircularProgressIndicator()))
-                else if (state.error != null && state.versions.isEmpty)
-                  Expanded(child: _ErrorView(error: state.error!))
-                else
-                  Expanded(child: _VersionList()),
-              ],
-            ),
+    return Row(
+      children: [
+        // ── 좌측: 버전 목록 패널 ────────────────────────────────────────
+        SizedBox(
+          width: 280,
+          child: Column(
+            children: [
+              _ListHeader(),
+              if (state.isLoading && state.versions.isEmpty)
+                const Expanded(
+                    child: Center(child: CircularProgressIndicator()))
+              else if (state.error != null && state.versions.isEmpty)
+                Expanded(child: _ErrorView(error: state.error!))
+              else
+                Expanded(child: _VersionList()),
+            ],
           ),
-          const VerticalDivider(width: 1, thickness: 1),
-          // ── 우측: 상세/편집 패널 ────────────────────────────────────────
-          const Expanded(child: OntologyDetailPanel()),
-        ],
-      ),
+        ),
+        const VerticalDivider(width: 1, thickness: 1),
+        // ── 우측: 상세/편집 패널 ────────────────────────────────────────
+        const Expanded(child: OntologyDetailPanel()),
+      ],
     );
   }
 }

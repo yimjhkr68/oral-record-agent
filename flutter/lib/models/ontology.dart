@@ -1,3 +1,5 @@
+import 'published_ontology.dart';
+
 enum OntologyStatus { draft, confirmed, archived }
 
 class OntologyClass {
@@ -7,6 +9,7 @@ class OntologyClass {
   final String description;
   final List<String> examples;
   final String standardTag;
+  final List<ClassMapping> mappings;
 
   const OntologyClass({
     required this.name,
@@ -15,6 +18,7 @@ class OntologyClass {
     this.description = '',
     this.examples = const [],
     this.standardTag = '',
+    this.mappings = const [],
   });
 
   factory OntologyClass.fromJson(Map<String, dynamic> json) => OntologyClass(
@@ -24,6 +28,9 @@ class OntologyClass {
     description: json['description'] ?? '',
     examples: List<String>.from(json['examples'] ?? []),
     standardTag: json['standard_tag'] ?? '',
+    mappings: (json['mappings'] as List? ?? [])
+        .map((m) => ClassMapping.fromJson(m as Map<String, dynamic>))
+        .toList(),
   );
 
   Map<String, dynamic> toJson() => {
@@ -33,7 +40,26 @@ class OntologyClass {
     'description': description,
     'examples': examples,
     'standard_tag': standardTag,
+    'mappings': mappings.map((m) => m.toJson()).toList(),
   };
+
+  OntologyClass copyWith({
+    String? name,
+    String? labelKo,
+    String? color,
+    String? description,
+    List<String>? examples,
+    String? standardTag,
+    List<ClassMapping>? mappings,
+  }) => OntologyClass(
+    name: name ?? this.name,
+    labelKo: labelKo ?? this.labelKo,
+    color: color ?? this.color,
+    description: description ?? this.description,
+    examples: examples ?? this.examples,
+    standardTag: standardTag ?? this.standardTag,
+    mappings: mappings ?? this.mappings,
+  );
 }
 
 class OntologyPredicate {

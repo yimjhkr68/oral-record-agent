@@ -57,6 +57,9 @@ class ApiClient {
   Future<Response> patch(String path, {dynamic data}) =>
       _dio.patch('$_baseUrl$path', data: data);
 
+  Future<Response> put(String path, {dynamic data}) =>
+      _dio.put('$_baseUrl$path', data: data);
+
   Future<Response> delete(String path) => _dio.delete('$_baseUrl$path');
 
   Future<Response> postFormData(String path, FormData data) =>
