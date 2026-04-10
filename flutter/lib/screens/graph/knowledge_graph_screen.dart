@@ -32,7 +32,11 @@ class _KnowledgeGraphScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(graphProvider.notifier).loadGraph();
+      if (!mounted) return;
+      // 노드가 없을 때만 로드 — 탭 재진입 시 기존 상태(위치, 검색어) 유지
+      if (ref.read(graphProvider).nodes.isEmpty) {
+        ref.read(graphProvider.notifier).loadGraph();
+      }
     });
   }
 
