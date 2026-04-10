@@ -145,19 +145,19 @@ class TripleStep2Review extends ConsumerWidget {
         ref.read(tripleWorkProvider).pendingTriples.length;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: const Text('확정 저장'),
         content: Text('검토된 트리플 $count개를 그래프 DB에 저장합니다.\n'
             '저장 후에는 편집 화면으로 돌아올 수 없습니다.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dialogCtx, false),
               child: const Text('취소')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2e7d32),
                 foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogCtx, true),
             child: const Text('확정'),
           ),
         ],
@@ -176,10 +176,6 @@ class TripleStep2Review extends ConsumerWidget {
             '${result['skipped'] > 0 ? ' (중복 ${result['skipped']}개 건너뜀)' : ''}'),
         backgroundColor: const Color(0xFF2e7d32),
       ));
-      // Step 3 이동은 provider의 currentStep=2 변경이 triple_screen.dart의
-      // ref.listen에서 처리함. 여기서 invalidate를 추가로 호출하면
-      // autoDispose provider와 탭 전환 애니메이션이 충돌해 블랙스크린 발생.
-      // → invalidate 제거, Step3 자체적으로 탭 활성화 시 데이터 로드함.
     } else {
       final err = ref.read(tripleWorkProvider).error ?? '저장 실패';
       messenger.showSnackBar(

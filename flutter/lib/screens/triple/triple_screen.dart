@@ -15,36 +15,37 @@ class TripleScreen extends ConsumerStatefulWidget {
 class _TripleScreenState extends ConsumerState<TripleScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
+  // 프로그래밍 방식 탭 전환 중 플래그 — _onTabChanged가 provider step을 되돌리지 않도록
+  bool _programmaticChange = false;
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
-    _tabCtrl.addListener(_onTabChanged);
-  }
-
-  void _onTabChanged() {
-    if (_tabCtrl.indexIsChanging) return;
-    // 탭 직접 클릭 시 provider step도 동기화
-    ref.read(tripleWorkProvider.notifier).setStep(_tabCtrl.index);
+    // addListener 제거: animateTo 호출 시 notifyListeners()가 즉시 발동해
+    // indexIsChanging 체크 타이밍 레이스로 setStep(oldIndex)가 호출되는 버그 방지.
+    // 사용자 탭 클릭은 TabBar.onTap에서 처리.
   }
 
   @override
   void dispose() {
-    _tabCtrl.removeListener(_onTabChanged);
     _tabCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // provider step 변경 → 탭 자동 이동 (Step 1→2: 추출 완료 후, Step 2→3: 확정 저장 후)
-    // addPostFrameCallback: build 도중 animateTo 호출 방지 (블랙스크린 버그 수정)
-    ref.listen(tripleWorkProvider.select((s) => s.currentStep), (_, step) {
+    // provider step 변경 → 탭 자동 이동
+    ref.listen(tripleWorkProvider.select((s) => s.currentStep), (prev, step) {
       if (_tabCtrl.index != step) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && _tabCtrl.index != step) {
+            _programmaticChange = true;
             _tabCtrl.animateTo(step);
+            // 애니메이션 완료 후 플래그 해제
+            Future.delayed(const Duration(milliseconds: 400), () {
+              _programmaticChange = false;
+            });
           }
         });
       }
@@ -62,6 +63,11 @@ class _TripleScreenState extends ConsumerState<TripleScreen>
             elevation: 1,
             child: TabBar(
               controller: _tabCtrl,
+              onTap: (index) {
+                if (!_programmaticChange) {
+                  ref.read(tripleWorkProvider.notifier).setStep(index);
+                }
+              },
               tabs: [
                 const Tab(text: 'Step 1  추출 설정'),
                 Tab(
