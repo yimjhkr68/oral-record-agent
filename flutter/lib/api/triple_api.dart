@@ -1,30 +1,96 @@
+import 'package:dio/dio.dart';
 import 'api_client.dart';
 import '../models/triple.dart';
 
 class TripleApi {
   final ApiClient _client;
-  TripleApi(this._client);
+  String role; // 'viewer' | 'admin'
 
-  Future<GraphData> listTriples({
+  TripleApi(this._client, {this.role = 'viewer'});
+
+  Options get _adminOpts => Options(headers: {'x-role': role});
+
+  // ── 조회 (인증 불필요) ─────────────────────────────────────────────────────
+
+  Future<List<Triple>> listTriples({
     String q = '',
     String? version,
     String status = 'active',
+    String subjectType = '',
   }) async {
     final res = await _client.get('/api/triples/', params: {
       'q': q,
       if (version != null) 'version': version,
       'status': status,
+      if (subjectType.isNotEmpty) 'subject_type': subjectType,
     });
-    return GraphData.fromJson(res.data as Map<String, dynamic>);
+    final data = res.data as Map<String, dynamic>;
+    return (data['items'] as List? ?? [])
+        .map((t) => Triple.fromJson(t as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// 관리자용 목록 조회 — GET /api/triples/list
+  Future<List<Triple>> listManagedTriples({
+    String? version,
+    String? source,
+    String? createdBy,
+    String? dateFrom,
+    String? dateTo,
+    String? status,
+  }) async {
+    final res = await _client.get('/api/triples/list', params: {
+      if (version != null) 'version': version,
+      if (source != null) 'source': source,
+      if (createdBy != null) 'by': createdBy,
+      if (dateFrom != null) 'from': dateFrom,
+      if (dateTo != null) 'to': dateTo,
+      if (status != null) 'status': status,
+    });
+    final data = res.data as Map<String, dynamic>;
+    return (data['triples'] as List)
+        .map((t) => Triple.fromJson(t as Map<String, dynamic>))
+        .toList();
+  }
+
+  // ── 쓰기 (admin role 필요) ─────────────────────────────────────────────────
+
+  Future<Triple> createTriple({
+    required String subject,
+    required String subjectType,
+    required String predicate,
+    required String object,
+    required String objectType,
+    required String ontologyVersion,
+    String? sourceRecordId,
+    double confidence = 1.0,
+    String note = '',
+    String createdBy = 'admin',
+    String extractionMethod = 'manual',
+  }) async {
+    final res = await _client.post('/api/triples/', data: {
+      'subject': subject,
+      'subject_type': subjectType,
+      'predicate': predicate,
+      'object': object,
+      'object_type': objectType,
+      'ontology_version': ontologyVersion,
+      if (sourceRecordId != null) 'source_record_id': sourceRecordId,
+      'confidence': confidence,
+      'note': note,
+      'created_by': createdBy,
+      'extraction_method': extractionMethod,
+    }, options: _adminOpts);
+    return Triple.fromJson(res.data as Map<String, dynamic>);
   }
 
   Future<void> deleteTriple(String id) async {
-    await _client.delete('/api/triples/$id');
+    await _client.delete('/api/triples/$id', options: _adminOpts);
   }
 
   Future<Triple> archiveTriple(String id, {String reason = ''}) async {
-    final res = await _client
-        .post('/api/triples/$id/archive', data: {'reason': reason});
+    final res = await _client.post('/api/triples/$id/archive',
+        data: {'reason': reason}, options: _adminOpts);
     return Triple.fromJson(res.data as Map<String, dynamic>);
   }
 
@@ -34,6 +100,7 @@ class TripleApi {
     String? objectType,
     double? confidence,
     String? note,
+    String? updatedBy,
   }) async {
     final res = await _client.patch('/api/triples/$id', data: {
       if (predicate != null) 'predicate': predicate,
@@ -41,7 +108,31 @@ class TripleApi {
       if (objectType != null) 'object_type': objectType,
       if (confidence != null) 'confidence': confidence,
       if (note != null) 'note': note,
-    });
+      if (updatedBy != null) 'updated_by': updatedBy,
+    }, options: _adminOpts);
+    return Triple.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<Triple> putTriple(String id, {
+    String? subject,
+    String? subjectType,
+    String? predicate,
+    String? object,
+    String? objectType,
+    double? confidence,
+    String? note,
+    String? updatedBy,
+  }) async {
+    final res = await _client.put('/api/triples/$id', data: {
+      if (subject != null) 'subject': subject,
+      if (subjectType != null) 'subject_type': subjectType,
+      if (predicate != null) 'predicate': predicate,
+      if (object != null) 'object': object,
+      if (objectType != null) 'object_type': objectType,
+      if (confidence != null) 'confidence': confidence,
+      if (note != null) 'note': note,
+      if (updatedBy != null) 'updated_by': updatedBy,
+    }, options: _adminOpts);
     return Triple.fromJson(res.data as Map<String, dynamic>);
   }
 
@@ -67,5 +158,22 @@ class TripleApi {
     final res = await _client.post('/api/triples/bulk-confirm',
         data: {'triples': triples});
     return res.data as Map<String, dynamic>;
+  }
+
+  /// 범주별 카운트 — Map<typeName, count>
+  Future<Map<String, int>> getCategories({
+    String? version,
+    String status = 'active',
+  }) async {
+    final res = await _client.get('/api/triples/categories', params: {
+      if (version != null) 'version': version,
+      'status': status,
+    });
+    final data = res.data as Map<String, dynamic>;
+    final cats = data['categories'] as List? ?? [];
+    return {
+      for (final c in cats)
+        c['name'] as String: (c['count'] as num).toInt()
+    };
   }
 }

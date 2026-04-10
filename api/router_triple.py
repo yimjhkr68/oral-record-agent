@@ -132,20 +132,52 @@ def create_triple(body: CreateRequest,
 
 
 @router.get("/")
-def search_triples(
-    q:       str            = Query("",       description="검색어"),
-    version: Optional[str]  = Query(None,     description="온톨로지 버전"),
-    status:  str            = Query("active", description="active | archived"),
+def list_triples_endpoint(
+    q:            str           = Query("",       description="검색어 (주어/술어/목적어)"),
+    subject_type: str           = Query("",       description="클래스 필터 (주어 타입)"),
+    version:      Optional[str] = Query(None,     description="온톨로지 버전"),
+    status:       str           = Query("active", description="active | archived | all"),
+    limit:        int           = Query(500,      description="최대 반환 건수"),
 ):
-    """검색어 기반 트리플 서브그래프 조회."""
-    try:
-        triple_status = TripleStatus(status)
-    except ValueError:
-        raise HTTPException(status_code=400,
-                            detail=f"유효하지 않은 status: {status!r}")
-    return get_triple_manager().search(
-        query=q, ontology_version=version, status=triple_status
-    )
+    """트리플 목록 조회. q=키워드, subject_type=클래스 필터."""
+    from dataclasses import asdict
+
+    include_archived = status in ("archived", "all")
+    all_t = get_triple_manager().db.all_triples(include_archived=include_archived)
+
+    result = list(all_t)
+
+    # 상태 필터
+    if status == "active":
+        result = [t for t in result if t.status.value == "active"]
+    elif status == "archived":
+        result = [t for t in result if t.status.value == "archived"]
+
+    # 버전 필터
+    if version:
+        result = [t for t in result if t.ontology_version == version]
+
+    # 키워드 필터 (주어/술어/목적어 모두 검색)
+    if q:
+        q_lower = q.lower()
+        result = [
+            t for t in result
+            if q_lower in t.subject.lower()
+            or q_lower in t.predicate.lower()
+            or q_lower in t.object.lower()
+        ]
+
+    # 클래스 필터 (주어 타입)
+    if subject_type:
+        result = [t for t in result if t.subject_type == subject_type]
+
+    items = []
+    for t in result[:limit]:
+        d = asdict(t)
+        d["status"] = t.status.value
+        items.append(d)
+
+    return {"total": len(result), "items": items}
 
 
 @router.get("/stats")
@@ -232,6 +264,27 @@ def search_extended(
         cat["label_ko"] = label_map.get(cat["name"], cat["name"])
 
     return result
+
+
+@router.get("/facets")
+def get_triple_facets():
+    """클래스별 트리플 수 반환 (패싯 버튼용)."""
+    from collections import Counter
+    all_t = get_triple_manager().db.all_triples(include_archived=False)
+    subject_counts = Counter(t.subject_type for t in all_t)
+    object_counts  = Counter(t.object_type  for t in all_t)
+    all_classes = set(subject_counts) | set(object_counts)
+    facets = sorted(
+        [
+            {
+                "class": cls,
+                "count": subject_counts.get(cls, 0) + object_counts.get(cls, 0),
+            }
+            for cls in all_classes
+        ],
+        key=lambda f: -f["count"],
+    )
+    return {"facets": facets}
 
 
 @router.put("/{triple_id}")

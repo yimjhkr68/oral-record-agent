@@ -4,21 +4,36 @@ import '../api/api_client.dart';
 import '../api/triple_api.dart';
 import '../models/triple.dart';
 
+/// 현재 역할: 'viewer' | 'admin'
+final roleProvider = StateProvider<String>((ref) => 'viewer');
+
 final tripleApiProvider = Provider<TripleApi>((ref) {
-  return TripleApi(ref.read(apiClientProvider));
+  final role = ref.watch(roleProvider);
+  return TripleApi(ref.read(apiClientProvider), role: role);
 });
 
 // ── 기존 저장된 트리플 목록 ────────────────────────────────────────────────────
 final tripleQueryProvider         = StateProvider<String>((ref) => '');
 final tripleStatusProvider        = StateProvider<String>((ref) => 'active');
 final tripleVersionFilterProvider = StateProvider<String?>((ref) => null);
+final tripleSubjectTypeProvider   = StateProvider<String>((ref) => '');
 
-final tripleListProvider = FutureProvider.autoDispose<GraphData>((ref) async {
-  final q       = ref.watch(tripleQueryProvider);
-  final status  = ref.watch(tripleStatusProvider);
-  final version = ref.watch(tripleVersionFilterProvider);
+final tripleListProvider = FutureProvider.autoDispose<List<Triple>>((ref) async {
+  final q          = ref.watch(tripleQueryProvider);
+  final status     = ref.watch(tripleStatusProvider);
+  final version    = ref.watch(tripleVersionFilterProvider);
+  final subjType   = ref.watch(tripleSubjectTypeProvider);
   return ref.read(tripleApiProvider).listTriples(
-      q: q, status: status, version: version);
+      q: q, status: status, version: version, subjectType: subjType);
+});
+
+/// 범주별 카운트 — Map<typeName, count>
+final categoryCountProvider =
+    FutureProvider.autoDispose<Map<String, int>>((ref) async {
+  final version = ref.watch(tripleVersionFilterProvider);
+  final status  = ref.watch(tripleStatusProvider);
+  return ref.read(tripleApiProvider).getCategories(
+      version: version, status: status);
 });
 
 // ── 트리플 작업 상태 (Step 1/2) ───────────────────────────────────────────────
