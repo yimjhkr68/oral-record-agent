@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel
 
-from graph.graph_db import GraphDB, TripleStatus
+from graph.graph_db import GraphDB, TripleStatus, EXTRACTION_AUTO, EXTRACTION_MANUAL, EXTRACTION_EDITED
 from graph.triple_manager import TripleManager
 from pipeline.triple_extractor import TripleExtractor
 from api.router_ontology import get_manager as get_ontology_manager
@@ -49,15 +49,17 @@ def get_extractor() -> TripleExtractor:
 # ── 요청 스키마 ────────────────────────────────────────────────────────────────
 
 class CreateRequest(BaseModel):
-    subject:          str
-    subject_type:     str
-    predicate:        str
-    object:           str
-    object_type:      str
-    ontology_version: str
-    source_record_id: Optional[str]  = None
-    confidence:       float          = 1.0
-    note:             str            = ""
+    subject:           str
+    subject_type:      str
+    predicate:         str
+    object:            str
+    object_type:       str
+    ontology_version:  str
+    source_record_id:  Optional[str] = None
+    confidence:        float         = 1.0
+    note:              str           = ""
+    created_by:        str           = "system"
+    extraction_method: str           = EXTRACTION_AUTO
 
 
 class UpdateRequest(BaseModel):
@@ -66,6 +68,28 @@ class UpdateRequest(BaseModel):
     object_type: Optional[str]   = None
     confidence:  Optional[float] = None
     note:        Optional[str]   = None
+    updated_by:  Optional[str]   = None
+
+
+class PutRequest(BaseModel):
+    """전체 수정 (PUT). subject / subject_type 포함."""
+    subject:      Optional[str]   = None
+    subject_type: Optional[str]   = None
+    predicate:    Optional[str]   = None
+    object:       Optional[str]   = None
+    object_type:  Optional[str]   = None
+    confidence:   Optional[float] = None
+    note:         Optional[str]   = None
+    updated_by:   Optional[str]   = None
+
+
+# ── 인증 의존성 ────────────────────────────────────────────────────────────────
+
+def require_admin(x_role: str = Header(default="viewer")) -> str:
+    """X-Role: admin 헤더 필수. 없으면 403."""
+    if x_role.lower() != "admin":
+        raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다.")
+    return x_role
 
 
 class ArchiveRequest(BaseModel):
@@ -89,7 +113,8 @@ class BulkConfirmRequest(BaseModel):
 # ── 엔드포인트 ─────────────────────────────────────────────────────────────────
 
 @router.post("/", status_code=201)
-def create_triple(body: CreateRequest):
+def create_triple(body: CreateRequest,
+                  _: str = Depends(require_admin)):
     """트리플 생성 (동일 S+P+O 존재 시 기존 반환)."""
     return get_triple_manager().create(
         subject=body.subject,
@@ -101,6 +126,8 @@ def create_triple(body: CreateRequest):
         source_record_id=body.source_record_id,
         confidence=body.confidence,
         note=body.note,
+        created_by=body.created_by,
+        extraction_method=body.extraction_method,
     )
 
 
@@ -127,6 +154,106 @@ def triple_stats():
     return get_triple_manager().stats()
 
 
+@router.get("/list")
+def list_triples(
+    version:   Optional[str] = Query(None, description="온톨로지 버전"),
+    source:    Optional[str] = Query(None, description="출처 record_id"),
+    by:        Optional[str] = Query(None, description="생성자"),
+    from_:     Optional[str] = Query(None, alias="from", description="날짜 from (YYYY-MM-DD)"),
+    to:        Optional[str] = Query(None, description="날짜 to (YYYY-MM-DD)"),
+    status:    Optional[str] = Query(None, description="active | archived | (없으면 전체)"),
+):
+    """관리자용 트리플 목록 조회 (필터 지원)."""
+    triples = get_triple_manager().list_triples(
+        ontology_version=version,
+        source_record_id=source,
+        created_by=by,
+        date_from=from_,
+        date_to=to,
+        status=status,
+    )
+    from dataclasses import asdict
+    result = []
+    for t in triples:
+        d = asdict(t)
+        d["status"] = t.status.value
+        result.append(d)
+    return {"triples": result, "total": len(result)}
+
+
+@router.get("/categories")
+def get_categories(
+    version: Optional[str] = Query(None,      description="온톨로지 버전"),
+    status:  Optional[str] = Query("active",  description="active | archived | (없으면 전체)"),
+):
+    """클래스별 트리플 범주화 (건수 포함)."""
+    from dataclasses import asdict
+    result = get_triple_manager().get_categories(
+        ontology_version=version,
+        status=status,
+    )
+
+    # label_ko 보강 — 온톨로지 버전이 지정된 경우 클래스명 → 한국어 레이블 매핑
+    label_map: dict[str, str] = {}
+    if version:
+        try:
+            onto = get_ontology_manager().get_version(version)
+            label_map = {c.name: c.label_ko for c in onto.classes if c.label_ko}
+        except Exception:
+            pass
+
+    for cat in result["categories"]:
+        cat["label_ko"] = label_map.get(cat["name"], cat["name"])
+
+    return result
+
+
+@router.get("/search")
+def search_extended(
+    q:       str           = Query("",       description="검색어"),
+    version: Optional[str] = Query(None,     description="온톨로지 버전"),
+    status:  str           = Query("active", description="active | archived"),
+):
+    """확장 검색: 1홉 트리플 + 범주 정보 반환."""
+    result = get_triple_manager().search_with_categories(
+        query=q, ontology_version=version, status=status
+    )
+
+    # label_ko 보강
+    label_map: dict[str, str] = {}
+    if version:
+        try:
+            onto = get_ontology_manager().get_version(version)
+            label_map = {c.name: c.label_ko for c in onto.classes if c.label_ko}
+        except Exception:
+            pass
+
+    for cat in result["categories"]:
+        cat["label_ko"] = label_map.get(cat["name"], cat["name"])
+
+    return result
+
+
+@router.put("/{triple_id}")
+def put_triple(triple_id: str, body: PutRequest,
+               _: str = Depends(require_admin)):
+    """트리플 전체 수정 (subject/subject_type 포함)."""
+    try:
+        return get_triple_manager().update(
+            triple_id,
+            subject=body.subject,
+            subject_type=body.subject_type,
+            predicate=body.predicate,
+            object_=body.object,
+            object_type=body.object_type,
+            confidence=body.confidence,
+            note=body.note,
+            updated_by=body.updated_by,
+        )
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
 @router.get("/{triple_id}")
 def get_triple(triple_id: str):
     """트리플 단건 조회."""
@@ -137,7 +264,8 @@ def get_triple(triple_id: str):
 
 
 @router.patch("/{triple_id}")
-def update_triple(triple_id: str, body: UpdateRequest):
+def update_triple(triple_id: str, body: UpdateRequest,
+                  _: str = Depends(require_admin)):
     """트리플 수정."""
     try:
         return get_triple_manager().update(
@@ -147,13 +275,15 @@ def update_triple(triple_id: str, body: UpdateRequest):
             object_type=body.object_type,
             confidence=body.confidence,
             note=body.note,
+            updated_by=body.updated_by,
         )
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.delete("/{triple_id}", status_code=204)
-def delete_triple(triple_id: str):
+def delete_triple(triple_id: str,
+                  _: str = Depends(require_admin)):
     """트리플 영구 삭제."""
     try:
         get_triple_manager().delete(triple_id)
@@ -162,8 +292,19 @@ def delete_triple(triple_id: str):
 
 
 @router.post("/{triple_id}/archive")
-def archive_triple(triple_id: str, body: ArchiveRequest):
-    """트리플 아카이브."""
+def archive_triple(triple_id: str, body: ArchiveRequest,
+                   _: str = Depends(require_admin)):
+    """트리플 아카이브 (POST — 하위 호환)."""
+    try:
+        return get_triple_manager().archive(triple_id, reason=body.reason)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.patch("/{triple_id}/archive")
+def archive_triple_patch(triple_id: str, body: ArchiveRequest,
+                         _: str = Depends(require_admin)):
+    """트리플 아카이브 (PATCH)."""
     try:
         return get_triple_manager().archive(triple_id, reason=body.reason)
     except KeyError as e:
@@ -256,6 +397,8 @@ def bulk_confirm_triples(body: BulkConfirmRequest):
                 source_record_id=item.get("source_record_id") or None,
                 confidence=float(item.get("confidence", 1.0)),
                 note=item.get("note", ""),
+                created_by=item.get("created_by", "system"),
+                extraction_method=item.get("extraction_method", EXTRACTION_AUTO),
             )
             from dataclasses import asdict
             d = asdict(t); d["status"] = t.status.value
@@ -278,3 +421,56 @@ def bulk_confirm_triples(body: BulkConfirmRequest):
 
     return {"added": added, "skipped": skipped, "triples": results,
             "session_id": body.session_id}
+
+
+# ── 일괄 내보내기 ──────────────────────────────────────────────────────────────
+
+class TripleExportRequest(BaseModel):
+    triple_ids:       list[str] = []
+    status:           str       = ""
+    ontology_version: str       = ""
+
+
+@router.post("/export")
+def export_triples(body: TripleExportRequest):
+    """트리플 일괄 내보내기. triple_ids 지정 시 해당 ID만, 없으면 status/ontology_version 필터 적용.
+    최대 100건 제한."""
+    import json
+    from datetime import datetime
+    from fastapi.responses import Response
+    from dataclasses import asdict
+
+    tm = get_triple_manager()
+    all_triples = tm.db.all_triples(include_archived=True)
+
+    if body.triple_ids:
+        id_set  = set(body.triple_ids)
+        triples = [t for t in all_triples if t.id in id_set]
+    else:
+        triples = list(all_triples)
+        if body.status:
+            triples = [t for t in triples if t.status.value == body.status]
+        if body.ontology_version:
+            triples = [t for t in triples
+                       if t.ontology_version == body.ontology_version]
+
+    if len(triples) > 10000:
+        raise HTTPException(status_code=400, detail="최대 10000건까지 내보내기 가능합니다")
+
+    def _serialize(t):
+        d = asdict(t)
+        d["status"] = t.status.value
+        return d
+
+    export_data = {
+        "export_type": "triples",
+        "exported_at": datetime.now().isoformat(),
+        "total":       len(triples),
+        "items":       [_serialize(t) for t in triples],
+    }
+    filename = f"triples_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    return Response(
+        content=json.dumps(export_data, ensure_ascii=False, indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

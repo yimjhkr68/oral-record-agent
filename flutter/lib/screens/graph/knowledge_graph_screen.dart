@@ -6,10 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/graph_provider.dart';
+import '../../services/graph_color_settings.dart';
 import '../../widgets/graph/graph_painter.dart';
 import 'graph_legend.dart';
 import 'graph_search_bar.dart';
-import 'node_detail_sheet.dart';
+import 'node_detail_panel.dart';
 
 // ── 메인 화면 ─────────────────────────────────────────────────────────────────
 
@@ -52,12 +53,6 @@ class _KnowledgeGraphScreenState
     for (final node in gs.nodes) {
       if ((Offset(node.x, node.y) - scene).distance <= node.radius + 4) {
         ref.read(graphProvider.notifier).selectNode(node.id);
-        showNodeDetailSheet(
-          context,
-          nodeId: node.id,
-          nodeData: node,
-          rawTriples: gs.rawTriples,
-        );
         return;
       }
     }
@@ -111,65 +106,76 @@ class _KnowledgeGraphScreenState
         ],
       ),
     );
-    if (format == null) return;
+    if (format == null || !mounted) return;
     await _exportGraph(format, gs);
   }
 
   Future<void> _exportGraph(String format, GraphState gs) async {
-    String content;
-    String defaultName;
+    try {
+      String content;
+      String defaultName;
 
-    if (format == 'csv') {
-      final buf = StringBuffer();
-      buf.writeln(
-          'subject,subject_type,predicate,object,object_type,'
-          'confidence,ontology_version,source_record_id,created_at,note');
-      String esc(String s) => '"${s.replaceAll('"', '""')}"';
-      for (final t in gs.rawTriples) {
+      if (format == 'csv') {
+        final buf = StringBuffer();
         buf.writeln(
-            '${esc(t.subject)},${esc(t.subjectType)},${esc(t.predicate)},'
-            '${esc(t.object)},${esc(t.objectType)},${t.confidence},'
-            '${esc(t.ontologyVersion)},${esc(t.sourceRecordId)},'
-            '${esc(t.createdAt)},${esc(t.note)}');
+            'subject,subject_type,predicate,object,object_type,'
+            'confidence,ontology_version,source_record_id,created_at,note');
+        String esc(String s) => '"${s.replaceAll('"', '""')}"';
+        for (final t in gs.rawTriples) {
+          buf.writeln(
+              '${esc(t.subject)},${esc(t.subjectType)},${esc(t.predicate)},'
+              '${esc(t.object)},${esc(t.objectType)},${t.confidence},'
+              '${esc(t.ontologyVersion)},${esc(t.sourceRecordId)},'
+              '${esc(t.createdAt)},${esc(t.note)}');
+        }
+        content = buf.toString();
+        defaultName = 'knowledge_graph.csv';
+      } else {
+        content = const JsonEncoder.withIndent('  ').convert({
+          'nodes': gs.nodes
+              .map((n) => {'id': n.id, 'type': n.type, 'degree': n.degree})
+              .toList(),
+          'triples': gs.rawTriples
+              .map((t) => {
+                    'subject': t.subject,
+                    'subject_type': t.subjectType,
+                    'predicate': t.predicate,
+                    'object': t.object,
+                    'object_type': t.objectType,
+                    'confidence': t.confidence,
+                    'ontology_version': t.ontologyVersion,
+                    'source_record_id': t.sourceRecordId,
+                    'created_at': t.createdAt,
+                    'note': t.note,
+                  })
+              .toList(),
+        });
+        defaultName = 'knowledge_graph.json';
       }
-      content = buf.toString();
-      defaultName = 'knowledge_graph.csv';
-    } else {
-      content = const JsonEncoder.withIndent('  ').convert({
-        'nodes': gs.nodes
-            .map((n) => {'id': n.id, 'type': n.type, 'degree': n.degree})
-            .toList(),
-        'triples': gs.rawTriples
-            .map((t) => {
-                  'subject': t.subject,
-                  'subject_type': t.subjectType,
-                  'predicate': t.predicate,
-                  'object': t.object,
-                  'object_type': t.objectType,
-                  'confidence': t.confidence,
-                  'ontology_version': t.ontologyVersion,
-                  'source_record_id': t.sourceRecordId,
-                  'created_at': t.createdAt,
-                  'note': t.note,
-                })
-            .toList(),
-      });
-      defaultName = 'knowledge_graph.json';
-    }
 
-    final path = await FilePicker.platform.saveFile(
-      dialogTitle: '그래프 내보내기',
-      fileName: defaultName,
-      type: FileType.custom,
-      allowedExtensions: [format],
-    );
-    if (path == null) return;
-    await File(path).writeAsString(content, encoding: utf8);
-    if (mounted) {
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: '그래프 내보내기',
+        fileName: defaultName,
+        type: FileType.custom,
+        allowedExtensions: [format],
+      );
+      if (path == null || !mounted) return;
+
+      await File(path).writeAsString(content, encoding: utf8);
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('저장됨: $path'),
           action: SnackBarAction(label: '확인', onPressed: () {}),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('내보내기 실패: $e'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -231,83 +237,112 @@ class _KnowledgeGraphScreenState
       );
     }
 
+    final selectedNode = gs.selectedNode;
+
     return Scaffold(
-      body: Stack(children: [
-        // ── 1. 그래프 캔버스 ─────────────────────────────────────────────
-        GestureDetector(
-          onTapUp: (d) => _onTapCanvas(d, gs),
-          onPanStart: (d) => _onPanStart(d, gs),
-          onPanUpdate: _onPanUpdate,
-          onPanEnd: (_) => _draggingNodeId = null,
-          child: InteractiveViewer(
-            transformationController: _transformCtrl,
-            constrained: false,
-            boundaryMargin: const EdgeInsets.all(300),
-            minScale: 0.05,
-            maxScale: 5.0,
-            child: CustomPaint(
-              size: const Size(3000, 3000),
-              painter: GraphPainter(
-                nodes: gs.nodes,
-                edges: gs.edges,
-                classColors: graphClassColors,
-                selectedNodeId: gs.selectedNodeId,
-              ),
+      body: Row(
+        children: [
+          // ── 그래프 캔버스 영역 ─────────────────────────────────────────
+          Expanded(
+            child: Stack(
+              children: [
+                // 1. 그래프 캔버스
+                GestureDetector(
+                  onTapUp: (d) => _onTapCanvas(d, gs),
+                  onPanStart: (d) => _onPanStart(d, gs),
+                  onPanUpdate: _onPanUpdate,
+                  onPanEnd: (_) => _draggingNodeId = null,
+                  child: InteractiveViewer(
+                    transformationController: _transformCtrl,
+                    constrained: false,
+                    boundaryMargin: const EdgeInsets.all(300),
+                    minScale: 0.05,
+                    maxScale: 5.0,
+                    child: CustomPaint(
+                      size: const Size(3000, 3000),
+                      painter: GraphPainter(
+                        nodes: gs.nodes,
+                        edges: gs.edges,
+                        classColors: GraphColorSettings.currentColors,
+                        selectedNodeId: gs.selectedNodeId,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 2. 시뮬레이션 인디케이터
+                if (gs.isSimulating)
+                  const Positioned(
+                    top: 70,
+                    right: 16,
+                    child: _SimulatingBadge(),
+                  ),
+
+                // 3. 상단 검색바 오버레이
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  right: 12,
+                  child: GraphSearchBar(
+                    controller: _searchCtrl,
+                    onSearch: (q) =>
+                        ref.read(graphProvider.notifier).search(q),
+                    onClear: () {
+                      _searchCtrl.clear();
+                      ref.read(graphProvider.notifier).search('');
+                    },
+                    onExport: () => _showExportDialog(gs),
+                    onRefresh: () =>
+                        ref.read(graphProvider.notifier).loadGraph(),
+                    stats: gs.stats,
+                  ),
+                ),
+
+                // 4. 하단 범례
+                const Positioned(
+                  bottom: 12,
+                  left: 12,
+                  child: GraphLegend(),
+                ),
+
+                // 5. 줌 힌트
+                Positioned(
+                  bottom: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      '핀치/스크롤 줌  ·  드래그 이동  ·  노드 탭으로 상세',
+                      style:
+                          TextStyle(fontSize: 10, color: Colors.white70),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
 
-        // ── 2. 시뮬레이션 인디케이터 ─────────────────────────────────────
-        if (gs.isSimulating)
-          const Positioned(
-            top: 70,
-            right: 16,
-            child: _SimulatingBadge(),
+          // ── 우측 노드 상세 패널 (선택 시 슬라이드인) ────────────────────
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOut,
+            width: selectedNode != null ? 340 : 0,
+            child: selectedNode != null
+                ? NodeDetailPanel(
+                    node: selectedNode,
+                    rawTriples: gs.rawTriples,
+                    onClose: () =>
+                        ref.read(graphProvider.notifier).selectNode(null),
+                  )
+                : const SizedBox.shrink(),
           ),
-
-        // ── 3. 상단 오버레이 ─────────────────────────────────────────────
-        Positioned(
-          top: 12,
-          left: 12,
-          right: 12,
-          child: GraphSearchBar(
-            controller: _searchCtrl,
-            onSearch: (q) => ref.read(graphProvider.notifier).search(q),
-            onClear: () {
-              _searchCtrl.clear();
-              ref.read(graphProvider.notifier).search('');
-            },
-            onExport: () => _showExportDialog(gs),
-            onRefresh: () => ref.read(graphProvider.notifier).loadGraph(),
-            stats: gs.stats,
-          ),
-        ),
-
-        // ── 4. 하단 범례 ─────────────────────────────────────────────────
-        const Positioned(
-          bottom: 12,
-          left: 12,
-          child: GraphLegend(),
-        ),
-
-        // ── 5. 줌 힌트 ───────────────────────────────────────────────────
-        Positioned(
-          bottom: 12,
-          right: 12,
-          child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.45),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Text(
-              '핀치/스크롤 줌  ·  드래그 이동  ·  노드 탭으로 상세',
-              style: TextStyle(fontSize: 10, color: Colors.white70),
-            ),
-          ),
-        ),
-      ]),
+        ],
+      ),
     );
   }
 }
