@@ -27,12 +27,20 @@ def _to_dict(version: "OntologyVersion") -> dict:
 def _from_dict(data: dict) -> "OntologyVersion":
     """dict → OntologyVersion 역직렬화."""
     from ontology.ontology_manager import (
-        OntologyClass, OntologyPredicate, OntologyStatus, OntologyVersion,
+        OntologyStatus, OntologyVersion,
+        _safe_class, _safe_predicate,
     )
     data = dict(data)
     data["status"] = OntologyStatus(data["status"])
-    data["classes"] = [OntologyClass(**c) for c in data.get("classes", [])]
-    data["predicates"] = [OntologyPredicate(**p) for p in data.get("predicates", [])]
+    # _safe_class/_safe_predicate 로 역직렬화 — ClassMapping 중첩 포함 처리
+    data["classes"] = [
+        c for c in (_safe_class(d) for d in data.get("classes", []))
+        if c is not None
+    ]
+    data["predicates"] = [
+        p for p in (_safe_predicate(d) for d in data.get("predicates", []))
+        if p is not None
+    ]
     return OntologyVersion(**data)
 
 

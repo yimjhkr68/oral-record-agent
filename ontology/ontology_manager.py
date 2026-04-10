@@ -23,6 +23,16 @@ class OntologyStatus(str, Enum):
 
 
 @dataclass
+class ClassMapping:
+    """자체 클래스 ↔ 공표 온톨로지 클래스 매핑 (1:N, 주/보조 구분)."""
+    curie:        str         # e.g. "crm:E21_Person"
+    ontology_id:  str         # e.g. "cidoc-crm"
+    is_primary:   bool  = True
+    confidence:   float = 1.0
+    note:         str   = ""
+
+
+@dataclass
 class OntologyClass:
     name:         str
     label_ko:     str
@@ -32,6 +42,7 @@ class OntologyClass:
     note:         str = ""
     standard_tag: str = ""   # "foaf:Person · cidoc:E21_Person · schema:Person"
     merge_note:   str = ""   # 종합 시 처리 내역
+    mappings:     list[ClassMapping] = field(default_factory=list)  # 공표 클래스 매핑
 
 
 @dataclass
@@ -93,12 +104,29 @@ class OntologyVersion:
 
 _ALLOWED_CLASS_FIELDS = {
     "name", "label_ko", "color", "description",
-    "examples", "note", "standard_tag", "merge_note",
+    "examples", "note", "standard_tag", "merge_note", "mappings",
 }
 _ALLOWED_PRED_FIELDS = {
     "name", "domain", "range_", "description",
     "note", "standard_tag", "merge_note",
 }
+_ALLOWED_MAPPING_FIELDS = {"curie", "ontology_id", "is_primary", "confidence", "note"}
+
+
+def _safe_mapping(data: dict) -> "ClassMapping | None":
+    """dict → ClassMapping. curie 없거나 타입 오류 시 None."""
+    if not isinstance(data, dict):
+        return None
+    try:
+        return ClassMapping(
+            curie=data["curie"],
+            ontology_id=data.get("ontology_id", ""),
+            is_primary=bool(data.get("is_primary", True)),
+            confidence=float(data.get("confidence", 1.0)),
+            note=data.get("note", ""),
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
 
 
 def _safe_class(data: dict) -> "OntologyClass | None":
@@ -106,6 +134,15 @@ def _safe_class(data: dict) -> "OntologyClass | None":
     if not isinstance(data, dict):
         return None
     filtered = {k: v for k, v in data.items() if k in _ALLOWED_CLASS_FIELDS}
+    # mappings: list[dict] → list[ClassMapping] (비-dict 항목 무시)
+    raw = filtered.pop("mappings", [])
+    filtered["mappings"] = [
+        m for m in (
+            _safe_mapping(d) if isinstance(d, dict) else None
+            for d in (raw if isinstance(raw, list) else [])
+        )
+        if m is not None
+    ]
     try:
         return OntologyClass(**filtered)
     except TypeError:
@@ -258,6 +295,7 @@ class OntologyManager:
         """
         구술 샘플 → AI 분석 → Draft OntologyVersion 생성 + 파일 저장.
         base_version_id 있으면 해당 버전 기반으로 확장 제안.
+        공표 온톨로지 클래스 목록을 프롬프트에 포함해 자동 매핑도 함께 생성.
         """
         base_ontology_json = ""
         if base_version_id:
@@ -270,11 +308,30 @@ class OntologyManager:
             except KeyError:
                 pass
 
+        # 공표 온톨로지 클래스 목록 수집 (매핑 제안용)
+        published_classes_section = ""
+        try:
+            from ontology.published_ontology_store import PublishedOntologyStore
+            pub_store = PublishedOntologyStore()
+            lines = []
+            for onto in pub_store.list_all():
+                items = ", ".join(
+                    f"{c.curie}({c.label_ko})" for c in onto.classes
+                )
+                lines.append(f"  {onto.name} ({onto.prefix}): {items}")
+            if lines:
+                published_classes_section = (
+                    "\n\n[공표 온톨로지 클래스 참조 — mappings 작성에 활용]\n"
+                    + "\n".join(lines)
+                )
+        except Exception:
+            pass  # 로드 실패 시 매핑 없이 진행
+
         system_prompt = f"""당신은 구술기록 아카이브 전문가다.
 제공된 구술 텍스트 샘플을 분석하여 지식그래프 온톨로지를 제안해라.
 
 기존 온톨로지({base_ontology_json if base_ontology_json else "없음"})가 있으면 그것을 기반으로 확장 제안해라.
-텍스트에서 실제로 등장하는 개념만 포함해라.
+텍스트에서 실제로 등장하는 개념만 포함해라.{published_classes_section}
 
 반드시 다음 JSON 형식으로만 응답해:
 {{
@@ -284,7 +341,11 @@ class OntologyManager:
       "label_ko": "한국어 레이블",
       "color": "#hex",
       "description": "정의",
-      "examples": ["예시1", "예시2"]
+      "examples": ["예시1", "예시2"],
+      "mappings": [
+        {{"curie": "crm:E21_Person", "ontology_id": "cidoc-crm", "is_primary": true, "confidence": 0.95, "note": ""}},
+        {{"curie": "schema:Person", "ontology_id": "schema-org", "is_primary": false, "confidence": 0.85, "note": ""}}
+      ]
     }}
   ],
   "predicates": [
@@ -295,7 +356,14 @@ class OntologyManager:
       "description": "의미 설명"
     }}
   ]
-}}"""
+}}
+
+매핑 작성 지침:
+- 공표 온톨로지 참조 목록에서 가장 적합한 클래스를 선택해라
+- is_primary=true는 주 매핑(가장 의미적으로 가까운 것) 1개만
+- is_primary=false는 보조 매핑 (0개 이상)
+- confidence: 0.0~1.0 (의미적 유사도)
+- 적합한 공표 클래스가 없으면 mappings를 빈 배열로 두어라"""
 
         client = anthropic.Anthropic()
         try:

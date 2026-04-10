@@ -10,7 +10,10 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from ontology.ontology_manager import OntologyClass, OntologyManager, OntologyPredicate
+from ontology.ontology_manager import (
+    ClassMapping, OntologyClass, OntologyManager, OntologyPredicate,
+    _safe_class, _safe_predicate,
+)
 
 router = APIRouter(prefix="/api/ontologies", tags=["온톨로지"])
 
@@ -109,8 +112,14 @@ def get_version(version_id: str):
 def update_draft(version_id: str, body: UpdateRequest):
     """Draft 버전 수정."""
     try:
-        classes    = [OntologyClass(**c)    for c in body.classes]    if body.classes    else None
-        predicates = [OntologyPredicate(**p) for p in body.predicates] if body.predicates else None
+        classes = (
+            [c for c in (_safe_class(d) for d in body.classes) if c is not None]
+            if body.classes is not None else None
+        )
+        predicates = (
+            [p for p in (_safe_predicate(d) for d in body.predicates) if p is not None]
+            if body.predicates is not None else None
+        )
         return get_manager().update(version_id, classes=classes,
                                     predicates=predicates,
                                     description=body.description)
@@ -194,3 +203,65 @@ async def extract_text_from_file(file: UploadFile = File(...)):
             os.unlink(tmp_path)
 
     return {"text": text, "filename": filename, "chars": len(text)}
+
+
+# ── 공표 클래스 매핑 CRUD ────────────────────────────────────────────────────────
+
+class MappingItem(BaseModel):
+    curie:       str
+    ontology_id: str
+    is_primary:  bool  = True
+    confidence:  float = 1.0
+    note:        str   = ""
+
+
+class MappingsUpdateRequest(BaseModel):
+    mappings: list[MappingItem]
+
+
+@router.put("/{version_id}/classes/{class_name}/mappings")
+def update_class_mappings(
+    version_id: str, class_name: str, body: MappingsUpdateRequest
+):
+    """Draft 버전의 특정 클래스 매핑 전체 교체.
+
+    body.mappings 목록으로 해당 클래스의 mappings를 완전히 대체한다.
+    빈 목록을 보내면 매핑이 전부 삭제된다.
+    """
+    manager = get_manager()
+    try:
+        version = manager.get(version_id)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    if version.status.value != "draft":
+        raise HTTPException(
+            status_code=403,
+            detail=f"Draft 상태만 매핑 수정 가능합니다. 현재 상태: {version.status}",
+        )
+
+    # 클래스 탐색
+    target = next((c for c in version.classes if c.name == class_name), None)
+    if target is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"클래스를 찾을 수 없습니다: {class_name!r}",
+        )
+
+    # 매핑 교체
+    target.mappings = [
+        ClassMapping(
+            curie=m.curie,
+            ontology_id=m.ontology_id,
+            is_primary=m.is_primary,
+            confidence=m.confidence,
+            note=m.note,
+        )
+        for m in body.mappings
+    ]
+
+    # 버전 저장 (update()는 status 체크를 포함하므로 직접 save)
+    manager._store.save_draft(version)
+
+    import dataclasses
+    return dataclasses.asdict(version)
