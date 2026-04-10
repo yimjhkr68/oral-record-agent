@@ -86,42 +86,55 @@ class _KnowledgeGraphScreenState
 
   // ── Export ────────────────────────────────────────────────────────────────
 
-  Future<void> _showExportDialog(GraphState gs) async {
-    if (gs.rawTriples.isEmpty && gs.nodes.isEmpty) return;
+  Future<void> _showExportDialog() async {
+    // 1. async 시작 전 현재 상태를 로컬 변수로 복사 (stale 참조 방지)
+    final gs = ref.read(graphProvider);
+    if (gs.nodes.isEmpty && gs.rawTriples.isEmpty) return;
+
+    final nodes = List.from(gs.nodes);
+    final rawTriples = List.from(gs.rawTriples);
+
+    // 2. 형식 선택 다이얼로그 — builder ctx 사용 (outer context 사용 금지)
     final format = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('그래프 내보내기'),
         content: const Text('저장 형식을 선택하세요.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(ctx),
               child: const Text('취소')),
           OutlinedButton(
-              onPressed: () => Navigator.pop(context, 'json'),
+              onPressed: () => Navigator.pop(ctx, 'json'),
               child: const Text('JSON')),
           ElevatedButton(
-              onPressed: () => Navigator.pop(context, 'csv'),
+              onPressed: () => Navigator.pop(ctx, 'csv'),
               child: const Text('CSV')),
         ],
       ),
     );
     if (format == null || !mounted) return;
-    await _exportGraph(format, gs);
+
+    await _exportGraph(format, nodes, rawTriples);
   }
 
-  Future<void> _exportGraph(String format, GraphState gs) async {
-    try {
-      String content;
-      String defaultName;
+  Future<void> _exportGraph(
+    String format,
+    List<dynamic> nodes,
+    List<dynamic> rawTriples,
+  ) async {
+    // 3. JSON/CSV 생성 (동기 — provider 접근 없음, 로컬 변수만 사용)
+    String content;
+    String defaultName;
 
+    try {
       if (format == 'csv') {
         final buf = StringBuffer();
         buf.writeln(
             'subject,subject_type,predicate,object,object_type,'
             'confidence,ontology_version,source_record_id,created_at,note');
         String esc(String s) => '"${s.replaceAll('"', '""')}"';
-        for (final t in gs.rawTriples) {
+        for (final t in rawTriples) {
           buf.writeln(
               '${esc(t.subject)},${esc(t.subjectType)},${esc(t.predicate)},'
               '${esc(t.object)},${esc(t.objectType)},${t.confidence},'
@@ -132,10 +145,13 @@ class _KnowledgeGraphScreenState
         defaultName = 'knowledge_graph.csv';
       } else {
         content = const JsonEncoder.withIndent('  ').convert({
-          'nodes': gs.nodes
+          'export_type': 'graph',
+          'exported_at': DateTime.now().toIso8601String(),
+          'stats': {'nodes': nodes.length, 'triples': rawTriples.length},
+          'nodes': nodes
               .map((n) => {'id': n.id, 'type': n.type, 'degree': n.degree})
               .toList(),
-          'triples': gs.rawTriples
+          'triples': rawTriples
               .map((t) => {
                     'subject': t.subject,
                     'subject_type': t.subjectType,
@@ -152,33 +168,60 @@ class _KnowledgeGraphScreenState
         });
         defaultName = 'knowledge_graph.json';
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('데이터 변환 실패: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-      final path = await FilePicker.platform.saveFile(
+    // 4. 파일 경로 선택 (native dialog — provider 상태 변경 없음)
+    String? path;
+    try {
+      path = await FilePicker.platform.saveFile(
         dialogTitle: '그래프 내보내기',
         fileName: defaultName,
         type: FileType.custom,
         allowedExtensions: [format],
       );
-      if (path == null || !mounted) return;
-
-      await File(path).writeAsString(content, encoding: utf8);
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('저장됨: $path'),
-          action: SnackBarAction(label: '확인', onPressed: () {}),
-        ),
-      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('내보내기 실패: $e'),
+          content: Text('파일 선택 실패: $e'),
           backgroundColor: Colors.red,
         ),
       );
+      return;
     }
+    if (path == null || !mounted) return;
+
+    // 5. 파일 저장
+    try {
+      await File(path).writeAsString(content, encoding: utf8);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('저장 실패: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // 6. 완료 알림
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('저장됨: $path'),
+        action: SnackBarAction(label: '확인', onPressed: () {}),
+      ),
+    );
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -291,7 +334,7 @@ class _KnowledgeGraphScreenState
                       _searchCtrl.clear();
                       ref.read(graphProvider.notifier).search('');
                     },
-                    onExport: () => _showExportDialog(gs),
+                    onExport: () => _showExportDialog(),
                     onRefresh: () =>
                         ref.read(graphProvider.notifier).loadGraph(),
                     stats: gs.stats,
