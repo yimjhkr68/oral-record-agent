@@ -1,19 +1,81 @@
 import 'package:flutter/material.dart';
-import '../../widgets/graph/graph_painter.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// 하단 범례 — 탭으로 접기/펼치기
-class GraphLegend extends StatefulWidget {
+import '../../providers/graph_provider.dart';
+import '../../services/graph_color_settings.dart';
+
+/// 하단 범례 — 탭으로 접기/펼치기 + 색상 점 클릭으로 색상 변경
+class GraphLegend extends ConsumerStatefulWidget {
   const GraphLegend({super.key});
 
   @override
-  State<GraphLegend> createState() => _GraphLegendState();
+  ConsumerState<GraphLegend> createState() => _GraphLegendState();
 }
 
-class _GraphLegendState extends State<GraphLegend> {
+class _GraphLegendState extends ConsumerState<GraphLegend> {
   bool _expanded = false;
+
+  /// 그래프에 실제 등장하는 클래스 타입 집합
+  Set<String> get _usedTypes {
+    final nodes = ref.read(graphProvider).nodes;
+    return nodes.map((n) => n.type).toSet();
+  }
+
+  Future<void> _editColor(String className) async {
+    final current = GraphColorSettings.colorFor(className);
+    Color picked = current;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('$className 색상 변경'),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: current,
+            onColorChanged: (c) => picked = c,
+            pickerAreaHeightPercent: 0.6,
+            enableAlpha: false,
+            labelTypes: const [],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await GraphColorSettings.resetColor(className);
+              if (mounted) Navigator.pop(context, true);
+            },
+            child: const Text('기본값으로'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('적용'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      await GraphColorSettings.setColor(className, picked);
+      if (!mounted) return;
+      // 그래프 강제 갱신
+      ref.read(graphProvider.notifier).applyColorSettings();
+      setState(() {}); // 범례 색상 갱신
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // 실제 사용 중인 클래스만 표시
+    final used = _usedTypes;
+    final entries = GraphColorSettings.currentColors.entries
+        .where((e) => used.isEmpty || used.contains(e.key))
+        .toList();
+
     return Material(
       color: Colors.black.withValues(alpha: 0.55),
       borderRadius: BorderRadius.circular(10),
@@ -22,30 +84,47 @@ class _GraphLegendState extends State<GraphLegend> {
         onTap: () => setState(() => _expanded = !_expanded),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          child: _expanded ? _expandedView() : _collapsedView(),
+          child: _expanded
+              ? _expandedView(entries)
+              : _collapsedView(entries),
         ),
       ),
     );
   }
 
-  Widget _expandedView() {
+  Widget _expandedView(List<MapEntry<String, Color>> entries) {
     return Wrap(
       spacing: 12,
-      runSpacing: 4,
-      children: graphClassColors.entries.map((e) {
-        return Row(mainAxisSize: MainAxisSize.min, children: [
-          _dot(e.value),
-          const SizedBox(width: 4),
-          Text(e.key,
-              style: const TextStyle(color: Colors.white, fontSize: 10)),
-        ]);
+      runSpacing: 6,
+      children: entries.map((e) {
+        final isCustom = GraphColorSettings.customizedClasses.contains(e.key);
+        return GestureDetector(
+          onTap: () {
+            _editColor(e.key);
+          },
+          child: Tooltip(
+            message: '탭하여 색상 변경',
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              _dot(e.value, border: isCustom),
+              const SizedBox(width: 4),
+              Text(e.key,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: isCustom
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  )),
+            ]),
+          ),
+        );
       }).toList(),
     );
   }
 
-  Widget _collapsedView() {
+  Widget _collapsedView(List<MapEntry<String, Color>> entries) {
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      ...graphClassColors.entries.take(5).map((e) => Padding(
+      ...entries.take(5).map((e) => Padding(
             padding: const EdgeInsets.only(right: 4),
             child: _dot(e.value),
           )),
@@ -54,9 +133,15 @@ class _GraphLegendState extends State<GraphLegend> {
     ]);
   }
 
-  Widget _dot(Color color) => Container(
+  Widget _dot(Color color, {bool border = false}) => Container(
         width: 10,
         height: 10,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: border
+              ? Border.all(color: Colors.white, width: 1.5)
+              : null,
+        ),
       );
 }
