@@ -196,12 +196,18 @@ class TripleWorkNotifier extends StateNotifier<TripleWorkState> {
       final result = await _api.bulkConfirm(
         state.pendingTriples.map((t) => t.toJson()).toList(),
       );
+      // pendingTriples/sourceRecords 초기화와 currentStep 변경을 분리:
+      // 한 번에 바꾸면 Step2가 빈 상태로 rebuild된 직후 탭 전환이 겹쳐
+      // build 사이클 충돌 → 블랙스크린 유발.
       state = state.copyWith(
         isExtracting: false,
         pendingTriples: [],
         sourceRecords: [],
-        currentStep: 2, // Step 3으로 이동
       );
+      // currentStep은 한 프레임 뒤에 변경 → 탭 전환 애니메이션 안전 보장
+      Future.microtask(() {
+        state = state.copyWith(currentStep: 2);
+      });
       return result;
     } on DioException catch (e) {
       state = state.copyWith(

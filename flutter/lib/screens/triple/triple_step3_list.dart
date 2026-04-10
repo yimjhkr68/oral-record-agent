@@ -61,6 +61,11 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
         setState(() => _selected = null);
       });
     });
+    // Step2 → Step3 전환 시 최신 데이터 로드
+    // (Step2에서 invalidate 호출 제거에 따라 여기서 첫 진입 시 refresh)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.invalidate(tripleListProvider);
+    });
   }
 
   @override

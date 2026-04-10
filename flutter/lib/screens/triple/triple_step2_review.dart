@@ -165,23 +165,24 @@ class TripleStep2Review extends ConsumerWidget {
     );
     if (ok != true || !context.mounted) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     final result =
         await ref.read(tripleWorkProvider.notifier).bulkConfirm();
     if (!context.mounted) return;
     if (result != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      messenger.showSnackBar(SnackBar(
         content: Text(
             '트리플 ${result['added']}개가 저장됐습니다.'
             '${result['skipped'] > 0 ? ' (중복 ${result['skipped']}개 건너뜀)' : ''}'),
         backgroundColor: const Color(0xFF2e7d32),
       ));
-      // addPostFrameCallback: 탭 이동 애니메이션 완료 후 invalidate → 블랙스크린 방지
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.invalidate(tripleListProvider);
-      });
+      // Step 3 이동은 provider의 currentStep=2 변경이 triple_screen.dart의
+      // ref.listen에서 처리함. 여기서 invalidate를 추가로 호출하면
+      // autoDispose provider와 탭 전환 애니메이션이 충돌해 블랙스크린 발생.
+      // → invalidate 제거, Step3 자체적으로 탭 활성화 시 데이터 로드함.
     } else {
       final err = ref.read(tripleWorkProvider).error ?? '저장 실패';
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(err), backgroundColor: Colors.red),
       );
     }
