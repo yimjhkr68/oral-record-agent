@@ -91,15 +91,35 @@ class _KnowledgeGraphScreenState
     final gs = ref.read(graphProvider);
     if (gs.nodes.isEmpty && gs.rawTriples.isEmpty) return;
 
-    final nodes = List.from(gs.nodes);
-    final rawTriples = List.from(gs.rawTriples);
+    final hasSearch = gs.searchQuery.isNotEmpty;
+    final searchQuery = gs.searchQuery;
+
+    // 검색 중이면 opacity > 0.5 인 노드/엣지만 (강조 + 1홉 이웃)
+    final exportNodes = hasSearch
+        ? gs.nodes.where((n) => n.opacity > 0.5).toList()
+        : List.from(gs.nodes);
+    final exportEdges = hasSearch
+        ? gs.edges.where((e) => e.opacity > 0.5).toList()
+        : List.from(gs.edges);
+
+    // rawTriples: 내보낼 노드에 포함된 subject/object 쌍만 필터
+    final exportNodeIds = exportNodes.map((n) => n.id).toSet();
+    final exportRawTriples = hasSearch
+        ? gs.rawTriples
+            .where((t) =>
+                exportNodeIds.contains(t.subject) &&
+                exportNodeIds.contains(t.object))
+            .toList()
+        : List.from(gs.rawTriples);
 
     // 2. 형식 선택 다이얼로그 — builder ctx 사용 (outer context 사용 금지)
     final format = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('그래프 내보내기'),
-        content: const Text('저장 형식을 선택하세요.'),
+        title: Text(hasSearch ? '서브그래프 내보내기' : '전체 그래프 내보내기'),
+        content: Text(hasSearch
+            ? '검색어 "$searchQuery" 기준\n노드 ${exportNodes.length}개 · 엣지 ${exportEdges.length}개'
+            : '노드 ${exportNodes.length}개 · 엣지 ${exportEdges.length}개'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -115,17 +135,30 @@ class _KnowledgeGraphScreenState
     );
     if (format == null || !mounted) return;
 
-    await _exportGraph(format, nodes, rawTriples);
+    await _exportGraph(
+      format: format,
+      exportNodes: exportNodes,
+      exportEdges: exportEdges,
+      exportRawTriples: exportRawTriples,
+      hasSearch: hasSearch,
+      searchQuery: searchQuery,
+    );
   }
 
-  Future<void> _exportGraph(
-    String format,
-    List<dynamic> nodes,
-    List<dynamic> rawTriples,
-  ) async {
+  Future<void> _exportGraph({
+    required String format,
+    required List<dynamic> exportNodes,
+    required List<dynamic> exportEdges,
+    required List<dynamic> exportRawTriples,
+    required bool hasSearch,
+    required String searchQuery,
+  }) async {
     // 3. JSON/CSV 생성 (동기 — provider 접근 없음, 로컬 변수만 사용)
     String content;
     String defaultName;
+
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    final exportType = hasSearch ? 'subgraph' : 'graph';
 
     try {
       if (format == 'csv') {
@@ -134,7 +167,7 @@ class _KnowledgeGraphScreenState
             'subject,subject_type,predicate,object,object_type,'
             'confidence,ontology_version,source_record_id,created_at,note');
         String esc(String s) => '"${s.replaceAll('"', '""')}"';
-        for (final t in rawTriples) {
+        for (final t in exportRawTriples) {
           buf.writeln(
               '${esc(t.subject)},${esc(t.subjectType)},${esc(t.predicate)},'
               '${esc(t.object)},${esc(t.objectType)},${t.confidence},'
@@ -142,31 +175,32 @@ class _KnowledgeGraphScreenState
               '${esc(t.createdAt)},${esc(t.note)}');
         }
         content = buf.toString();
-        defaultName = 'knowledge_graph.csv';
+        defaultName = hasSearch
+            ? 'subgraph_${searchQuery}_$ts.csv'
+            : 'knowledge_graph_$ts.csv';
       } else {
         content = const JsonEncoder.withIndent('  ').convert({
-          'export_type': 'graph',
+          'export_type': exportType,
+          if (hasSearch) 'search_query': searchQuery,
           'exported_at': DateTime.now().toIso8601String(),
-          'stats': {'nodes': nodes.length, 'triples': rawTriples.length},
-          'nodes': nodes
+          'stats': {
+            'nodes': exportNodes.length,
+            'edges': exportEdges.length,
+          },
+          'nodes': exportNodes
               .map((n) => {'id': n.id, 'type': n.type, 'degree': n.degree})
               .toList(),
-          'triples': rawTriples
-              .map((t) => {
-                    'subject': t.subject,
-                    'subject_type': t.subjectType,
-                    'predicate': t.predicate,
-                    'object': t.object,
-                    'object_type': t.objectType,
-                    'confidence': t.confidence,
-                    'ontology_version': t.ontologyVersion,
-                    'source_record_id': t.sourceRecordId,
-                    'created_at': t.createdAt,
-                    'note': t.note,
+          'edges': exportEdges
+              .map((e) => {
+                    'source': e.sourceId,
+                    'predicate': e.predicate,
+                    'target': e.targetId,
                   })
               .toList(),
         });
-        defaultName = 'knowledge_graph.json';
+        defaultName = hasSearch
+            ? 'subgraph_${searchQuery}_$ts.json'
+            : 'knowledge_graph_$ts.json';
       }
     } catch (e) {
       if (!mounted) return;
@@ -183,7 +217,9 @@ class _KnowledgeGraphScreenState
     String? path;
     try {
       path = await FilePicker.platform.saveFile(
-        dialogTitle: '그래프 내보내기',
+        dialogTitle: hasSearch
+            ? '서브그래프 내보내기 (노드 ${exportNodes.length}개)'
+            : '전체 그래프 내보내기 (노드 ${exportNodes.length}개)',
         fileName: defaultName,
         type: FileType.custom,
         allowedExtensions: [format],
@@ -216,9 +252,12 @@ class _KnowledgeGraphScreenState
 
     // 6. 완료 알림
     if (!mounted) return;
+    final msg = hasSearch
+        ? '서브그래프 저장 완료 (노드 ${exportNodes.length}개, 엣지 ${exportEdges.length}개)'
+        : '전체 그래프 저장 완료 (노드 ${exportNodes.length}개, 엣지 ${exportEdges.length}개)';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('저장됨: $path'),
+        content: Text(msg),
         action: SnackBarAction(label: '확인', onPressed: () {}),
       ),
     );
@@ -338,6 +377,9 @@ class _KnowledgeGraphScreenState
                     onRefresh: () =>
                         ref.read(graphProvider.notifier).loadGraph(),
                     stats: gs.stats,
+                    exportTooltip: gs.searchQuery.isNotEmpty
+                        ? '현재 서브그래프 내보내기'
+                        : '전체 그래프 내보내기',
                   ),
                 ),
 

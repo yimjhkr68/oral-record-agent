@@ -8,6 +8,7 @@ class GraphSearchBar extends StatefulWidget {
   final VoidCallback onExport;
   final VoidCallback onRefresh;
   final Map<String, dynamic> stats;
+  final String exportTooltip;
 
   const GraphSearchBar({
     super.key,
@@ -17,6 +18,7 @@ class GraphSearchBar extends StatefulWidget {
     required this.onExport,
     required this.onRefresh,
     required this.stats,
+    this.exportTooltip = '전체 그래프 내보내기',
   });
 
   @override
@@ -49,7 +51,7 @@ class _GraphSearchBarState extends State<GraphSearchBar> {
           child: TextField(
             controller: widget.controller,
             decoration: InputDecoration(
-              hintText: '노드 검색...',
+              hintText: '노드 또는 관계(속성)로 검색...',
               prefixIcon: const Icon(Icons.search, size: 18),
               suffixIcon: widget.controller.text.isNotEmpty
                   ? IconButton(
@@ -91,7 +93,7 @@ class _GraphSearchBarState extends State<GraphSearchBar> {
       // export 버튼
       _OverlayButton(
         icon: Icons.download_outlined,
-        tooltip: '내보내기 (CSV / JSON)',
+        tooltip: widget.exportTooltip,
         onTap: widget.onExport,
       ),
       const SizedBox(width: 6),
