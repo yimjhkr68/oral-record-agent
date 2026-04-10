@@ -84,10 +84,12 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
   Triple? _selected;
 
   // ── 로컬 로드 상태 ──────────────────────────────────────────────────────────
-  List<Triple> _allTriples = [];
+  List<Triple> _allTriples = [];      // API 전체 데이터
+  List<Triple> _filteredTriples = []; // 클래스 + 검색 클라이언트 필터 결과
   bool _isLoading = false;
   String _error = '';
-  String _classFilter = ''; // 빠른 선택 바 서버 필터
+  String _classFilter = '';    // 빠른 선택 바 클래스 필터
+  String _appliedSearch = '';  // [검색] 버튼으로 확정된 검색어
 
   // 클라이언트 필터
   final Set<String> _selectedTypes = {};
@@ -99,27 +101,45 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
   final Set<String> _checkedIds = {};
   bool _isSelecting = false;
 
+  // ── 클라이언트 필터 (클래스 + 검색어) ─────────────────────────────────────
+  List<Triple> _computeFilter([List<Triple>? source]) {
+    final data = source ?? _allTriples;
+    if (_classFilter.isEmpty && _appliedSearch.isEmpty) return List.of(data);
+    final q = _appliedSearch.toLowerCase();
+    return data.where((t) {
+      // 클래스 필터: 주어 타입 OR 목적어 타입
+      if (_classFilter.isNotEmpty &&
+          t.subjectType != _classFilter &&
+          t.objectType  != _classFilter) return false;
+      // 검색어 필터: 주어/술어/목적어 포함
+      if (q.isNotEmpty &&
+          !t.subject.toLowerCase().contains(q) &&
+          !t.predicate.toLowerCase().contains(q) &&
+          !t.object.toLowerCase().contains(q)) return false;
+      return true;
+    }).toList();
+  }
+
+  void _applyFilter() {
+    setState(() => _filteredTriples = _computeFilter());
+  }
+
   // ── 탭별 필터 ───────────────────────────────────────────────────────────────
   List<Triple> get _activeTriples =>
-      _allTriples.where((t) => t.status == TripleStatus.active).toList();
+      _filteredTriples.where((t) => t.status == TripleStatus.active).toList();
   List<Triple> get _archivedTriples =>
-      _allTriples.where((t) => t.status == TripleStatus.archived).toList();
+      _filteredTriples.where((t) => t.status == TripleStatus.archived).toList();
 
-  // ── 데이터 로드 ─────────────────────────────────────────────────────────────
-  Future<void> _loadTriples({
-    String search = '',
-    String classFilter = '',
-  }) async {
+  // ── 데이터 로드 (API) ───────────────────────────────────────────────────────
+  Future<void> _loadTriples() async {
     if (!mounted) return;
     setState(() { _isLoading = true; _error = ''; });
 
     try {
       final version = ref.read(tripleVersionFilterProvider);
       final params = <String, dynamic>{};
-      if (search.isNotEmpty) params['q'] = search;
-      if (classFilter.isNotEmpty) params['subject_type'] = classFilter;
       if (version != null) params['version'] = version;
-      // status 파라미터 없음 → 전체 로드 후 Flutter 에서 탭 분리
+      // 클래스·검색 필터는 클라이언트에서 처리 — API 에는 보내지 않음
 
       final response = await ref
           .read(apiClientProvider)
@@ -137,15 +157,17 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
           .toList();
 
       setState(() {
-        _allTriples = triples;
-        _isLoading  = false;
+        _allTriples      = triples;
+        _filteredTriples = _computeFilter(triples); // 현재 필터 즉시 적용
+        _isLoading       = false;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _allTriples = [];
-        _isLoading  = false;
-        _error      = e.toString();
+        _allTriples      = [];
+        _filteredTriples = [];
+        _isLoading       = false;
+        _error           = e.toString();
       });
     }
   }
@@ -174,9 +196,9 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
 
   void _search() {
     final q = _searchCtrl.text.trim();
-    // tripleQueryProvider 는 _TripleRow 텍스트 하이라이트용으로만 사용
-    ref.read(tripleQueryProvider.notifier).state = q;
-    _loadTriples(search: q, classFilter: _classFilter);
+    ref.read(tripleQueryProvider.notifier).state = q; // 텍스트 하이라이트용
+    setState(() => _appliedSearch = q);
+    _applyFilter();
   }
 
   void _clearAllFilters() {
@@ -186,10 +208,11 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
       _selectedTypes.clear();
       _sourceFilter  = '';
       _classFilter   = '';
+      _appliedSearch = '';
     });
     ref.read(tripleQueryProvider.notifier).state = '';
     ref.read(tripleVersionFilterProvider.notifier).state = null;
-    _loadTriples();
+    _loadTriples(); // 버전 필터 리셋 시 API 재로드
   }
 
   List<Triple> _applyFilters(List<Triple> triples) {
@@ -210,7 +233,8 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
   bool get _hasActiveFilters {
     final version = ref.read(tripleVersionFilterProvider);
     return _selectedTypes.isNotEmpty || _sourceFilter.isNotEmpty
-        || version != null || _classFilter.isNotEmpty;
+        || version != null || _classFilter.isNotEmpty
+        || _appliedSearch.isNotEmpty;
   }
 
   // ── 다중 선택 액션 ─────────────────────────────────────────────────────────
@@ -237,10 +261,7 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
         await ref.read(tripleApiProvider).archiveTriple(id);
       } catch (_) {}
     }
-    await _loadTriples(
-      search: _searchCtrl.text.trim(),
-      classFilter: _classFilter,
-    );
+    await _loadTriples();
     setState(() {
       _checkedIds.clear();
       _isSelecting = false;
@@ -279,10 +300,7 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
         await ref.read(tripleApiProvider).deleteTriple(id);
       } catch (_) {}
     }
-    await _loadTriples(
-      search: _searchCtrl.text.trim(),
-      classFilter: _classFilter,
-    );
+    await _loadTriples();
     setState(() {
       _checkedIds.clear();
       _isSelecting = false;
@@ -355,10 +373,7 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
       builder: (_) => _AddTripleDialog(versions: versions),
     );
     if (created == true) {
-      _loadTriples(
-        search: _searchCtrl.text.trim(),
-        classFilter: _classFilter,
-      );
+      _loadTriples();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('트리플이 추가되었습니다.')),
@@ -533,8 +548,10 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                               style: const TextStyle(fontSize: 12)),
                         )),
                   ],
-                  onChanged: (v) =>
-                      ref.read(tripleVersionFilterProvider.notifier).state = v,
+                  onChanged: (v) {
+                    ref.read(tripleVersionFilterProvider.notifier).state = v;
+                    _loadTriples(); // 버전은 서버 필터 — API 재로드
+                  },
                 ),
               ),
               const SizedBox(height: 10),
@@ -619,10 +636,7 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                   onTap: () {
                     final newFilter = sel ? '' : type;
                     setState(() => _classFilter = newFilter);
-                    _loadTriples(
-                      search: _searchCtrl.text.trim(),
-                      classFilter: newFilter,
-                    );
+                    _applyFilter(); // API 호출 없이 클라이언트 필터
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
@@ -737,10 +751,7 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                     style: const TextStyle(color: Colors.red)),
                 const SizedBox(height: 8),
                 ElevatedButton(
-                  onPressed: () => _loadTriples(
-                    search: _searchCtrl.text.trim(),
-                    classFilter: _classFilter,
-                  ),
+                  onPressed: _loadTriples,
                   child: const Text('다시 시도'),
                 ),
               ]),
@@ -856,20 +867,14 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                                 await ref
                                     .read(tripleApiProvider)
                                     .archiveTriple(t.id);
-                                await _loadTriples(
-                                  search: _searchCtrl.text.trim(),
-                                  classFilter: _classFilter,
-                                );
+                                await _loadTriples();
                                 if (mounted) setState(() => _selected = null);
                               },
                               onDelete: () async {
                                 await ref
                                     .read(tripleApiProvider)
                                     .deleteTriple(t.id);
-                                await _loadTriples(
-                                  search: _searchCtrl.text.trim(),
-                                  classFilter: _classFilter,
-                                );
+                                await _loadTriples();
                                 if (mounted) setState(() => _selected = null);
                               },
                             );
@@ -886,28 +891,19 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                             isAdmin: isAdmin,
                             onClose: () =>
                                 setState(() => _selected = null),
-                            onRefresh: () => _loadTriples(
-                              search: _searchCtrl.text.trim(),
-                              classFilter: _classFilter,
-                            ),
+                            onRefresh: () => _loadTriples(),
                             onArchive: (id) async {
                               await ref
                                   .read(tripleApiProvider)
                                   .archiveTriple(id);
-                              await _loadTriples(
-                                search: _searchCtrl.text.trim(),
-                                classFilter: _classFilter,
-                              );
+                              await _loadTriples();
                               if (mounted) setState(() => _selected = null);
                             },
                             onDelete: (id) async {
                               await ref
                                   .read(tripleApiProvider)
                                   .deleteTriple(id);
-                              await _loadTriples(
-                                search: _searchCtrl.text.trim(),
-                                classFilter: _classFilter,
-                              );
+                              await _loadTriples();
                               if (mounted) setState(() => _selected = null);
                             },
                           ),
