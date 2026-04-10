@@ -28,7 +28,7 @@ class _GraphLegendState extends ConsumerState<GraphLegend> {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: Text('$className 색상 변경'),
         content: SingleChildScrollView(
           child: ColorPicker(
@@ -43,16 +43,17 @@ class _GraphLegendState extends ConsumerState<GraphLegend> {
           TextButton(
             onPressed: () async {
               await GraphColorSettings.resetColor(className);
-              if (mounted) Navigator.pop(context, true);
+              // dialog 자신의 ctx 사용 — outer context 사용 시 graph screen이 팝됨
+              if (ctx.mounted) Navigator.pop(ctx, true);
             },
             child: const Text('기본값으로'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(ctx, false),
             child: const Text('취소'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(ctx, true),
             child: const Text('적용'),
           ),
         ],
