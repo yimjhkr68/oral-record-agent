@@ -9,6 +9,7 @@ import '../../models/triple.dart';
 import '../../providers/ontology_provider.dart';
 import '../../providers/triple_provider.dart';
 import '../../api/api_client.dart';
+import '../../providers/graph_provider.dart';
 import '../../services/export_service.dart';
 
 // ── 추출 방법 레이블 ────────────────────────────────────────────────────────────
@@ -319,20 +320,35 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
       ),
     );
     if (ok != true || !mounted) return;
+
+    setState(() => _isLoading = true);
+    int deleted = 0;
+    int failed = 0;
     for (final id in ids) {
       try {
         await ref.read(tripleApiProvider).deleteTriple(id);
-      } catch (_) {}
+        deleted++;
+      } catch (_) {
+        failed++;
+      }
     }
     await _loadTriples();
     if (!mounted) return;
+    ref.read(graphProvider.notifier).loadGraph();
     setState(() {
       _checkedIds.clear();
       _isSelecting = false;
       _selected = null;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${ids.length}개 삭제됨')),
+      SnackBar(
+        content: Text(
+          failed == 0
+              ? '$deleted개 삭제 완료'
+              : '$deleted개 삭제, $failed개 실패',
+        ),
+        backgroundColor: failed > 0 ? Colors.orange : null,
+      ),
     );
   }
 
@@ -941,6 +957,7 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                                     .deleteTriple(t.id);
                                 await _loadTriples();
                                 if (!mounted) return;
+                                ref.read(graphProvider.notifier).loadGraph();
                                 setState(() => _selected = null);
                               },
                             );
@@ -972,6 +989,7 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                                   .deleteTriple(id);
                               await _loadTriples();
                               if (!mounted) return;
+                              ref.read(graphProvider.notifier).loadGraph();
                               setState(() => _selected = null);
                             },
                           ),

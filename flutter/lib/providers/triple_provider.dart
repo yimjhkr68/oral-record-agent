@@ -5,7 +5,7 @@ import '../api/triple_api.dart';
 import '../models/triple.dart';
 
 /// 현재 역할: 'viewer' | 'admin'
-final roleProvider = StateProvider<String>((ref) => 'viewer');
+final roleProvider = StateProvider<String>((ref) => 'admin');
 
 final tripleApiProvider = Provider<TripleApi>((ref) {
   final role = ref.watch(roleProvider);
