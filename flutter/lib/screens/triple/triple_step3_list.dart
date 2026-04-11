@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/ontology.dart';
@@ -722,11 +726,52 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                   side: BorderSide(
                       color: Theme.of(context).colorScheme.primary),
                 ),
-                onPressed: () => ExportService.exportTriples(
-                  apiClient: ref.read(apiClientProvider),
-                  context: context,
-                  tripleIds: _checkedIds.toList(),
-                ),
+                onPressed: () async {
+                  final selectedItems = _allTriples
+                      .where((t) => _checkedIds.contains(t.id))
+                      .toList();
+                  final messenger = ScaffoldMessenger.of(context);
+
+                  final savePath = await FilePicker.platform.saveFile(
+                    dialogTitle: '선택 트리플 내보내기 (${selectedItems.length}개)',
+                    fileName:
+                        'triples_selected_${selectedItems.length}_'
+                        '${DateTime.now().millisecondsSinceEpoch}.json',
+                    allowedExtensions: ['json'],
+                    type: FileType.custom,
+                  );
+                  if (savePath == null || !mounted) return;
+
+                  final exportData = jsonEncode({
+                    'export_type': 'triples',
+                    'exported_at': DateTime.now().toIso8601String(),
+                    'total': selectedItems.length,
+                    'items': selectedItems.map((t) => {
+                      'id': t.id,
+                      'subject': t.subject,
+                      'subject_type': t.subjectType,
+                      'predicate': t.predicate,
+                      'object': t.object,
+                      'object_type': t.objectType,
+                      'ontology_version': t.ontologyVersion,
+                      'source_record_id': t.sourceRecordId,
+                      'confidence': t.confidence,
+                      'status': t.status.name,
+                      'created_at': t.createdAt,
+                      'created_by': t.createdBy,
+                      'note': t.note,
+                    }).toList(),
+                  });
+
+                  await File(savePath).writeAsString(exportData,
+                      encoding: utf8);
+
+                  if (!mounted) return;
+                  messenger.showSnackBar(SnackBar(
+                    content: Text(
+                        '저장 완료: ${selectedItems.length}개 트리플'),
+                  ));
+                },
               ),
             ],
           ],
