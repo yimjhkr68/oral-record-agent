@@ -27,7 +27,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.Create(L"oral_record_agent", origin, size)) {
+  if (!window.Create(L"Oral Record Agent v4.0 \u2014 Ontology Knowledge Graph", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

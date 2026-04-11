@@ -46,7 +46,7 @@ class OralRecordApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: '구술기록 지식그래프 v4.0',
+      title: 'Oral Record Agent v4.0 — Ontology Knowledge Graph',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF1E3A5F),

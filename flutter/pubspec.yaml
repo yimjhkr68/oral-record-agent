@@ -1,5 +1,5 @@
 name: oral_record_agent
-description: 구술기록 지식그래프 에이전트 v4.0
+description: Oral Record Agent v4.0 — Ontology Knowledge Graph
 publish_to: 'none'
 version: 4.0.0+1
 
@@ -34,6 +34,7 @@ dependencies:
 
   # 파일 선택
   file_picker: ^8.0.0
+  flutter_colorpicker: ^1.1.0
 
 dev_dependencies:
   flutter_test:
