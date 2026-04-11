@@ -136,8 +136,15 @@ class OntologyStore:
         path.unlink()
 
     def delete_confirmed(self, version_id: str) -> None:
-        """confirmed/{version_id}.json 삭제. 없으면 KeyError."""
-        path = self.confirmed_dir / f"{version_id}.json"
-        if not path.exists():
+        """confirmed/{version_id}.json 또는 drafts/{version_id}.json 삭제.
+        confirmed 폴더에 없으면 drafts 폴더도 확인 (status 필드만 confirmed인 경우 대응).
+        어디에도 없으면 KeyError.
+        """
+        confirmed_path = self.confirmed_dir / f"{version_id}.json"
+        draft_path     = self.drafts_dir    / f"{version_id}.json"
+        if confirmed_path.exists():
+            confirmed_path.unlink()
+        elif draft_path.exists():
+            draft_path.unlink()
+        else:
             raise KeyError(f"Confirmed 파일 없음: {version_id!r}")
-        path.unlink()
