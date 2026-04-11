@@ -27,6 +27,38 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
     super.dispose();
   }
 
+  Future<void> _clearAll() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('모든 이력 삭제'),
+        content: const Text(
+            '온톨로지 이력과 트리플 생성 이력을 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('취소')),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('전체 삭제', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await ref.read(historyApiProvider).clearAll();
+    ref.read(ontologyEventProvider.notifier).clearAll();
+    ref.read(sessionListProvider.notifier).clearAll();
+    ref.invalidate(historySummaryProvider);
+  }
+
+  void _refresh() {
+    ref.read(ontologyEventProvider.notifier).load();
+    ref.read(sessionListProvider.notifier).load();
+    ref.invalidate(historySummaryProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     final summary = ref.watch(historySummaryProvider);
@@ -38,11 +70,12 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: '새로고침',
-            onPressed: () {
-              ref.read(ontologyEventProvider.notifier).load();
-              ref.read(sessionListProvider.notifier).load();
-              ref.invalidate(historySummaryProvider);
-            },
+            onPressed: _refresh,
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_forever, color: Colors.red),
+            tooltip: '모든 이력 삭제',
+            onPressed: _clearAll,
           ),
         ],
         bottom: TabBar(
@@ -58,8 +91,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen>
           // ── 요약 통계 ────────────────────────────────────────────────────
           summary.when(
             data: (s) => _SummaryBar(summary: s),
-            loading: () => const SizedBox(height: 4,
-                child: LinearProgressIndicator()),
+            loading: () =>
+                const SizedBox(height: 4, child: LinearProgressIndicator()),
             error: (_, __) => const SizedBox.shrink(),
           ),
           const Divider(height: 1),

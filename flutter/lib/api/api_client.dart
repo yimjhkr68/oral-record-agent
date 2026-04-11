@@ -47,20 +47,21 @@ class ApiClient {
   Future<Response> get(String path, {Map<String, dynamic>? params}) =>
       _dio.get('$_baseUrl$path', queryParameters: params);
 
-  Future<Response> post(String path, {dynamic data}) =>
-      _dio.post('$_baseUrl$path', data: data);
+  Future<Response> post(String path, {dynamic data, Options? options}) =>
+      _dio.post('$_baseUrl$path', data: data, options: options);
 
   /// AI 생성/종합 전용 — receiveTimeout 120초
   Future<Response> postAI(String path, {dynamic data}) =>
       _aiDio.post('$_baseUrl$path', data: data);
 
-  Future<Response> patch(String path, {dynamic data}) =>
-      _dio.patch('$_baseUrl$path', data: data);
+  Future<Response> patch(String path, {dynamic data, Options? options}) =>
+      _dio.patch('$_baseUrl$path', data: data, options: options);
 
-  Future<Response> put(String path, {dynamic data}) =>
-      _dio.put('$_baseUrl$path', data: data);
+  Future<Response> put(String path, {dynamic data, Options? options}) =>
+      _dio.put('$_baseUrl$path', data: data, options: options);
 
-  Future<Response> delete(String path) => _dio.delete('$_baseUrl$path');
+  Future<Response> delete(String path, {dynamic data, Options? options}) =>
+      _dio.delete('$_baseUrl$path', data: data, options: options);
 
   Future<Response> postFormData(String path, FormData data) =>
       _dio.post('$_baseUrl$path', data: data);

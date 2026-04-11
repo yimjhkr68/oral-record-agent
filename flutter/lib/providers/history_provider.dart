@@ -7,7 +7,8 @@ final historyApiProvider = Provider<HistoryApi>((ref) {
   return HistoryApi(ref.read(apiClientProvider));
 });
 
-// 온톨로지 이벤트
+// ── 온톨로지 이벤트 ────────────────────────────────────────────────────────────
+
 class OntologyEventState {
   final List<OntologyEvent> events;
   final bool loading;
@@ -48,6 +49,38 @@ class OntologyEventNotifier extends StateNotifier<OntologyEventState> {
       state = state.copyWith(loading: false, error: e.toString());
     }
   }
+
+  Future<void> deleteSingle(String eventId) async {
+    try {
+      await _api.deleteOntologyEvent(eventId);
+      state = state.copyWith(
+        events: state.events.where((e) => e.id != eventId).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> deleteBulk(List<String> ids) async {
+    try {
+      await _api.deleteOntologyEventsBulk(ids);
+      final idSet = ids.toSet();
+      state = state.copyWith(
+        events: state.events.where((e) => !idSet.contains(e.id)).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> clearAll() async {
+    try {
+      await _api.clearAllOntologyEvents();
+      state = state.copyWith(events: []);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
 }
 
 final ontologyEventProvider =
@@ -55,7 +88,8 @@ final ontologyEventProvider =
   return OntologyEventNotifier(ref.read(historyApiProvider));
 });
 
-// 트리플 생성 세션
+// ── 트리플 생성 세션 ───────────────────────────────────────────────────────────
+
 class SessionListState {
   final List<ExtractionSession> sessions;
   final bool loading;
@@ -96,6 +130,38 @@ class SessionListNotifier extends StateNotifier<SessionListState> {
       state = state.copyWith(loading: false, error: e.toString());
     }
   }
+
+  Future<void> deleteSingle(String sessionId) async {
+    try {
+      await _api.deleteSession(sessionId);
+      state = state.copyWith(
+        sessions: state.sessions.where((s) => s.id != sessionId).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> deleteBulk(List<String> ids) async {
+    try {
+      await _api.deleteSessionsBulk(ids);
+      final idSet = ids.toSet();
+      state = state.copyWith(
+        sessions: state.sessions.where((s) => !idSet.contains(s.id)).toList(),
+      );
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  Future<void> clearAll() async {
+    try {
+      await _api.clearAllSessions();
+      state = state.copyWith(sessions: []);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
+  }
 }
 
 final sessionListProvider =
@@ -103,7 +169,8 @@ final sessionListProvider =
   return SessionListNotifier(ref.read(historyApiProvider));
 });
 
-// 요약 통계
+// ── 요약 통계 ─────────────────────────────────────────────────────────────────
+
 final historySummaryProvider = FutureProvider<HistorySummary>((ref) async {
   return ref.read(historyApiProvider).getSummary();
 });

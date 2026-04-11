@@ -49,4 +49,42 @@ class HistoryApi {
     final res = await _client.get('/api/history/summary');
     return HistorySummary.fromJson(res.data);
   }
+
+  // ── 삭제 ──────────────────────────────────────────────────────────────────
+
+  Future<void> deleteOntologyEvent(String eventId) async {
+    await _client.delete('/api/history/ontology/$eventId');
+  }
+
+  Future<int> deleteOntologyEventsBulk(List<String> ids) async {
+    final res = await _client.delete(
+      '/api/history/ontology/bulk',
+      data: {'ids': ids},
+    );
+    return (res.data['deleted'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<void> clearAllOntologyEvents() async {
+    await _client.delete('/api/history/ontology/all');
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    await _client.delete('/api/history/extractions/$sessionId');
+  }
+
+  Future<int> deleteSessionsBulk(List<String> ids) async {
+    final res = await _client.delete(
+      '/api/history/extractions/bulk',
+      data: {'ids': ids},
+    );
+    return (res.data['deleted'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<void> clearAllSessions() async {
+    await _client.delete('/api/history/extractions/all');
+  }
+
+  Future<void> clearAll() async {
+    await _client.delete('/api/history/all');
+  }
 }

@@ -3,11 +3,68 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/history.dart';
 import '../../providers/history_provider.dart';
 
-class OntologyHistoryTab extends ConsumerWidget {
+class OntologyHistoryTab extends ConsumerStatefulWidget {
   const OntologyHistoryTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OntologyHistoryTab> createState() => _OntologyHistoryTabState();
+}
+
+class _OntologyHistoryTabState extends ConsumerState<OntologyHistoryTab> {
+  bool _selectMode = false;
+  final Set<String> _selectedIds = {};
+
+  void _toggleSelect(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _exitSelectMode() {
+    setState(() {
+      _selectMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  Future<void> _deleteBulk() async {
+    final ids = List<String>.from(_selectedIds);
+    _exitSelectMode();
+    await ref.read(ontologyEventProvider.notifier).deleteBulk(ids);
+  }
+
+  Future<void> _deleteSingle(String id) async {
+    await ref.read(ontologyEventProvider.notifier).deleteSingle(id);
+  }
+
+  Future<void> _clearAll(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('온톨로지 이력 전체 삭제'),
+        content: const Text('모든 온톨로지 이력을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('취소')),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('전체 삭제', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(ontologyEventProvider.notifier).clearAll();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(ontologyEventProvider);
 
     if (state.loading) {
@@ -19,38 +76,124 @@ class OntologyHistoryTab extends ConsumerWidget {
             style: const TextStyle(color: Colors.red, fontSize: 13)),
       );
     }
-    if (state.events.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.history_edu, size: 48, color: Colors.grey),
-            SizedBox(height: 8),
-            Text('온톨로지 이력이 없습니다',
-                style: TextStyle(color: Colors.grey, fontSize: 14)),
-          ],
-        ),
-      );
-    }
 
-    return ListView.separated(
-      padding: const EdgeInsets.all(12),
-      itemCount: state.events.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, indent: 48),
-      itemBuilder: (_, i) => _EventTile(event: state.events[i]),
+    return Column(
+      children: [
+        // ── 액션 바 ──────────────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Row(
+            children: [
+              TextButton.icon(
+                icon: Icon(
+                    _selectMode ? Icons.close : Icons.checklist,
+                    size: 16),
+                label: Text(
+                    _selectMode ? '취소' : '선택 삭제',
+                    style: const TextStyle(fontSize: 12)),
+                onPressed: () {
+                  if (_selectMode) {
+                    _exitSelectMode();
+                  } else {
+                    setState(() => _selectMode = true);
+                  }
+                },
+              ),
+              if (_selectMode && _selectedIds.isNotEmpty) ...[
+                const Spacer(),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6)),
+                  icon: const Icon(Icons.delete, size: 16, color: Colors.white),
+                  label: Text('${_selectedIds.length}개 삭제',
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 12)),
+                  onPressed: _deleteBulk,
+                ),
+              ],
+              if (!_selectMode) ...[
+                const Spacer(),
+                TextButton.icon(
+                  icon: const Icon(Icons.delete_sweep,
+                      color: Colors.red, size: 16),
+                  label: const Text('전체 삭제',
+                      style: TextStyle(color: Colors.red, fontSize: 12)),
+                  onPressed: state.events.isEmpty
+                      ? null
+                      : () => _clearAll(context),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        // ── 목록 ────────────────────────────────────────────────────────────
+        if (state.events.isEmpty)
+          const Expanded(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.history_edu, size: 48, color: Colors.grey),
+                  SizedBox(height: 8),
+                  Text('온톨로지 이력이 없습니다',
+                      style: TextStyle(color: Colors.grey, fontSize: 14)),
+                ],
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.all(12),
+              itemCount: state.events.length,
+              separatorBuilder: (_, __) =>
+                  const Divider(height: 1, indent: 48),
+              itemBuilder: (_, i) {
+                final event = state.events[i];
+                return _EventTile(
+                  event: event,
+                  selectMode: _selectMode,
+                  selected: _selectedIds.contains(event.id),
+                  onToggle: () => _toggleSelect(event.id),
+                  onDelete: () => _deleteSingle(event.id),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }
 
 class _EventTile extends StatelessWidget {
   final OntologyEvent event;
-  const _EventTile({required this.event});
+  final bool selectMode;
+  final bool selected;
+  final VoidCallback onToggle;
+  final VoidCallback onDelete;
+
+  const _EventTile({
+    required this.event,
+    required this.selectMode,
+    required this.selected,
+    required this.onToggle,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       dense: true,
-      leading: _EventIcon(eventType: event.eventType),
+      onTap: selectMode ? onToggle : null,
+      leading: selectMode
+          ? Checkbox(
+              value: selected,
+              onChanged: (_) => onToggle(),
+            )
+          : _EventIcon(eventType: event.eventType),
       title: Row(children: [
         Text(event.versionId,
             style: const TextStyle(
@@ -62,8 +205,25 @@ class _EventTile extends StatelessWidget {
           ? Text(event.detail,
               style: const TextStyle(fontSize: 11, color: Colors.grey))
           : null,
-      trailing: Text(event.dateLabel,
-          style: const TextStyle(fontSize: 11, color: Colors.grey)),
+      trailing: selectMode
+          ? null
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(event.dateLabel,
+                    style: const TextStyle(
+                        fontSize: 11, color: Colors.grey)),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline,
+                      size: 16, color: Colors.red),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: '삭제',
+                  onPressed: onDelete,
+                ),
+              ],
+            ),
     );
   }
 }
