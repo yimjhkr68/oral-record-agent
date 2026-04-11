@@ -659,9 +659,12 @@ class OntologyManager:
         """
         import dataclasses
         version = self.get(version_id)
+        # 이미 Confirmed 이면 멱등 처리 (재호출 방어)
+        if version.status == OntologyStatus.CONFIRMED:
+            return version
         if version.status != OntologyStatus.DRAFT:
             raise PermissionError(
-                f"Draft 상태만 확정 가능합니다. 현재 상태: {version.status}"
+                f"Draft 상태만 확정 가능합니다. 현재 상태: {version.status.value}"
             )
         version.status       = OntologyStatus.CONFIRMED
         version.confirmed_at = datetime.now().isoformat()

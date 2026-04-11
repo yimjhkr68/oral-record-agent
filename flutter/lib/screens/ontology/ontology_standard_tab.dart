@@ -534,7 +534,11 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
     final success = await ref
         .read(ontologyProvider.notifier)
         .confirmVersion(v.versionId);
-    if (!success && context.mounted) {
+    if (!context.mounted) return;
+    if (success) {
+      ref.read(ontologyProvider.notifier).loadVersions();
+      _snack('"${v.versionId}" 확정됐습니다. 확정 탭에서 확인하세요.');
+    } else {
       _snack(ref.read(ontologyProvider).error ?? '확정 실패', isError: true);
     }
   }
