@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +10,19 @@ import '../api/graph_api.dart';
 import '../models/triple.dart';
 import '../widgets/graph/graph_node_model.dart';
 import '../widgets/graph/force_layout.dart';
+
+String _graphError(Object e) {
+  if (e is DioException && e.type == DioExceptionType.connectionTimeout) {
+    return '서버에 연결할 수 없습니다.';
+  }
+  if (e is DioException && e.type == DioExceptionType.receiveTimeout) {
+    return '서버 응답이 지연되고 있습니다.';
+  }
+  if (e is DioException) {
+    return '서버 오류 (${e.response?.statusCode ?? e.type.name})';
+  }
+  return e.toString();
+}
 
 // ── API provider ─────────────────────────────────────────────────────────────
 
@@ -68,6 +82,11 @@ class GraphState {
   }
 
   static const _sentinel = Object();
+
+  /// 현재 선택된 LayoutNode (없으면 null)
+  LayoutNode? get selectedNode => selectedNodeId == null
+      ? null
+      : nodes.where((n) => n.id == selectedNodeId).firstOrNull;
 }
 
 // ── Notifier ─────────────────────────────────────────────────────────────────
@@ -120,7 +139,7 @@ class GraphNotifier extends StateNotifier<GraphState> {
 
       _startSimulation();
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _graphError(e));
     }
   }
 
@@ -139,7 +158,7 @@ class GraphNotifier extends StateNotifier<GraphState> {
     });
   }
 
-  /// 검색 — 매칭/이웃/나머지 투명도 설정
+  /// 검색 — 노드 ID + 엣지 술어 동시 매칭
   void search(String query) {
     if (query.isEmpty) {
       for (final n in state.nodes) {
@@ -149,43 +168,63 @@ class GraphNotifier extends StateNotifier<GraphState> {
       }
       for (final e in state.edges) {
         e.opacity = 1.0;
+        e.highlighted = false;
       }
       state = state.copyWith(searchQuery: '', nodes: [...state.nodes]);
       return;
     }
 
     final q = query.toLowerCase();
-    final matched = state.nodes
+
+    // 1. 노드 ID 매칭
+    final nodeMatched = state.nodes
         .where((n) => n.id.toLowerCase().contains(q))
         .map((n) => n.id)
         .toSet();
 
-    final neighbors = <String>{};
-    for (final e in state.edges) {
-      if (matched.contains(e.sourceId)) neighbors.add(e.targetId);
-      if (matched.contains(e.targetId)) neighbors.add(e.sourceId);
+    // 2. 엣지 술어 매칭
+    final edgeMatched = state.edges
+        .where((e) => e.predicate.toLowerCase().contains(q))
+        .toSet();
+
+    // 술어 매칭 엣지의 source/target 노드도 강조 대상에 추가
+    for (final e in edgeMatched) {
+      nodeMatched.add(e.sourceId);
+      nodeMatched.add(e.targetId);
     }
 
+    // 3. 1홉 이웃 수집
+    final neighbors = <String>{};
+    for (final e in state.edges) {
+      if (nodeMatched.contains(e.sourceId)) neighbors.add(e.targetId);
+      if (nodeMatched.contains(e.targetId)) neighbors.add(e.sourceId);
+    }
+    neighbors.removeAll(nodeMatched);
+
+    // 4. 노드 투명도/강조
     for (final n in state.nodes) {
-      if (matched.contains(n.id)) {
+      if (nodeMatched.contains(n.id)) {
         n.opacity = 1.0;
         n.highlighted = true;
         n.radius = n.baseRadius * 1.5;
       } else if (neighbors.contains(n.id)) {
-        n.opacity = 0.7;
+        n.opacity = 0.65;
         n.highlighted = false;
         n.radius = n.baseRadius;
       } else {
-        n.opacity = 0.2;
+        n.opacity = 0.12;
         n.highlighted = false;
         n.radius = n.baseRadius;
       }
     }
 
+    // 5. 엣지 투명도/강조
     for (final e in state.edges) {
-      e.opacity = (matched.contains(e.sourceId) || matched.contains(e.targetId))
-          ? 0.8
-          : 0.1;
+      final isEdgeMatch = edgeMatched.contains(e);
+      final isNodeMatch = nodeMatched.contains(e.sourceId) ||
+          nodeMatched.contains(e.targetId);
+      e.highlighted = isEdgeMatch;
+      e.opacity = (isEdgeMatch || isNodeMatch) ? 1.0 : 0.05;
     }
 
     state = state.copyWith(searchQuery: query, nodes: [...state.nodes]);
@@ -210,6 +249,11 @@ class GraphNotifier extends StateNotifier<GraphState> {
       n.selected = n.id == nodeId;
     }
     state = state.copyWith(selectedNodeId: nodeId, nodes: [...state.nodes]);
+  }
+
+  /// 색상 설정 변경 후 그래프 화면 강제 갱신
+  void applyColorSettings() {
+    state = state.copyWith(nodes: [...state.nodes]);
   }
 
   @override

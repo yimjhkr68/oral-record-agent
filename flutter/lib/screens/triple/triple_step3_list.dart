@@ -282,10 +282,15 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
       ),
     );
     if (ok != true || !mounted) return;
+    int archived = 0;
+    int failed = 0;
     for (final id in ids) {
       try {
         await ref.read(tripleApiProvider).archiveTriple(id);
-      } catch (_) {}
+        archived++;
+      } catch (_) {
+        failed++;
+      }
     }
     await _loadTriples();
     if (!mounted) return;
@@ -295,7 +300,14 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
       _selected = null;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${ids.length}개 아카이브됨')),
+      SnackBar(
+        content: Text(
+          failed == 0
+              ? '$archived개 아카이브 완료'
+              : '$archived개 아카이브, $failed개 실패',
+        ),
+        backgroundColor: failed > 0 ? Colors.orange : null,
+      ),
     );
   }
 

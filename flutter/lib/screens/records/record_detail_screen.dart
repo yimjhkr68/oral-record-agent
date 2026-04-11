@@ -41,12 +41,14 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen>
       final api = ref.read(recordApiProvider);
       final record = await api.get(widget.recordId);
       final usage = await api.getUsage(widget.recordId);
+      if (!mounted) return;
       setState(() {
         _record = record;
         _usage = usage;
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -110,7 +112,7 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen>
   void _showEditDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => _EditDialog(
+      builder: (ctx) => _EditDialog(
         record: _record!,
         onSaved: (title, note) async {
           await ref.read(recordListProvider.notifier).update(
@@ -127,17 +129,17 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen>
   void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('기록 삭제'),
         content: Text('"${_record!.title}"을 삭제하시겠습니까?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('취소')),
           TextButton(
             onPressed: () async {
+              Navigator.of(ctx).pop();
               final nav = Navigator.of(context);
-              nav.pop();
               final ok = await ref
                   .read(recordListProvider.notifier)
                   .delete(_record!.id);

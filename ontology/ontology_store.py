@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import os
+
+logger = logging.getLogger(__name__)
 
 from utils.file_io import atomic_write_json, ensure_dir, read_json
 
@@ -109,8 +112,8 @@ class OntologyStore:
             try:
                 v = _from_dict(read_json(path))
                 versions[v.version_id] = v
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("confirmed 온톨로지 로드 실패 — %s: %s", path.name, e)
 
         # drafts 로드 (confirmed에 없는 것만)
         for path in self.drafts_dir.glob("*.json"):
@@ -118,8 +121,8 @@ class OntologyStore:
                 v = _from_dict(read_json(path))
                 if v.version_id not in versions:
                     versions[v.version_id] = v
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("draft 온톨로지 로드 실패 — %s: %s", path.name, e)
 
         return list(versions.values())
 

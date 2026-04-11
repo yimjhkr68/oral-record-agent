@@ -397,7 +397,14 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
             {'name': name, 'tag': tag, 'confirmed': confirmed}
           ]);
       ref.read(ontologyProvider.notifier).loadVersions();
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('클래스 매핑 저장 실패: $e'),
+              backgroundColor: Colors.orange),
+        );
+      }
+    }
   }
 
   Future<void> _onSavePred(String name, String tag, bool confirmed) async {
@@ -414,7 +421,14 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
             {'name': name, 'tag': tag, 'confirmed': confirmed}
           ]);
       ref.read(ontologyProvider.notifier).loadVersions();
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('속성 매핑 저장 실패: $e'),
+              backgroundColor: Colors.orange),
+        );
+      }
+    }
   }
 
   // ── 전체 자동 적용 (클래스 탭 기준) ─────────────────────────────────────────

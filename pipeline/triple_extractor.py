@@ -58,15 +58,17 @@ class TripleExtractor:
             raise RuntimeError(f"AI API 호출 실패: {e}") from e
 
         raw = response.content[0].text.strip()
-        if "```" in raw:
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
+        # 코드 펜스 제거 + JSON 객체 경계 슬라이싱 (preamble/postamble 방어)
+        clean = raw.replace("```json", "").replace("```", "").strip()
+        start = clean.find('{')
+        end   = clean.rfind('}')
+        if start != -1 and end != -1 and end > start:
+            clean = clean[start:end + 1]
         try:
-            parsed = json.loads(raw)
+            parsed = json.loads(clean)
         except json.JSONDecodeError as e:
             raise RuntimeError(
-                f"AI 응답 JSON 파싱 실패 — 원문: {raw[:200]!r}"
+                f"AI 응답 JSON 파싱 실패 — 원문: {clean[:200]!r}"
             ) from e
         return parsed.get("triples", []), ontology_version_id
 

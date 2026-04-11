@@ -30,22 +30,31 @@ class TripleStatus(str, Enum):
     ARCHIVED = "archived"
 
 
+# extraction_method 리터럴
+EXTRACTION_AUTO   = "auto_extract"
+EXTRACTION_MANUAL = "manual"
+EXTRACTION_EDITED = "edited"
+
+
 @dataclass
 class Triple:
-    subject:          str = ""
-    subject_type:     str = ""
-    predicate:        str = ""
-    object:           str = ""
-    object_type:      str = ""
-    ontology_version: str = ""
-    source_record_id: Optional[str] = None
-    confidence:       float = 1.0
-    status:           TripleStatus = TripleStatus.ACTIVE
-    created_at:       str = field(default_factory=lambda: datetime.now().isoformat())
-    updated_at:       Optional[str] = None
-    archived_at:      Optional[str] = None
-    note:             str = ""
-    id:               str = field(default_factory=lambda: str(uuid.uuid4())[:8])
+    subject:           str = ""
+    subject_type:      str = ""
+    predicate:         str = ""
+    object:            str = ""
+    object_type:       str = ""
+    ontology_version:  str = ""
+    source_record_id:  Optional[str] = None
+    confidence:        float = 1.0
+    status:            TripleStatus = TripleStatus.ACTIVE
+    created_at:        str = field(default_factory=lambda: datetime.now().isoformat())
+    created_by:        str = "system"
+    extraction_method: str = EXTRACTION_AUTO   # auto_extract | manual | edited
+    updated_at:        Optional[str] = None
+    updated_by:        Optional[str] = None
+    archived_at:       Optional[str] = None
+    note:              str = ""
+    id:                str = field(default_factory=lambda: str(uuid.uuid4())[:8])
 
     def __post_init__(self):
         if isinstance(self.status, str):
@@ -75,7 +84,8 @@ class GraphDB:
         """graph.json 있으면 로드. 없으면 빈 상태. 파일 손상 시 빈 상태로 시작."""
         try:
             data = read_json(self.graph_file)
-        except Exception:
+        except Exception as e:
+            logger.warning("graph.json 로드 실패 — 빈 상태로 시작: %s", e)
             data = {}
         if not data:
             return
@@ -84,8 +94,9 @@ class GraphDB:
             try:
                 triple = Triple(**t)
                 self._triples[triple.id] = triple
-            except Exception:
-                pass  # 손상된 트리플 레코드 건너뜀
+            except Exception as e:
+                logger.warning("손상된 트리플 레코드 건너뜀 (id=%s): %s",
+                               t.get("id", "?"), e)
 
     def _save(self) -> None:
         """
@@ -159,19 +170,43 @@ class GraphDB:
         return self._triples.get(triple_id)
 
     def update(self, triple_id: str, **kwargs) -> Optional[Triple]:
-        """필드 업데이트 + updated_at 자동 갱신."""
+        """필드 업데이트 + updated_at 자동 갱신.
+        subject / object 변경 시 노드 degree 재계산 + 고립 노드 제거."""
         triple = self._triples.get(triple_id)
         if triple is None:
             return None
         allowed = {
+            "subject", "subject_type",
             "predicate", "object", "object_type",
             "confidence", "note", "status",
-            "archived_at",
+            "archived_at", "updated_by", "extraction_method",
+            "ontology_version",
         }
+        structural_keys = {"subject", "object"}
+        structural_changed = False
         for k, v in kwargs.items():
             if k in allowed:
+                if k in structural_keys and getattr(triple, k) != v:
+                    structural_changed = True
                 setattr(triple, k, v)
         triple.updated_at = datetime.now().isoformat()
+
+        if structural_changed:
+            # 새 subject/object 노드 보장
+            for node_id, node_type in (
+                (triple.subject, triple.subject_type),
+                (triple.object,  triple.object_type),
+            ):
+                if node_id not in self._nodes:
+                    self._nodes[node_id] = {
+                        "id": node_id, "type": node_type, "degree": 0
+                    }
+            self._recalc_degrees()
+            # 고립 노드 제거
+            self._nodes = {
+                nid: n for nid, n in self._nodes.items() if n["degree"] > 0
+            }
+
         self._auto_save()
         return triple
 

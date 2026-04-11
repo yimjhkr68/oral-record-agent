@@ -224,16 +224,16 @@ class _RecordCard extends ConsumerWidget {
   void _confirmDelete(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('기록 삭제'),
         content: Text('"${record.title}"을 삭제하시겠습니까?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.of(ctx).pop(),
               child: const Text('취소')),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              Navigator.of(ctx).pop();
               await ref.read(recordListProvider.notifier).delete(record.id);
             },
             child:
