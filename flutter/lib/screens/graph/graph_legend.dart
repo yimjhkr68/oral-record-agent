@@ -71,11 +71,33 @@ class _GraphLegendState extends ConsumerState<GraphLegend> {
 
   @override
   Widget build(BuildContext context) {
-    // 실제 사용 중인 클래스만 표시
+    // 실제 사용 중인 클래스만 표시 — 중요도순 정렬 (Narrator 계열 우선)
+    const priorityOrder = [
+      'Narrator', 'OralNarrator', 'OralHistoryNarrator',
+      'Victim', 'Survivor', 'SurvivorFamily', 'Witness',
+      'Person', 'Interviewer',
+      'HistoricalEvent', 'HistoricalMassacreEvent', 'TraumaticEvent', 'Event',
+      'OralHistoryRecord', 'NarrativeSession',
+      'Place', 'Location', 'AdministrativeRegion',
+      'Organization', 'Community',
+      'Time', 'Date', 'HistoricalPeriod',
+      'Emotion', 'Trauma', 'TraumaticExperience',
+      'HistoricalActor', 'MilitaryUnit', 'Perpetrator',
+      'Topic', 'Policy', 'Object', 'Collection', 'Document',
+    ];
     final used = _usedTypes;
-    final entries = GraphColorSettings.currentColors.entries
+    final allEntries = GraphColorSettings.currentColors.entries
         .where((e) => used.isEmpty || used.contains(e.key))
         .toList();
+    allEntries.sort((a, b) {
+      final ia = priorityOrder.indexOf(a.key);
+      final ib = priorityOrder.indexOf(b.key);
+      if (ia == -1 && ib == -1) return a.key.compareTo(b.key);
+      if (ia == -1) return 1;
+      if (ib == -1) return -1;
+      return ia.compareTo(ib);
+    });
+    final entries = allEntries;
 
     return Material(
       color: Colors.black.withValues(alpha: 0.55),

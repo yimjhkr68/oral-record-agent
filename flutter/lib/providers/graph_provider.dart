@@ -116,7 +116,7 @@ class GraphNotifier extends StateNotifier<GraphState> {
         id: n.id,
         type: n.type,
         degree: n.degree,
-        radius: 14 + min(n.degree * 2.0, 12),
+        radius: radiusForNode(n.type, n.degree),
       )).toList();
 
       final edges = data.triples.map((t) => LayoutEdge(
