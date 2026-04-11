@@ -294,10 +294,10 @@ def update_draft(version_id: str, body: UpdateRequest):
 
 
 @router.delete("/{version_id}", status_code=204)
-def delete_draft(version_id: str):
-    """Draft 버전 삭제."""
+def delete_draft(version_id: str, force: bool = False):
+    """온톨로지 버전 삭제. force=true 이면 Confirmed/Archived도 삭제."""
     try:
-        get_manager().delete(version_id)
+        get_manager().delete(version_id, force=force)
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:

@@ -44,8 +44,13 @@ class OntologyApi {
     return OntologyVersion.fromJson(res.data as Map<String, dynamic>);
   }
 
-  Future<void> deleteDraft(String versionId) async {
-    await _client.delete('/api/ontologies/$versionId');
+  Future<void> deleteDraft(String versionId) => deleteVersion(versionId);
+
+  Future<void> deleteVersion(String versionId, {bool force = false}) async {
+    final path = force
+        ? '/api/ontologies/$versionId?force=true'
+        : '/api/ontologies/$versionId';
+    await _client.delete(path);
   }
 
   Future<OntologyVersion> confirmVersion(String versionId) async {
@@ -55,6 +60,15 @@ class OntologyApi {
 
   Future<OntologyVersion> archiveVersion(String versionId) async {
     final res = await _client.post('/api/ontologies/$versionId/archive');
+    return OntologyVersion.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<OntologyVersion> renameVersion(
+      String versionId, String newVersionId) async {
+    final res = await _client.patch(
+      '/api/ontologies/$versionId/rename',
+      data: {'new_version_id': newVersionId},
+    );
     return OntologyVersion.fromJson(res.data as Map<String, dynamic>);
   }
 
@@ -95,6 +109,32 @@ class OntologyApi {
       data: {'mappings': mappings.map((m) => m.toJson()).toList()},
     );
     return OntologyVersion.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  /// 클래스·속성별 표준 매핑 추천 + 현재 저장값 반환
+  Future<Map<String, List<MappingItem>>> getMappings(String versionId) async {
+    final res = await _client.get('/api/ontologies/$versionId/mappings');
+    final data = res.data as Map<String, dynamic>;
+    return {
+      'classes': (data['classes'] as List? ?? [])
+          .map((e) => MappingItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      'predicates': (data['predicates'] as List? ?? [])
+          .map((e) => MappingItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    };
+  }
+
+  /// 클래스·속성 standard_tag 및 mapping_confirmed 일괄 업데이트
+  Future<void> saveMappings(
+    String versionId, {
+    List<Map<String, dynamic>> classes = const [],
+    List<Map<String, dynamic>> predicates = const [],
+  }) async {
+    await _client.patch('/api/ontologies/$versionId/mappings', data: {
+      'classes': classes,
+      'predicates': predicates,
+    });
   }
 
   /// 파일(txt/pdf/docx) → 텍스트 추출

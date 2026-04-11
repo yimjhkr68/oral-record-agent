@@ -338,20 +338,35 @@ class OntologyManager:
             pass
         return version
 
-    def delete(self, version_id: str) -> None:
-        """Draft 상태만 삭제 가능. 그 외 PermissionError."""
+    def _generate_unique_version_id(self, prefix: str) -> str:
+        """타임스탬프 기반 고유 version_id 생성. 충돌 시 카운터 접미사 추가."""
+        ts = datetime.now().strftime("%Y%m%d%H%M%S")
+        candidate = f"{prefix}-{ts}"
+        if candidate not in self._cache:
+            return candidate
+        counter = 2
+        while f"{candidate}-{counter}" in self._cache:
+            counter += 1
+        return f"{candidate}-{counter}"
+
+    def delete(self, version_id: str, force: bool = False) -> None:
+        """Draft 상태만 삭제 가능. force=True 이면 Confirmed/Archived도 삭제."""
         version = self.get(version_id)
-        if version.status != OntologyStatus.DRAFT:
+        if version.status != OntologyStatus.DRAFT and not force:
             raise PermissionError(
-                f"Draft 상태만 삭제 가능합니다. 현재 상태: {version.status}"
+                f"Draft 상태만 삭제 가능합니다. 현재 상태: {version.status.value} "
+                f"(강제 삭제하려면 force=True 사용)"
             )
-        self._store.delete_draft(version_id)
+        if version.status == OntologyStatus.DRAFT:
+            self._store.delete_draft(version_id)
+        else:
+            self._store.delete_confirmed(version_id)
         del self._cache[version_id]
         try:
             self._history.record_ontology_event(
                 event_type="deleted",
                 version_id=version_id,
-                detail="Draft 삭제",
+                detail=f"{version.status.value} 삭제" + (" (강제)" if force else ""),
             )
         except Exception:
             pass
@@ -477,9 +492,8 @@ class OntologyManager:
             if p is not None
         ]
 
-        # 새 버전 ID 자동 생성 (타임스탬프 기반)
-        ts = datetime.now().strftime("%Y%m%d%H%M%S")
-        version_id = f"draft-{ts}"
+        # 새 버전 ID 자동 생성 (중복 방지)
+        version_id = self._generate_unique_version_id("draft")
 
         version = OntologyVersion(
             version_id=version_id,

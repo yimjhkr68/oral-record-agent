@@ -168,24 +168,19 @@ class OntologyNotifier extends StateNotifier<OntologyState> {
     }
   }
 
-  // ── Draft 삭제 ───────────────────────────────────────────────────────────────
+  // ── 버전 삭제 (Draft: 기본 / Confirmed·Archived: force=true) ──────────────
 
-  Future<bool> deleteDraft(String versionId) async {
+  Future<bool> deleteDraft(String versionId) => deleteVersion(versionId);
+
+  Future<bool> deleteVersion(String versionId, {bool force = false}) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      await _api.deleteDraft(versionId);
+      await _api.deleteVersion(versionId, force: force);
       final updated =
           state.versions.where((v) => v.versionId != versionId).toList();
-      final newSelected = state.selectedVersion?.versionId == versionId
-          ? null
-          : state.selectedVersion;
-      state = state.copyWith(
-        versions: updated,
-        isLoading: false,
-      );
-      if (newSelected == null) {
-        state = state.copyWith(clearSelected: true);
-      }
+      final clearSel = state.selectedVersion?.versionId == versionId;
+      state = state.copyWith(versions: updated, isLoading: false);
+      if (clearSel) state = state.copyWith(clearSelected: true);
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
