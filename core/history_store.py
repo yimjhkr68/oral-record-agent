@@ -205,6 +205,74 @@ class HistoryStore:
         session["records"] = [dict(r) for r in records]
         return session
 
+    # ── 이력 삭제 ─────────────────────────────────────────────────────────
+
+    def delete_ontology_event(self, event_id: str) -> bool:
+        """온톨로지 이벤트 단건 삭제. 없으면 False."""
+        with get_connection() as conn:
+            cur = conn.execute(
+                "DELETE FROM ontology_events WHERE id = ?", (event_id,)
+            )
+        return cur.rowcount > 0
+
+    def delete_ontology_events_bulk(self, event_ids: list[str]) -> int:
+        """온톨로지 이벤트 다건 삭제. 삭제된 수 반환."""
+        if not event_ids:
+            return 0
+        placeholders = ",".join("?" * len(event_ids))
+        with get_connection() as conn:
+            cur = conn.execute(
+                f"DELETE FROM ontology_events WHERE id IN ({placeholders})",
+                event_ids,
+            )
+        return cur.rowcount
+
+    def clear_all_ontology_events(self) -> int:
+        """온톨로지 이벤트 전체 삭제. 삭제된 수 반환."""
+        with get_connection() as conn:
+            cur = conn.execute("DELETE FROM ontology_events")
+        return cur.rowcount
+
+    def delete_session(self, session_id: str) -> bool:
+        """추출 세션 단건 삭제. 없으면 False."""
+        with get_connection() as conn:
+            conn.execute(
+                "DELETE FROM session_records WHERE session_id = ?", (session_id,)
+            )
+            cur = conn.execute(
+                "DELETE FROM extraction_sessions WHERE id = ?", (session_id,)
+            )
+        return cur.rowcount > 0
+
+    def delete_sessions_bulk(self, session_ids: list[str]) -> int:
+        """추출 세션 다건 삭제. 삭제된 수 반환."""
+        if not session_ids:
+            return 0
+        placeholders = ",".join("?" * len(session_ids))
+        with get_connection() as conn:
+            conn.execute(
+                f"DELETE FROM session_records WHERE session_id IN ({placeholders})",
+                session_ids,
+            )
+            cur = conn.execute(
+                f"DELETE FROM extraction_sessions WHERE id IN ({placeholders})",
+                session_ids,
+            )
+        return cur.rowcount
+
+    def clear_all_sessions(self) -> int:
+        """추출 세션 전체 삭제. 삭제된 수 반환."""
+        with get_connection() as conn:
+            conn.execute("DELETE FROM session_records")
+            cur = conn.execute("DELETE FROM extraction_sessions")
+        return cur.rowcount
+
+    def clear_all(self) -> dict:
+        """온톨로지 이벤트 + 추출 세션 전체 삭제."""
+        ontology = self.clear_all_ontology_events()
+        sessions = self.clear_all_sessions()
+        return {"ontology_events": ontology, "extraction_sessions": sessions}
+
     # ── 요약 통계 ──────────────────────────────────────────────────────────
 
     def get_summary(self) -> dict:

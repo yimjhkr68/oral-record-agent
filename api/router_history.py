@@ -1,10 +1,14 @@
-"""이력 조회 API"""
-from fastapi import APIRouter, Query
-from fastapi import HTTPException
+"""이력 조회 + 삭제 API"""
+from fastapi import APIRouter, Query, HTTPException
+from pydantic import BaseModel
 from core.history_store import HistoryStore
 
 router = APIRouter(prefix="/api/history", tags=["history"])
 store = HistoryStore()
+
+
+class BulkDeleteRequest(BaseModel):
+    ids: list[str]
 
 
 # ── 온톨로지 이벤트 ──────────────────────────────────────────────────────────
@@ -58,3 +62,57 @@ def get_session_detail(session_id: str):
 @router.get("/summary")
 def get_summary():
     return store.get_summary()
+
+
+# ── 이력 삭제 ─────────────────────────────────────────────────────────────────
+
+@router.delete("/all")
+def clear_all_history():
+    """온톨로지 이벤트 + 추출 세션 전체 삭제."""
+    return store.clear_all()
+
+
+@router.delete("/ontology/all")
+def clear_all_ontology_events():
+    """온톨로지 이벤트 전체 삭제."""
+    count = store.clear_all_ontology_events()
+    return {"deleted": count}
+
+
+@router.delete("/ontology/bulk")
+def delete_ontology_events_bulk(body: BulkDeleteRequest):
+    """온톨로지 이벤트 다건 삭제."""
+    count = store.delete_ontology_events_bulk(body.ids)
+    return {"deleted": count}
+
+
+@router.delete("/ontology/{event_id}")
+def delete_ontology_event(event_id: str):
+    """온톨로지 이벤트 단건 삭제."""
+    ok = store.delete_ontology_event(event_id)
+    if not ok:
+        raise HTTPException(404, f"이벤트 없음: {event_id}")
+    return {"deleted": event_id}
+
+
+@router.delete("/extractions/all")
+def clear_all_sessions():
+    """추출 세션 전체 삭제."""
+    count = store.clear_all_sessions()
+    return {"deleted": count}
+
+
+@router.delete("/extractions/bulk")
+def delete_sessions_bulk(body: BulkDeleteRequest):
+    """추출 세션 다건 삭제."""
+    count = store.delete_sessions_bulk(body.ids)
+    return {"deleted": count}
+
+
+@router.delete("/extractions/{session_id}")
+def delete_session(session_id: str):
+    """추출 세션 단건 삭제."""
+    ok = store.delete_session(session_id)
+    if not ok:
+        raise HTTPException(404, f"세션 없음: {session_id}")
+    return {"deleted": session_id}
