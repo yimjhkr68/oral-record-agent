@@ -18,24 +18,39 @@ def _extract_json(raw: str) -> dict:
     """AI 응답에서 JSON 객체를 robust하게 추출.
 
     처리 순서:
-    1. 코드 펜스(```json ... ```) 제거
-    2. 첫 번째 '{' ~ 마지막 '}' 사이만 슬라이싱 (preamble/postamble 제거)
-    3. json.loads — 실패 시 ValueError 발생 (→ HTTP 422)
+    1. 코드 펜스(```json ... ```) 제거 + BOM/제어문자 정리
+    2. raw_decode: 첫 번째 '{' 위치부터 파싱 — 괄호 균형을 JSON 파서가 직접 계산
+       (rfind('}')로 슬라이싱하면 JSON 뒤 설명 텍스트 안의 '}'에 오염될 수 있음)
+    3. 실패 시 fallback: rfind('}') 슬라이싱 후 재시도
+    4. 여전히 실패하면 ValueError (→ HTTP 422)
     """
-    # 1. 코드 펜스 제거
-    clean = raw.replace("```json", "").replace("```", "").strip()
-    # 2. JSON 객체 경계 추출
+    # 1. 코드 펜스 + BOM 제거
+    clean = raw.replace("```json", "").replace("```", "").strip().lstrip('\ufeff')
+
+    # 2. raw_decode: 첫 번째 '{' 위치에서 JSON 파서가 직접 경계 계산
+    decoder = json.JSONDecoder()
     start = clean.find('{')
-    end   = clean.rfind('}')
+    if start != -1:
+        try:
+            obj, _ = decoder.raw_decode(clean, start)
+            return obj
+        except json.JSONDecodeError:
+            pass
+
+    # 3. fallback: rfind('}') 슬라이싱
+    end = clean.rfind('}')
     if start != -1 and end != -1 and end > start:
-        clean = clean[start:end + 1]
-    # 3. 파싱
-    try:
-        return json.loads(clean)
-    except json.JSONDecodeError as e:
-        raise ValueError(
-            f"AI 응답 파싱 실패: {e}\n응답 앞부분: {clean[:300]!r}"
-        ) from e
+        candidate = clean[start:end + 1]
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            pass
+
+    # 4. 실패
+    logger.error("[ONTOLOGY_PARSE_FAIL] raw 앞부분: %r", raw[:500])
+    raise ValueError(
+        f"AI 응답에서 JSON을 찾을 수 없습니다.\n응답 앞부분: {raw[:300]!r}"
+    )
 
 
 # ── 데이터 모델 ────────────────────────────────────────────────────────────────
