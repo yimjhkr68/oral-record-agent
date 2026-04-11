@@ -14,6 +14,30 @@ import anthropic
 logger = logging.getLogger(__name__)
 
 
+def _extract_json(raw: str) -> dict:
+    """AI 응답에서 JSON 객체를 robust하게 추출.
+
+    처리 순서:
+    1. 코드 펜스(```json ... ```) 제거
+    2. 첫 번째 '{' ~ 마지막 '}' 사이만 슬라이싱 (preamble/postamble 제거)
+    3. json.loads — 실패 시 ValueError 발생 (→ HTTP 422)
+    """
+    # 1. 코드 펜스 제거
+    clean = raw.replace("```json", "").replace("```", "").strip()
+    # 2. JSON 객체 경계 추출
+    start = clean.find('{')
+    end   = clean.rfind('}')
+    if start != -1 and end != -1 and end > start:
+        clean = clean[start:end + 1]
+    # 3. 파싱
+    try:
+        return json.loads(clean)
+    except json.JSONDecodeError as e:
+        raise ValueError(
+            f"AI 응답 파싱 실패: {e}\n응답 앞부분: {clean[:300]!r}"
+        ) from e
+
+
 # ── 데이터 모델 ────────────────────────────────────────────────────────────────
 
 class OntologyStatus(str, Enum):
@@ -442,14 +466,7 @@ class OntologyManager:
             raise RuntimeError(f"AI API 호출 실패: {e}") from e
 
         raw = response.content[0].text.strip()
-        # 코드 펜스 전체 제거 (```json ... ``` / ``` ... ``` 모두 처리)
-        clean = raw.replace("```json", "").replace("```", "").strip()
-        try:
-            parsed = json.loads(clean)
-        except json.JSONDecodeError as e:
-            raise ValueError(
-                f"AI 응답 파싱 실패: {e}\n응답 앞부분: {clean[:300]!r}"
-            ) from e
+        parsed = _extract_json(raw)
 
         classes = [
             c for c in (_safe_class(d) for d in parsed.get("classes", []))
@@ -568,14 +585,7 @@ class OntologyManager:
             raise RuntimeError(f"AI API 호출 실패: {e}") from e
 
         text = "".join(b.text for b in message.content if hasattr(b, "text"))
-        clean = text.replace("```json", "").replace("```", "").strip()
-
-        try:
-            parsed = json.loads(clean)
-        except json.JSONDecodeError as e:
-            raise ValueError(
-                f"AI 응답 파싱 실패: {e}\n응답 앞부분: {clean[:300]!r}"
-            ) from e
+        parsed = _extract_json(text)
 
         merged_classes = [
             c for c in (_safe_class(d) for d in parsed.get("classes", []))

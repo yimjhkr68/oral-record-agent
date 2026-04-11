@@ -11,6 +11,12 @@ String _aiErrorMessage(Object e) {
   if (e is DioException && e.type == DioExceptionType.connectionTimeout) {
     return '서버에 연결할 수 없습니다. 서버 설정을 확인해주세요.';
   }
+  if (e is DioException && e.response?.statusCode == 422) {
+    return 'AI 응답 파싱 실패. 다시 시도해주세요.';
+  }
+  if (e is DioException && e.response?.statusCode == 502) {
+    return 'AI API 호출 실패. API 키 또는 네트워크를 확인해주세요.';
+  }
   return e.toString();
 }
 
@@ -206,6 +212,28 @@ class OntologyNotifier extends StateNotifier<OntologyState> {
   }
 
   // ── 아카이브 ─────────────────────────────────────────────────────────────────
+
+  Future<OntologyVersion?> renameVersion(
+      String versionId, String newVersionId) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final v = await _api.renameVersion(versionId, newVersionId);
+      final updated = state.versions
+          .map((x) => x.versionId == versionId ? v : x)
+          .toList();
+      state = state.copyWith(
+        versions: updated,
+        selectedVersion: state.selectedVersion?.versionId == versionId
+            ? v
+            : state.selectedVersion,
+        isLoading: false,
+      );
+      return v;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return null;
+    }
+  }
 
   Future<bool> archiveVersion(String versionId) async {
     state = state.copyWith(isLoading: true, clearError: true);
