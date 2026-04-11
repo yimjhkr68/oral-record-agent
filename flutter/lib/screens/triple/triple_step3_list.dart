@@ -267,75 +267,73 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
     final ids = Set<String>.from(_checkedIds);
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('선택 아카이브'),
         content: Text('선택한 ${ids.length}개 트리플을 아카이브하시겠습니까?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.of(ctx).pop(false),
               child: const Text('취소')),
           ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.of(ctx).pop(true),
               child: const Text('아카이브')),
         ],
       ),
     );
-    if (ok != true) return;
+    if (ok != true || !mounted) return;
     for (final id in ids) {
       try {
         await ref.read(tripleApiProvider).archiveTriple(id);
       } catch (_) {}
     }
     await _loadTriples();
+    if (!mounted) return;
     setState(() {
       _checkedIds.clear();
       _isSelecting = false;
       _selected = null;
     });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${ids.length}개 아카이브됨')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${ids.length}개 아카이브됨')),
+    );
   }
 
   Future<void> _deleteSelected() async {
     final ids = Set<String>.from(_checkedIds);
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('선택 삭제'),
         content: Text('선택한 ${ids.length}개 트리플을 영구 삭제하시겠습니까?\n되돌릴 수 없습니다.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.of(ctx).pop(false),
               child: const Text('취소')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red, foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('삭제'),
           ),
         ],
       ),
     );
-    if (ok != true) return;
+    if (ok != true || !mounted) return;
     for (final id in ids) {
       try {
         await ref.read(tripleApiProvider).deleteTriple(id);
       } catch (_) {}
     }
     await _loadTriples();
+    if (!mounted) return;
     setState(() {
       _checkedIds.clear();
       _isSelecting = false;
       _selected = null;
     });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${ids.length}개 삭제됨')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${ids.length}개 삭제됨')),
+    );
   }
 
   // ── 타입 칩 (카운트 배지 포함) ────────────────────────────────────────────────
@@ -398,12 +396,11 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
       builder: (_) => _AddTripleDialog(versions: versions),
     );
     if (created == true) {
-      _loadTriples();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('트리플이 추가되었습니다.')),
-        );
-      }
+      await _loadTriples();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('트리플이 추가되었습니다.')),
+      );
     }
   }
 
@@ -935,14 +932,16 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                                     .read(tripleApiProvider)
                                     .archiveTriple(t.id);
                                 await _loadTriples();
-                                if (mounted) setState(() => _selected = null);
+                                if (!mounted) return;
+                                setState(() => _selected = null);
                               },
                               onDelete: () async {
                                 await ref
                                     .read(tripleApiProvider)
                                     .deleteTriple(t.id);
                                 await _loadTriples();
-                                if (mounted) setState(() => _selected = null);
+                                if (!mounted) return;
+                                setState(() => _selected = null);
                               },
                             );
                           },
@@ -964,14 +963,16 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                                   .read(tripleApiProvider)
                                   .archiveTriple(id);
                               await _loadTriples();
-                              if (mounted) setState(() => _selected = null);
+                              if (!mounted) return;
+                              setState(() => _selected = null);
                             },
                             onDelete: (id) async {
                               await ref
                                   .read(tripleApiProvider)
                                   .deleteTriple(id);
                               await _loadTriples();
-                              if (mounted) setState(() => _selected = null);
+                              if (!mounted) return;
+                              setState(() => _selected = null);
                             },
                           ),
                         ),
@@ -1523,15 +1524,15 @@ class _DetailPanelState extends State<_DetailPanel> {
       BuildContext context, String id) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('아카이브'),
         content: const Text('이 트리플을 아카이브하시겠습니까?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.of(ctx).pop(false),
               child: const Text('취소')),
           ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.of(ctx).pop(true),
               child: const Text('아카이브')),
         ],
       ),
@@ -1543,18 +1544,18 @@ class _DetailPanelState extends State<_DetailPanel> {
       BuildContext context, String id) async {
     final ok = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('삭제'),
         content: const Text('이 트리플을 영구 삭제하시겠습니까?\n되돌릴 수 없습니다.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.of(ctx).pop(false),
               child: const Text('취소')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('삭제'),
           ),
         ],
