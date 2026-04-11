@@ -1088,7 +1088,11 @@ class _TripleRow extends StatelessWidget {
                         text: _highlightText(
                           t.subject,
                           searchQuery,
-                          baseStyle: const TextStyle(fontSize: 13),
+                          baseStyle: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ],
@@ -1125,7 +1129,11 @@ class _TripleRow extends StatelessWidget {
                         text: _highlightText(
                           t.object,
                           searchQuery,
-                          baseStyle: const TextStyle(fontSize: 13),
+                          baseStyle: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ],
@@ -1136,7 +1144,9 @@ class _TripleRow extends StatelessWidget {
                   width: 36,
                   child: Text(
                     t.confidence.toStringAsFixed(1),
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
                     textAlign: TextAlign.right,
                   ),
                 ),
@@ -1170,23 +1180,30 @@ class _TripleRow extends StatelessWidget {
                   t.createdAt.length >= 10
                       ? t.createdAt.substring(0, 10)
                       : t.createdAt,
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(width: 6),
                 Text('· ${t.createdBy}',
-                    style: const TextStyle(
-                        fontSize: 10, color: Colors.grey)),
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 const SizedBox(width: 6),
                 Text('· ${_methodLabel(t.extractionMethod)}',
-                    style: const TextStyle(
-                        fontSize: 10, color: Colors.grey)),
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
                 if (t.sourceRecordId.isNotEmpty) ...[
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       '· ${t.sourceRecordId}',
-                      style: const TextStyle(
-                          fontSize: 10, color: Colors.grey),
+                      style: TextStyle(
+                          fontSize: 10,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurfaceVariant),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
