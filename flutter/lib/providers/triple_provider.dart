@@ -162,21 +162,25 @@ class TripleWorkNotifier extends StateNotifier<TripleWorkState> {
         }
       } on DioException catch (e) {
         if (e.type == DioExceptionType.receiveTimeout) {
-          errors.add('${rec.id}: AI 응답 지연');
+          errors.add('${rec.id}: AI 응답 지연 (타임아웃)');
         } else {
-          errors.add('${rec.id}: ${e.message}');
+          // FastAPI detail 메시지 우선 추출
+          final detail = (e.response?.data as Map?)?['detail']?.toString();
+          errors.add('${rec.id}: ${detail ?? e.message ?? e.toString()}');
         }
       } catch (e) {
         errors.add('${rec.id}: $e');
       }
     }
 
+    // 트리플이 하나도 없고 오류만 있으면 Step 2로 이동하지 않음
+    final hasTriples = allPending.isNotEmpty;
     state = state.copyWith(
       isExtracting: false,
       extractProgress: records.length,
       extractStatus: '',
       pendingTriples: allPending,
-      currentStep: 1, // Step 2로 자동 이동
+      currentStep: hasTriples ? 1 : null, // 성공 트리플 없으면 Step 1 유지
       error: errors.isNotEmpty ? errors.join('\n') : null,
     );
   }

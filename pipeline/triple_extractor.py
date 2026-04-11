@@ -31,10 +31,11 @@ class TripleExtractor:
         """공통: 온톨로지 검증 + AI 호출 + JSON 파싱.
         반환: (triples_data, ontology_version_id)"""
         version = self.om.get(ontology_version_id)
-        if version.status != OntologyStatus.CONFIRMED:
+        if version.status == OntologyStatus.ARCHIVED:
             raise ValueError(
-                f"Confirmed 상태의 온톨로지만 사용 가능합니다. "
-                f"현재 상태: {version.status} (version_id={ontology_version_id!r})"
+                f"아카이브된 온톨로지는 사용할 수 없습니다. "
+                f"Confirmed 또는 Draft 상태의 온톨로지를 선택해 주세요. "
+                f"(version_id={ontology_version_id!r})"
             )
 
         # 텍스트 길이 제한
