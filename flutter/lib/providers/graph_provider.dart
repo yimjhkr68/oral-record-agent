@@ -10,6 +10,7 @@ import '../api/graph_api.dart';
 import '../models/triple.dart';
 import '../widgets/graph/graph_node_model.dart';
 import '../widgets/graph/force_layout.dart';
+import '../widgets/graph/cluster_detector.dart';
 
 String _graphError(Object e) {
   if (e is DioException && e.type == DioExceptionType.connectionTimeout) {
@@ -42,6 +43,8 @@ class GraphState {
   final String? error;
   final Map<String, dynamic> stats;
   final bool isSimulating;
+  final List<NarratorCluster> clusters;
+  final String selectedOntologyVersion;
 
   const GraphState({
     this.nodes = const [],
@@ -53,6 +56,8 @@ class GraphState {
     this.error,
     this.stats = const {},
     this.isSimulating = false,
+    this.clusters = const [],
+    this.selectedOntologyVersion = '',
   });
 
   GraphState copyWith({
@@ -65,6 +70,8 @@ class GraphState {
     Object? error = _sentinel,
     Map<String, dynamic>? stats,
     bool? isSimulating,
+    List<NarratorCluster>? clusters,
+    String? selectedOntologyVersion,
   }) {
     return GraphState(
       nodes: nodes ?? this.nodes,
@@ -78,6 +85,9 @@ class GraphState {
       error: identical(error, _sentinel) ? this.error : error as String?,
       stats: stats ?? this.stats,
       isSimulating: isSimulating ?? this.isSimulating,
+      clusters: clusters ?? this.clusters,
+      selectedOntologyVersion:
+          selectedOntologyVersion ?? this.selectedOntologyVersion,
     );
   }
 
@@ -105,12 +115,16 @@ class GraphNotifier extends StateNotifier<GraphState> {
     _canvasSize = size;
   }
 
-  /// 전체 그래프 로드
-  Future<void> loadGraph() async {
+  /// 전체 그래프 로드 (ontologyVersion 빈 문자열 = 전체)
+  Future<void> loadGraph({String ontologyVersion = ''}) async {
     _simTimer?.cancel();
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(
+      isLoading: true,
+      error: null,
+      selectedOntologyVersion: ontologyVersion,
+    );
     try {
-      final data = await _api.fullGraph();
+      final data = await _api.fullGraph(ontologyVersion: ontologyVersion);
 
       final nodes = data.nodes.map((n) => LayoutNode(
         id: n.id,
@@ -135,6 +149,7 @@ class GraphNotifier extends StateNotifier<GraphState> {
         isLoading: false,
         stats: {'nodes': nodes.length, 'triples': edges.length},
         searchQuery: '',
+        clusters: ClusterDetector.detect(nodes, edges),
       );
 
       _startSimulation();
@@ -143,7 +158,7 @@ class GraphNotifier extends StateNotifier<GraphState> {
     }
   }
 
-  /// 포스 시뮬레이션 — ~60fps, 수렴 시 정지
+  /// 포스 시뮬레이션 — ~60fps, 수렴 시 정지 + 군집 박스 분리
   void _startSimulation() {
     _simTimer?.cancel();
     state = state.copyWith(isSimulating: true);
@@ -153,7 +168,14 @@ class GraphNotifier extends StateNotifier<GraphState> {
       state = state.copyWith(nodes: [..._layout.nodes]);
       if (converged) {
         t.cancel();
-        state = state.copyWith(isSimulating: false);
+        // 군집 박스 겹침 분리 (노드 위치 직접 조정)
+        ClusterDetector.separateClusters(state.clusters, _layout.nodes);
+        // 분리 후 군집 멤버십 재계산 + 상태 반영
+        state = state.copyWith(
+          nodes: [..._layout.nodes],
+          clusters: ClusterDetector.detect(_layout.nodes, state.edges),
+          isSimulating: false,
+        );
       }
     });
   }
@@ -230,7 +252,11 @@ class GraphNotifier extends StateNotifier<GraphState> {
     state = state.copyWith(searchQuery: query, nodes: [...state.nodes]);
   }
 
-  /// 노드 드래그
+  static const _narratorTypes = {
+    'Narrator', 'OralNarrator', 'OralHistoryNarrator',
+  };
+
+  /// 노드 드래그 — 구술자면 소속 군집 노드 함께 이동
   void onNodeDrag(String nodeId, Offset delta) {
     final idx = state.nodes.indexWhere((n) => n.id == nodeId);
     if (idx == -1) return;
@@ -240,6 +266,23 @@ class GraphNotifier extends StateNotifier<GraphState> {
     node.pinned = true;
     node.vx = 0;
     node.vy = 0;
+
+    // 구술자 드래그 시 소속 군집 노드 함께 이동
+    if (_narratorTypes.contains(node.type)) {
+      final cluster = state.clusters
+          .where((c) => c.narratorId == nodeId)
+          .firstOrNull;
+      if (cluster != null) {
+        for (final n in state.nodes) {
+          if (n.id == nodeId) continue;
+          if (!cluster.nodeIds.contains(n.id)) continue;
+          n.x += delta.dx;
+          n.y += delta.dy;
+          // pinned 는 false 유지 — 시뮬레이션이 계속 물리 계산
+        }
+      }
+    }
+
     state = state.copyWith(nodes: [...state.nodes]);
   }
 

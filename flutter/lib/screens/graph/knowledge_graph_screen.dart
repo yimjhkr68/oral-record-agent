@@ -1,12 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:screenshot/screenshot.dart';
+
+import '../../api/api_client.dart';
 import '../../providers/graph_provider.dart';
 import '../../services/graph_color_settings.dart';
+import '../../services/graph_export_service.dart';
 import '../../widgets/graph/graph_painter.dart';
 import 'graph_legend.dart';
 import 'graph_search_bar.dart';
@@ -26,13 +31,23 @@ class _KnowledgeGraphScreenState
     extends ConsumerState<KnowledgeGraphScreen> {
   final _searchCtrl = TextEditingController();
   final _transformCtrl = TransformationController();
+  final _screenshotCtrl = ScreenshotController();
+  String _selectedOntology = '';
+  List<Map<String, String>> _ontologies = const [
+    {'id': '', 'label': '전체 (모든 트리플)'},
+  ];
+  bool _isDraggingNode = false;
   String? _draggingNodeId;
+  Offset? _lastDragPos;
+  bool _isOverNode = false;
+  Size _viewportSize = Size.zero;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _loadOntologies();
       // 노드가 없을 때만 로드 — 탭 재진입 시 기존 상태(위치, 검색어) 유지
       if (ref.read(graphProvider).nodes.isEmpty) {
         ref.read(graphProvider.notifier).loadGraph();
@@ -47,15 +62,44 @@ class _KnowledgeGraphScreenState
     super.dispose();
   }
 
+  // ── 온톨로지 목록 로드 ────────────────────────────────────────────────────
+
+  Future<void> _loadOntologies() async {
+    try {
+      final res = await ref.read(apiClientProvider).get(
+        '/api/ontologies/',
+        params: {'status': 'confirmed'},
+      );
+      if (!mounted) return;
+      final items = (res.data['items'] ?? res.data['versions'] ?? []) as List;
+      setState(() {
+        _ontologies = [
+          {'id': '', 'label': '전체 (모든 트리플)'},
+          ...items.map((v) => {
+                'id': v['version_id'] as String,
+                'label':
+                    '${v['version_id']} (클래스 ${v['class_count'] ?? '?'}개)',
+              }),
+        ];
+      });
+    } catch (_) {
+      // 로드 실패 시 기본값(전체) 유지
+    }
+  }
+
+  // ── 좌표 변환 헬퍼 ───────────────────────────────────────────────────────
+
+  Offset _toCanvas(Offset local) => MatrixUtils.transformPoint(
+        Matrix4.inverted(_transformCtrl.value),
+        local,
+      );
+
   // ── 노드 탭 감지 ──────────────────────────────────────────────────────────
 
   void _onTapCanvas(TapUpDetails d, GraphState gs) {
-    final scene = MatrixUtils.transformPoint(
-      Matrix4.inverted(_transformCtrl.value),
-      d.localPosition,
-    );
+    final pos = _toCanvas(d.localPosition);
     for (final node in gs.nodes) {
-      if ((Offset(node.x, node.y) - scene).distance <= node.radius + 4) {
+      if ((Offset(node.x, node.y) - pos).distance <= node.radius + 4) {
         ref.read(graphProvider.notifier).selectNode(node.id);
         return;
       }
@@ -63,29 +107,94 @@ class _KnowledgeGraphScreenState
     ref.read(graphProvider.notifier).selectNode(null);
   }
 
-  // ── 노드 드래그 ───────────────────────────────────────────────────────────
+  // ── 노드 드래그 (LongPress) ───────────────────────────────────────────────
 
-  void _onPanStart(DragStartDetails d, GraphState gs) {
-    final scene = MatrixUtils.transformPoint(
-      Matrix4.inverted(_transformCtrl.value),
-      d.localPosition,
-    );
+  void _onLongPressStart(LongPressStartDetails d, GraphState gs) {
+    final pos = _toCanvas(d.localPosition);
     for (final node in gs.nodes) {
-      if ((Offset(node.x, node.y) - scene).distance <= node.radius + 4) {
-        _draggingNodeId = node.id;
+      if ((Offset(node.x, node.y) - pos).distance <= node.radius + 8) {
+        setState(() {
+          _isDraggingNode = true;
+          _draggingNodeId = node.id;
+          _lastDragPos = pos;
+        });
+        ref.read(graphProvider.notifier).selectNode(node.id);
         return;
       }
     }
-    _draggingNodeId = null;
   }
 
-  void _onPanUpdate(DragUpdateDetails d) {
-    if (_draggingNodeId == null) return;
-    final scale = _transformCtrl.value.getMaxScaleOnAxis();
-    ref.read(graphProvider.notifier).onNodeDrag(
-      _draggingNodeId!,
-      d.delta / scale,
-    );
+  void _onLongPressDrag(LongPressMoveUpdateDetails d) {
+    if (!_isDraggingNode || _draggingNodeId == null) return;
+    final pos = _toCanvas(d.localPosition);
+    if (_lastDragPos == null) {
+      _lastDragPos = pos;
+      return;
+    }
+    final delta = pos - _lastDragPos!;
+    _lastDragPos = pos;
+    ref.read(graphProvider.notifier).onNodeDrag(_draggingNodeId!, delta);
+  }
+
+  void _onLongPressEnd() {
+    setState(() {
+      _isDraggingNode = false;
+      _draggingNodeId = null;
+      _lastDragPos = null;
+    });
+  }
+
+  // ── 전체 보기 (fit-to-screen) ─────────────────────────────────────────────
+
+  void _fitToScreen() {
+    final gs = ref.read(graphProvider);
+    if (gs.nodes.isEmpty || _viewportSize == Size.zero) return;
+
+    double minX = double.infinity,  minY = double.infinity;
+    double maxX = double.negativeInfinity, maxY = double.negativeInfinity;
+    for (final node in gs.nodes) {
+      if (node.x - node.radius < minX) minX = node.x - node.radius;
+      if (node.y - node.radius < minY) minY = node.y - node.radius;
+      if (node.x + node.radius > maxX) maxX = node.x + node.radius;
+      if (node.y + node.radius > maxY) maxY = node.y + node.radius;
+    }
+
+    const padding = 48.0;
+    minX -= padding; minY -= padding;
+    maxX += padding; maxY += padding;
+
+    final contentW = maxX - minX;
+    final contentH = maxY - minY;
+    if (contentW <= 0 || contentH <= 0) return;
+
+    final scale = min(
+      _viewportSize.width  / contentW,
+      _viewportSize.height / contentH,
+    ).clamp(0.05, 5.0);
+
+    final tx = (_viewportSize.width  - contentW * scale) / 2 - minX * scale;
+    final ty = (_viewportSize.height - contentH * scale) / 2 - minY * scale;
+
+    _transformCtrl.value = Matrix4.identity()
+      ..setEntry(0, 0, scale)
+      ..setEntry(1, 1, scale)
+      ..setEntry(0, 3, tx)
+      ..setEntry(1, 3, ty);
+  }
+
+  // ── Print (PNG / PDF) ─────────────────────────────────────────────────────
+
+  Future<void> _onPrint(String fmt, GraphState gs) async {
+    if (fmt == 'png') {
+      await GraphExportService.exportPng(_screenshotCtrl, context);
+    } else {
+      await GraphExportService.exportPdf(
+        _screenshotCtrl,
+        context,
+        nodeCount: gs.nodes.length,
+        edgeCount: gs.edges.length,
+      );
+    }
   }
 
   // ── Export ────────────────────────────────────────────────────────────────
@@ -273,6 +382,16 @@ class _KnowledgeGraphScreenState
   Widget build(BuildContext context) {
     final gs = ref.watch(graphProvider);
 
+    // 시뮬레이션 수렴 후 자동 fit
+    ref.listen<GraphState>(graphProvider, (prev, next) {
+      if (prev != null && prev.isSimulating && !next.isSimulating &&
+          next.nodes.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _fitToScreen();
+        });
+      }
+    });
+
     if (gs.isLoading && gs.nodes.isEmpty) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -330,31 +449,52 @@ class _KnowledgeGraphScreenState
         children: [
           // ── 그래프 캔버스 영역 ─────────────────────────────────────────
           Expanded(
-            child: Stack(
-              children: [
+            child: LayoutBuilder(
+              builder: (ctx, constraints) {
+                _viewportSize = constraints.biggest;
+                return Stack(
+                  children: [
                 // 1. 그래프 캔버스
-                GestureDetector(
-                  onTapUp: (d) => _onTapCanvas(d, gs),
-                  onPanStart: (d) => _onPanStart(d, gs),
-                  onPanUpdate: _onPanUpdate,
-                  onPanEnd: (_) => _draggingNodeId = null,
-                  child: InteractiveViewer(
-                    transformationController: _transformCtrl,
-                    constrained: false,
-                    boundaryMargin: const EdgeInsets.all(300),
-                    minScale: 0.05,
-                    maxScale: 5.0,
-                    child: CustomPaint(
-                      size: const Size(3000, 3000),
-                      painter: GraphPainter(
-                        nodes: gs.nodes,
-                        edges: gs.edges,
-                        classColors: GraphColorSettings.currentColors,
-                        selectedNodeId: gs.selectedNodeId,
+                Screenshot(
+                  controller: _screenshotCtrl,
+                  child: MouseRegion(
+                  cursor: _isOverNode
+                      ? SystemMouseCursors.grab
+                      : SystemMouseCursors.basic,
+                  onHover: (e) {
+                    final pos = _toCanvas(e.localPosition);
+                    final over = gs.nodes.any((n) =>
+                        (Offset(n.x, n.y) - pos).distance <= n.radius + 4);
+                    if (over != _isOverNode) {
+                      setState(() => _isOverNode = over);
+                    }
+                  },
+                  child: GestureDetector(
+                    onTapUp: (d) => _onTapCanvas(d, gs),
+                    onLongPressStart: (d) => _onLongPressStart(d, gs),
+                    onLongPressMoveUpdate: _onLongPressDrag,
+                    onLongPressEnd: (_) => _onLongPressEnd(),
+                    child: InteractiveViewer(
+                      transformationController: _transformCtrl,
+                      constrained: false,
+                      panEnabled: !_isDraggingNode,
+                      boundaryMargin: const EdgeInsets.all(300),
+                      minScale: 0.05,
+                      maxScale: 5.0,
+                      child: CustomPaint(
+                        size: const Size(3000, 3000),
+                        painter: GraphPainter(
+                          nodes: gs.nodes,
+                          edges: gs.edges,
+                          clusters: gs.clusters,
+                          classColors: GraphColorSettings.currentColors,
+                          selectedNodeId: gs.selectedNodeId,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  ),  // MouseRegion
+                ),  // Screenshot
 
                 // 2. 시뮬레이션 인디케이터
                 if (gs.isSimulating)
@@ -364,26 +504,76 @@ class _KnowledgeGraphScreenState
                     child: _SimulatingBadge(),
                   ),
 
-                // 3. 상단 검색바 오버레이
+                // 3. 상단 오버레이 — 온톨로지 드롭다운 + 검색바
                 Positioned(
                   top: 12,
                   left: 12,
                   right: 12,
-                  child: GraphSearchBar(
-                    controller: _searchCtrl,
-                    onSearch: (q) =>
-                        ref.read(graphProvider.notifier).search(q),
-                    onClear: () {
-                      _searchCtrl.clear();
-                      ref.read(graphProvider.notifier).search('');
-                    },
-                    onExport: () => _showExportDialog(),
-                    onRefresh: () =>
-                        ref.read(graphProvider.notifier).loadGraph(),
-                    stats: gs.stats,
-                    exportTooltip: gs.searchQuery.isNotEmpty
-                        ? '현재 서브그래프 내보내기'
-                        : '전체 그래프 내보내기',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 온톨로지 선택 드롭다운
+                      if (_ontologies.length > 1)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Material(
+                            elevation: 2,
+                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.white,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 2),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedOntology,
+                                  isDense: true,
+                                  icon: const Icon(Icons.arrow_drop_down,
+                                      size: 18),
+                                  items: _ontologies
+                                      .map((o) => DropdownMenuItem(
+                                            value: o['id'],
+                                            child: Text(o['label']!,
+                                                style: const TextStyle(
+                                                    fontSize: 13)),
+                                          ))
+                                      .toList(),
+                                  onChanged: (v) {
+                                    final version = v ?? '';
+                                    setState(() =>
+                                        _selectedOntology = version);
+                                    _searchCtrl.clear();
+                                    ref
+                                        .read(graphProvider.notifier)
+                                        .loadGraph(
+                                            ontologyVersion: version);
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      // 검색바
+                      GraphSearchBar(
+                        controller: _searchCtrl,
+                        onSearch: (q) =>
+                            ref.read(graphProvider.notifier).search(q),
+                        onClear: () {
+                          _searchCtrl.clear();
+                          ref.read(graphProvider.notifier).search('');
+                        },
+                        onExport: () => _showExportDialog(),
+                        onFitScreen: _fitToScreen,
+                        onPrint: (fmt) => _onPrint(fmt, gs),
+                        onRefresh: () => ref
+                            .read(graphProvider.notifier)
+                            .loadGraph(
+                                ontologyVersion: _selectedOntology),
+                        stats: gs.stats,
+                        exportTooltip: gs.searchQuery.isNotEmpty
+                            ? '현재 서브그래프 내보내기'
+                            : '전체 그래프 내보내기',
+                      ),
+                    ],
                   ),
                 ),
 
@@ -406,13 +596,15 @@ class _KnowledgeGraphScreenState
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
-                      '핀치/스크롤 줌  ·  드래그 이동  ·  노드 탭으로 상세',
+                      '탭: 상세보기  ·  길게 누르기: 노드 이동  ·  핀치/스크롤: 줌',
                       style:
                           TextStyle(fontSize: 10, color: Colors.white70),
                     ),
                   ),
                 ),
-              ],
+                  ],
+                );
+              },
             ),
           ),
 

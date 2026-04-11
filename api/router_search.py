@@ -10,9 +10,22 @@ router = APIRouter(prefix="/api/graph", tags=["지식그래프"])
 
 
 @router.get("")
-def full_graph():
-    """전체 그래프 (모든 노드 + 트리플)."""
-    return get_triple_manager().search(query="")
+def full_graph(ontology_version: str = Query("", description="온톨로지 버전 필터 (빈 값=전체)")):
+    """전체 그래프 (모든 노드 + 트리플). ontology_version 으로 필터링 가능."""
+    result = get_triple_manager().search(
+        query="",
+        ontology_version=ontology_version or None,
+    )
+
+    # ontology_version 필터 시 노드도 트리플 기준으로 재계산
+    if ontology_version:
+        valid_ids: set[str] = set()
+        for t in result["triples"]:
+            valid_ids.add(t["subject"])
+            valid_ids.add(t["object"])
+        result["nodes"] = [n for n in result["nodes"] if n["id"] in valid_ids]
+
+    return result
 
 
 @router.get("/search")

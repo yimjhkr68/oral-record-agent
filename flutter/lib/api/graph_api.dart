@@ -5,8 +5,13 @@ class GraphApi {
   final ApiClient _client;
   GraphApi(this._client);
 
-  Future<GraphData> fullGraph() async {
-    final res = await _client.get('/api/graph');
+  Future<GraphData> fullGraph({String ontologyVersion = ''}) async {
+    final res = await _client.get(
+      '/api/graph',
+      params: ontologyVersion.isNotEmpty
+          ? {'ontology_version': ontologyVersion}
+          : null,
+    );
     return GraphData.fromJson(res.data as Map<String, dynamic>);
   }
 
