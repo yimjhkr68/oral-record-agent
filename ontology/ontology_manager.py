@@ -488,12 +488,18 @@ class OntologyManager:
         try:
             response = client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=4096,
+                max_tokens=8192,
                 system=system_prompt,
                 messages=[{"role": "user", "content": sample_text}],
             )
         except Exception as e:
             raise RuntimeError(f"AI API 호출 실패: {e}") from e
+
+        if response.stop_reason == "max_tokens":
+            raise ValueError(
+                "AI 응답이 너무 깁니다. 더 짧은 샘플 텍스트를 입력하거나 "
+                "다시 시도해주세요."
+            )
 
         raw = response.content[0].text.strip()
         parsed = _extract_json(raw)
