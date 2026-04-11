@@ -105,21 +105,42 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
   final Set<String> _checkedIds = {};
   bool _isSelecting = false;
 
-  // ── 클라이언트 필터 (클래스 + 검색어) ─────────────────────────────────────
+  // ── 클라이언트 필터 (클래스 + 검색어 AND) ────────────────────────────────
   List<Triple> _computeFilter([List<Triple>? source]) {
     final data = source ?? _allTriples;
     if (_classFilter.isEmpty && _appliedSearch.isEmpty) return List.of(data);
-    final q = _appliedSearch.toLowerCase();
+
+    // 검색어를 공백으로 분리 → 모든 키워드가 AND 매칭
+    final keywords = _appliedSearch.trim().toLowerCase()
+        .split(' ')
+        .where((k) => k.isNotEmpty)
+        .toList();
+
     return data.where((t) {
       // 클래스 필터: 주어 타입 OR 목적어 타입
       if (_classFilter.isNotEmpty &&
           t.subjectType != _classFilter &&
           t.objectType  != _classFilter) return false;
-      // 검색어 필터: 주어/술어/목적어 포함
-      if (q.isNotEmpty &&
-          !t.subject.toLowerCase().contains(q) &&
-          !t.predicate.toLowerCase().contains(q) &&
-          !t.object.toLowerCase().contains(q)) return false;
+
+      // 검색어 필터: 모든 키워드가 어느 필드에든 포함되어야 함
+      if (keywords.isNotEmpty) {
+        // 특수문자 포함 검색을 위해 RegExp 사용 안 함 — String.contains() 사용
+        final fields = [
+          t.subject.toLowerCase(),
+          t.predicate.toLowerCase(),
+          t.object.toLowerCase(),
+          t.subjectType.toLowerCase(),
+          t.objectType.toLowerCase(),
+          t.sourceRecordId.toLowerCase(),
+          t.ontologyVersion.toLowerCase(),
+          t.note.toLowerCase(),
+        ];
+        final allMatched = keywords.every(
+          (kw) => fields.any((f) => f.contains(kw)),
+        );
+        if (!allMatched) return false;
+      }
+
       return true;
     }).toList();
   }
@@ -414,7 +435,8 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                         onPressed: () {
                           _searchCtrl.clear();
                           ref.read(tripleQueryProvider.notifier).state = '';
-                          setState(() {});
+                          setState(() => _appliedSearch = '');
+                          _applyFilter();
                         },
                       )
                     : null,
