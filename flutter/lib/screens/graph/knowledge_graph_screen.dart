@@ -13,6 +13,7 @@ import '../../providers/graph_provider.dart';
 import '../../services/graph_color_settings.dart';
 import '../../services/graph_export_service.dart';
 import '../../widgets/graph/graph_painter.dart';
+import 'cluster_panel.dart';
 import 'graph_legend.dart';
 import 'graph_search_bar.dart';
 import 'node_detail_panel.dart';
@@ -28,7 +29,8 @@ class KnowledgeGraphScreen extends ConsumerStatefulWidget {
 }
 
 class _KnowledgeGraphScreenState
-    extends ConsumerState<KnowledgeGraphScreen> {
+    extends ConsumerState<KnowledgeGraphScreen>
+    with TickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
   final _transformCtrl = TransformationController();
   final _screenshotCtrl = ScreenshotController();
@@ -41,6 +43,9 @@ class _KnowledgeGraphScreenState
   Offset? _lastDragPos;
   bool _isOverNode = false;
   Size _viewportSize = Size.zero;
+  bool _showClusterPanel = false;
+  AnimationController? _fitAnimCtrl;
+  Animation<Matrix4>? _fitAnim;
 
   @override
   void initState() {
@@ -59,6 +64,7 @@ class _KnowledgeGraphScreenState
   void dispose() {
     _searchCtrl.dispose();
     _transformCtrl.dispose();
+    _fitAnimCtrl?.dispose();
     super.dispose();
   }
 
@@ -148,11 +154,12 @@ class _KnowledgeGraphScreenState
 
   void _fitToScreen() {
     final gs = ref.read(graphProvider);
-    if (gs.nodes.isEmpty || _viewportSize == Size.zero) return;
+    final visibleNodes = gs.nodes.where((n) => !n.hidden).toList();
+    if (visibleNodes.isEmpty || _viewportSize == Size.zero) return;
 
     double minX = double.infinity,  minY = double.infinity;
     double maxX = double.negativeInfinity, maxY = double.negativeInfinity;
-    for (final node in gs.nodes) {
+    for (final node in visibleNodes) {
       if (node.x - node.radius < minX) minX = node.x - node.radius;
       if (node.y - node.radius < minY) minY = node.y - node.radius;
       if (node.x + node.radius > maxX) maxX = node.x + node.radius;
@@ -175,11 +182,174 @@ class _KnowledgeGraphScreenState
     final tx = (_viewportSize.width  - contentW * scale) / 2 - minX * scale;
     final ty = (_viewportSize.height - contentH * scale) / 2 - minY * scale;
 
-    _transformCtrl.value = Matrix4.identity()
+    _animateToMatrix(Matrix4.identity()
       ..setEntry(0, 0, scale)
       ..setEntry(1, 1, scale)
       ..setEntry(0, 3, tx)
-      ..setEntry(1, 3, ty);
+      ..setEntry(1, 3, ty));
+  }
+
+  void _animateToMatrix(Matrix4 target) {
+    _fitAnimCtrl?.dispose();
+    _fitAnimCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 350),
+    );
+    _fitAnim = Matrix4Tween(
+      begin: _transformCtrl.value,
+      end: target,
+    ).animate(CurvedAnimation(parent: _fitAnimCtrl!, curve: Curves.easeInOut));
+    _fitAnim!.addListener(() {
+      if (mounted) _transformCtrl.value = _fitAnim!.value;
+    });
+    _fitAnimCtrl!.forward();
+  }
+
+  // ── 레이아웃 저장/불러오기 ─────────────────────────────────────────────────
+
+  void _onLayout(String action) {
+    if (action == 'save') {
+      _showSaveLayoutDialog();
+    } else if (action == 'load') {
+      _showLoadLayoutDialog();
+    }
+  }
+
+  void _showSaveLayoutDialog() {
+    final now = DateTime.now();
+    final defaultName =
+        '레이아웃_${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')} '
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    final ctrl = TextEditingController(text: defaultName);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('레이아웃 저장'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: '레이아웃 이름',
+                hintText: '예: 2026-04-12 작업본',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = ctrl.text.trim();
+              Navigator.of(ctx).pop();
+              if (name.isNotEmpty) await _saveLayout(name);
+            },
+            child: const Text('저장'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveLayout(String name) async {
+    final gs = ref.read(graphProvider);
+    if (gs.nodes.isEmpty) return;
+
+    final nodes = gs.nodes.map((n) => {
+      'id':     n.id,
+      'x':      n.x,
+      'y':      n.y,
+      'pinned': n.pinned,
+    }).toList();
+
+    try {
+      await ref.read(apiClientProvider).post('/api/graph/layouts', data: {
+        'name': name,
+        'ontology_version': gs.selectedOntologyVersion,
+        'nodes': nodes,
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('레이아웃 저장됨: $name')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('저장 실패: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _showLoadLayoutDialog() async {
+    List<dynamic> layouts = [];
+    try {
+      final res = await ref.read(apiClientProvider).get('/api/graph/layouts');
+      layouts = (res.data['layouts'] as List? ?? []);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('목록 로드 실패: $e'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => _LoadLayoutDialog(
+        layouts: layouts,
+        onLoad: (filename) async {
+          Navigator.of(ctx).pop();
+          await _loadLayout(filename);
+        },
+        onDelete: (filename) async {
+          try {
+            await ref.read(apiClientProvider)
+                .delete('/api/graph/layouts/$filename');
+          } catch (_) {}
+          if (ctx.mounted) Navigator.of(ctx).pop();
+          // 다이얼로그 닫고 다시 열기
+          if (mounted) _showLoadLayoutDialog();
+        },
+      ),
+    );
+  }
+
+  Future<void> _loadLayout(String filename) async {
+    try {
+      final res = await ref.read(apiClientProvider)
+          .get('/api/graph/layouts/$filename');
+      final layoutNodes =
+          (res.data['nodes'] ?? res.data['node_positions'] ?? []) as List;
+      ref.read(graphProvider.notifier).applyLayout(layoutNodes);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('레이아웃 불러옴: ${res.data["name"]}')),
+      );
+      // 위치 복원 후 전체 보기
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fitToScreen();
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('불러오기 실패: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // ── Print (PNG / PDF) ─────────────────────────────────────────────────────
@@ -207,17 +377,19 @@ class _KnowledgeGraphScreenState
     final hasSearch = gs.searchQuery.isNotEmpty;
     final searchQuery = gs.searchQuery;
 
-    // 검색 중이면 opacity > 0.5 인 노드/엣지만 (강조 + 1홉 이웃)
-    final exportNodes = hasSearch
-        ? gs.nodes.where((n) => n.opacity > 0.5).toList()
-        : List.from(gs.nodes);
-    final exportEdges = hasSearch
-        ? gs.edges.where((e) => e.opacity > 0.5).toList()
-        : List.from(gs.edges);
+    // 숨겨진 노드 제외 + 검색 시 opacity > 0.5 필터 (강조 + 1홉 이웃)
+    final exportNodes = gs.nodes
+        .where((n) => !n.hidden && (!hasSearch || n.opacity > 0.5))
+        .toList();
+    final exportEdges = gs.edges
+        .where((e) => !e.hidden && (!hasSearch || e.opacity > 0.5))
+        .toList();
+
+    final isFiltered = exportNodes.length < gs.nodes.length;
 
     // rawTriples: 내보낼 노드에 포함된 subject/object 쌍만 필터
     final exportNodeIds = exportNodes.map((n) => n.id).toSet();
-    final exportRawTriples = hasSearch
+    final exportRawTriples = isFiltered
         ? gs.rawTriples
             .where((t) =>
                 exportNodeIds.contains(t.subject) &&
@@ -229,10 +401,13 @@ class _KnowledgeGraphScreenState
     final format = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(hasSearch ? '서브그래프 내보내기' : '전체 그래프 내보내기'),
+        title: Text(hasSearch ? '서브그래프 내보내기'
+            : isFiltered ? '부분 그래프 내보내기' : '전체 그래프 내보내기'),
         content: Text(hasSearch
             ? '검색어 "$searchQuery" 기준\n노드 ${exportNodes.length}개 · 엣지 ${exportEdges.length}개'
-            : '노드 ${exportNodes.length}개 · 엣지 ${exportEdges.length}개'),
+            : isFiltered
+                ? '표시 중인 범주 기준\n노드 ${exportNodes.length} / ${gs.nodes.length}개 · 엣지 ${exportEdges.length} / ${gs.edges.length}개'
+                : '노드 ${exportNodes.length}개 · 엣지 ${exportEdges.length}개'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx),
@@ -254,6 +429,7 @@ class _KnowledgeGraphScreenState
       exportEdges: exportEdges,
       exportRawTriples: exportRawTriples,
       hasSearch: hasSearch,
+      isFiltered: isFiltered,
       searchQuery: searchQuery,
     );
   }
@@ -264,6 +440,7 @@ class _KnowledgeGraphScreenState
     required List<dynamic> exportEdges,
     required List<dynamic> exportRawTriples,
     required bool hasSearch,
+    required bool isFiltered,
     required String searchQuery,
   }) async {
     // 3. JSON/CSV 생성 (동기 — provider 접근 없음, 로컬 변수만 사용)
@@ -271,7 +448,6 @@ class _KnowledgeGraphScreenState
     String defaultName;
 
     final ts = DateTime.now().millisecondsSinceEpoch;
-    final exportType = hasSearch ? 'subgraph' : 'graph';
 
     try {
       if (format == 'csv') {
@@ -290,10 +466,12 @@ class _KnowledgeGraphScreenState
         content = buf.toString();
         defaultName = hasSearch
             ? 'subgraph_${searchQuery}_$ts.csv'
-            : 'knowledge_graph_$ts.csv';
+            : isFiltered
+                ? 'partial_graph_$ts.csv'
+                : 'knowledge_graph_$ts.csv';
       } else {
         content = const JsonEncoder.withIndent('  ').convert({
-          'export_type': exportType,
+          'export_type': hasSearch ? 'subgraph' : isFiltered ? 'partial' : 'graph',
           if (hasSearch) 'search_query': searchQuery,
           'exported_at': DateTime.now().toIso8601String(),
           'stats': {
@@ -313,7 +491,9 @@ class _KnowledgeGraphScreenState
         });
         defaultName = hasSearch
             ? 'subgraph_${searchQuery}_$ts.json'
-            : 'knowledge_graph_$ts.json';
+            : isFiltered
+                ? 'partial_graph_$ts.json'
+                : 'knowledge_graph_$ts.json';
       }
     } catch (e) {
       if (!mounted) return;
@@ -381,6 +561,9 @@ class _KnowledgeGraphScreenState
   @override
   Widget build(BuildContext context) {
     final gs = ref.watch(graphProvider);
+    final visibleNodeCount = gs.nodes.where((n) => !n.hidden).length;
+    final visibleEdgeCount = gs.edges.where((e) => !e.hidden).length;
+    final hasHiddenNodes = visibleNodeCount < gs.nodes.length;
 
     // 시뮬레이션 수렴 후 자동 fit
     ref.listen<GraphState>(graphProvider, (prev, next) {
@@ -564,14 +747,24 @@ class _KnowledgeGraphScreenState
                         onExport: () => _showExportDialog(),
                         onFitScreen: _fitToScreen,
                         onPrint: (fmt) => _onPrint(fmt, gs),
+                        onLayout: _onLayout,
+                        onToggleClusterPanel: () => setState(
+                            () => _showClusterPanel = !_showClusterPanel),
+                        clusterPanelActive: _showClusterPanel,
                         onRefresh: () => ref
                             .read(graphProvider.notifier)
                             .loadGraph(
                                 ontologyVersion: _selectedOntology),
-                        stats: gs.stats,
+                        stats: {
+                          ...gs.stats,
+                          'visible_nodes': visibleNodeCount,
+                          'visible_edges': visibleEdgeCount,
+                        },
                         exportTooltip: gs.searchQuery.isNotEmpty
                             ? '현재 서브그래프 내보내기'
-                            : '전체 그래프 내보내기',
+                            : hasHiddenNodes
+                                ? '필터 그래프 내보내기 ($visibleNodeCount개 노드)'
+                                : '그래프 내보내기',
                       ),
                     ],
                   ),
@@ -606,6 +799,19 @@ class _KnowledgeGraphScreenState
                 );
               },
             ),
+          ),
+
+          // ── 우측 범주 패널 (⚙ 토글) ─────────────────────────────────────
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            width: _showClusterPanel ? 280 : 0,
+            child: _showClusterPanel
+                ? ClusterPanel(
+                    onClose: () =>
+                        setState(() => _showClusterPanel = false),
+                  )
+                : const SizedBox.shrink(),
           ),
 
           // ── 우측 노드 상세 패널 (선택 시 슬라이드인) ────────────────────
@@ -652,6 +858,83 @@ class _SimulatingBadge extends StatelessWidget {
         Text('레이아웃 계산 중',
             style: TextStyle(fontSize: 10, color: Colors.white70)),
       ]),
+    );
+  }
+}
+
+// ── 레이아웃 불러오기 다이얼로그 ──────────────────────────────────────────────
+
+class _LoadLayoutDialog extends StatelessWidget {
+  final List<dynamic> layouts;
+  final ValueChanged<String> onLoad;
+  final ValueChanged<String> onDelete;
+
+  const _LoadLayoutDialog({
+    required this.layouts,
+    required this.onLoad,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('레이아웃 불러오기'),
+      content: SizedBox(
+        width: 400,
+        child: layouts.isEmpty
+            ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Text('저장된 레이아웃이 없습니다.',
+                    style: TextStyle(color: Colors.grey)),
+              )
+            : ListView.separated(
+                shrinkWrap: true,
+                itemCount: layouts.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (_, i) {
+                  final layout = layouts[i] as Map<String, dynamic>;
+                  final savedAt = (layout['saved_at'] as String? ?? '');
+                  final dateStr = savedAt.length >= 16
+                      ? savedAt.substring(0, 16).replaceFirst('T', ' ')
+                      : savedAt;
+                  return ListTile(
+                    dense: true,
+                    title: Text(layout['name'] as String? ?? '',
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w500)),
+                    subtitle: Text(
+                      '$dateStr  ·  노드 ${layout['node_count'] ?? 0}개',
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.folder_open_outlined,
+                              size: 18, color: Colors.blue),
+                          tooltip: '불러오기',
+                          onPressed: () =>
+                              onLoad(layout['filename'] as String),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline,
+                              size: 18, color: Colors.red),
+                          tooltip: '삭제',
+                          onPressed: () =>
+                              onDelete(layout['filename'] as String),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('닫기'),
+        ),
+      ],
     );
   }
 }

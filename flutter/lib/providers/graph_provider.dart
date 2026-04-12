@@ -364,13 +364,16 @@ class GraphNotifier extends StateNotifier<GraphState> {
 
   /// 저장된 레이아웃 노드 위치 적용
   void applyLayout(List<dynamic> layoutNodes) {
-    final posMap = <String, (double, double)>{
-      for (final n in layoutNodes)
-        n['id'] as String: (
-          (n['x'] as num).toDouble(),
-          (n['y'] as num).toDouble(),
-        ),
-    };
+    // 시뮬레이션 중지 — 복원 직후 포스가 위치를 덮어쓰지 않도록
+    _simTimer?.cancel();
+
+    final posMap = <String, (double, double)>{};
+    for (final n in layoutNodes) {
+      final id = (n['id'] as String? ?? '').trim();
+      final x  = (n['x'] as num? ?? 0).toDouble();
+      final y  = (n['y'] as num? ?? 0).toDouble();
+      if (id.isNotEmpty) posMap[id] = (x, y);
+    }
 
     for (final node in state.nodes) {
       if (posMap.containsKey(node.id)) {
@@ -382,7 +385,10 @@ class GraphNotifier extends StateNotifier<GraphState> {
         node.vy = 0;
       }
     }
-    state = state.copyWith(nodes: [...state.nodes]);
+    state = state.copyWith(
+      nodes: [...state.nodes],
+      isSimulating: false,
+    );
   }
 
   @override
