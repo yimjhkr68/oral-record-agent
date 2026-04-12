@@ -15,6 +15,7 @@ import '../../providers/graph_provider.dart';
 import '../../services/graph_color_settings.dart';
 import '../../services/graph_visibility_settings.dart';
 import '../../services/graph_export_service.dart';
+import '../../widgets/graph/graph_node_model.dart';
 import '../../widgets/graph/graph_painter.dart';
 import 'cluster_panel.dart';
 import 'graph_legend.dart';
@@ -135,22 +136,41 @@ class _KnowledgeGraphScreenState
 
   void _onPanDown(DragDownDetails d, GraphState gs) {
     final pos = _toCanvas(d.localPosition);
+
+    // 가장 가까운 노드 히트 테스트
+    LayoutNode? hitNode;
+    double minDist = double.infinity;
     for (final node in gs.nodes) {
-      if (!node.hidden &&
-          (Offset(node.x, node.y) - pos).distance <= node.radius + 8) {
-        _pressedNodeId  = node.id;
-        _longPressTimer?.cancel();
-        _longPressTimer = Timer(const Duration(milliseconds: 300), () {
-          if (_pressedNodeId != null && mounted) {
-            setState(() {
-              _isDraggingNode = true;
-              _draggingNodeId = _pressedNodeId;
-            });
-            HapticFeedback.mediumImpact(); // Windows 에서는 무시됨
-          }
-        });
-        return;
+      if (node.hidden) continue;
+      final dist = (Offset(node.x, node.y) - pos).distance;
+      if (dist <= node.radius + 8 && dist < minDist) {
+        minDist = dist;
+        hitNode = node;
       }
+    }
+
+    if (hitNode != null) {
+      // 노드 위 → 즉시 상태 확정 후 300ms 타이머
+      setState(() {
+        _pressedNodeId = hitNode!.id;
+        _isOverNode    = true;
+      });
+      _longPressTimer?.cancel();
+      _longPressTimer = Timer(const Duration(milliseconds: 300), () {
+        if (_pressedNodeId != null && mounted) {
+          setState(() {
+            _isDraggingNode = true;
+            _draggingNodeId = _pressedNodeId;
+          });
+          HapticFeedback.mediumImpact(); // Windows 에서는 무시됨
+        }
+      });
+    } else {
+      // 빈 곳 → 패닝 허용
+      setState(() {
+        _pressedNodeId = null;
+        _isOverNode    = false;
+      });
     }
   }
 
@@ -173,13 +193,14 @@ class _KnowledgeGraphScreenState
   void _endGesture() {
     _longPressTimer?.cancel();
     _longPressTimer = null;
-    if (_isDraggingNode) {
+    if (_isDraggingNode || _isOverNode) {
       setState(() {
         _isDraggingNode = false;
         _draggingNodeId = null;
+        _isOverNode     = false;
       });
     }
-    _pressedNodeId  = null;
+    _pressedNodeId = null;
   }
 
   // ── 전체 보기 (fit-to-screen) ─────────────────────────────────────────────
@@ -776,35 +797,40 @@ class _KnowledgeGraphScreenState
                       setState(() => _isOverNode = over);
                     }
                   },
-                  child: GestureDetector(
-                      onTapUp: (d) => _onTapUp(d, gs),
-                      onPanDown: (d) => _onPanDown(d, gs),
-                      onPanUpdate: _onPanUpdate,
-                      onPanEnd: _onPanEnd,
-                      onPanCancel: _onPanCancel,
-                      child: InteractiveViewer(
-                        transformationController: _transformCtrl,
-                        constrained: false,
-                        panEnabled: !_isDraggingNode && !_isOverNode,
-                        scaleEnabled: true,
-                        boundaryMargin: const EdgeInsets.all(double.infinity),
-                        minScale: 0.05,
-                        maxScale: 5.0,
-                        child: CustomPaint(
-                          size: const Size(3000, 3000),
-                          painter: GraphPainter(
-                            nodes: gs.nodes,
-                            edges: gs.edges,
-                            clusters: gs.clusters,
-                            classColors: GraphColorSettings.currentColors,
-                            focusedNodeId: gs.focusedNodeId,
-                            selectedNodeId: gs.selectedNodeId,
-                          ),
-                        ),
+                  child: InteractiveViewer(
+                    transformationController: _transformCtrl,
+                    constrained: false,
+                    panEnabled: !_isDraggingNode,
+                    scaleEnabled: true,
+                    boundaryMargin: const EdgeInsets.all(double.infinity),
+                    minScale: 0.05,
+                    maxScale: 5.0,
+                    child: CustomPaint(
+                      size: const Size(3000, 3000),
+                      painter: GraphPainter(
+                        nodes: gs.nodes,
+                        edges: gs.edges,
+                        clusters: gs.clusters,
+                        classColors: GraphColorSettings.currentColors,
+                        focusedNodeId: gs.focusedNodeId,
+                        selectedNodeId: gs.selectedNodeId,
                       ),
                     ),
+                  ),
                   ),  // MouseRegion
                 ),  // Screenshot
+
+                // 1-b. 제스처 오버레이 — InteractiveViewer 위, UI 아래
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTapUp: (d) => _onTapUp(d, gs),
+                    onPanDown: (d) => _onPanDown(d, gs),
+                    onPanUpdate: _onPanUpdate,
+                    onPanEnd: _onPanEnd,
+                    onPanCancel: _onPanCancel,
+                  ),
+                ),
 
                 // 2. 시뮬레이션 인디케이터
                 if (gs.isSimulating)
