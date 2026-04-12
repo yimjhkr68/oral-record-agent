@@ -12,12 +12,15 @@ class GraphPainter extends CustomPainter {
   final Map<String, Color> classColors;
   final String? selectedNodeId;
 
+  final String? focusedNodeId;
+
   const GraphPainter({
     required this.nodes,
     required this.edges,
     required this.classColors,
     this.clusters = const [],
     this.selectedNodeId,
+    this.focusedNodeId,
   });
 
   Color _colorForType(String type) =>
@@ -237,6 +240,26 @@ class GraphPainter extends CustomPainter {
       Paint()..color = baseColor.withValues(alpha: 0.9 * op),
     );
 
+    // 포커스 링 (관계 클릭으로 이동한 노드 — 3초 강조)
+    if (node.id == focusedNodeId) {
+      canvas.drawCircle(
+        pos,
+        r + 8,
+        Paint()
+          ..color = Colors.blue.withValues(alpha: 0.45 * op)
+          ..strokeWidth = 2.0
+          ..style = PaintingStyle.stroke,
+      );
+      canvas.drawCircle(
+        pos,
+        r + 15,
+        Paint()
+          ..color = Colors.blue.withValues(alpha: 0.18 * op)
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke,
+      );
+    }
+
     // 강조 테두리 (검색 매칭)
     if (node.highlighted) {
       canvas.drawCircle(
@@ -305,7 +328,8 @@ class GraphPainter extends CustomPainter {
       old.nodes != nodes ||
       old.edges != edges ||
       old.clusters != clusters ||
-      old.selectedNodeId != selectedNodeId;
+      old.selectedNodeId != selectedNodeId ||
+      old.focusedNodeId != focusedNodeId;
 }
 
 /// 클래스별 고정 색상 팔레트

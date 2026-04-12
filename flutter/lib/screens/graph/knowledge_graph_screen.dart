@@ -240,6 +240,43 @@ class _KnowledgeGraphScreenState
     _fitAnimCtrl!.forward();
   }
 
+  // ── 노드 포커스 (관계 클릭 → 이동 + 강조) ─────────────────────────────────
+
+  void _focusNode(String nodeId) {
+    final gs = ref.read(graphProvider);
+    final target = gs.nodes.where((n) => n.id == nodeId).firstOrNull;
+    if (target == null) return;
+
+    // 검색 강조 (해당 노드 + 1홉 이웃)
+    ref.read(graphProvider.notifier).search(nodeId);
+    // 카메라 이동
+    _panToNode(target);
+    // 상세 패널 전환
+    ref.read(graphProvider.notifier).selectNode(nodeId);
+    // 포커스 링 설정 + 3초 후 해제
+    ref.read(graphProvider.notifier).setFocusedNode(nodeId);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) ref.read(graphProvider.notifier).setFocusedNode(null);
+    });
+  }
+
+  void _panToNode(node) {
+    if (_viewportSize == Size.zero) return;
+    final currentMatrix = _transformCtrl.value;
+    final currentScale  = currentMatrix.entry(0, 0);
+    // 우측 상세 패널(340) 제외한 유효 뷰포트
+    const panelWidth = 340.0;
+    final effectiveW = _viewportSize.width - panelWidth;
+    final effectiveH = _viewportSize.height;
+    final tx = effectiveW / 2 - node.x * currentScale;
+    final ty = effectiveH / 2 - node.y * currentScale;
+    _animateToMatrix(Matrix4.identity()
+      ..setEntry(0, 0, currentScale)
+      ..setEntry(1, 1, currentScale)
+      ..setEntry(0, 3, tx)
+      ..setEntry(1, 3, ty));
+  }
+
   // ── 레이아웃 저장/불러오기 ─────────────────────────────────────────────────
 
   void _onLayout(String action) {
@@ -761,6 +798,7 @@ class _KnowledgeGraphScreenState
                             edges: gs.edges,
                             clusters: gs.clusters,
                             classColors: GraphColorSettings.currentColors,
+                            focusedNodeId: gs.focusedNodeId,
                             selectedNodeId: gs.selectedNodeId,
                           ),
                         ),
@@ -968,6 +1006,7 @@ class _KnowledgeGraphScreenState
                     rawTriples: gs.rawTriples,
                     onClose: () =>
                         ref.read(graphProvider.notifier).selectNode(null),
+                    onFocusNode: _focusNode,
                   )
                 : const SizedBox.shrink(),
           ),

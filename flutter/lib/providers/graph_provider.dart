@@ -46,6 +46,7 @@ class GraphState {
   final bool isSimulating;
   final List<NarratorCluster> clusters;
   final String selectedOntologyVersion;
+  final String? focusedNodeId;
 
   const GraphState({
     this.nodes = const [],
@@ -59,6 +60,7 @@ class GraphState {
     this.isSimulating = false,
     this.clusters = const [],
     this.selectedOntologyVersion = '',
+    this.focusedNodeId,
   });
 
   GraphState copyWith({
@@ -73,6 +75,7 @@ class GraphState {
     bool? isSimulating,
     List<NarratorCluster>? clusters,
     String? selectedOntologyVersion,
+    Object? focusedNodeId = _sentinel,
   }) {
     return GraphState(
       nodes: nodes ?? this.nodes,
@@ -89,6 +92,9 @@ class GraphState {
       clusters: clusters ?? this.clusters,
       selectedOntologyVersion:
           selectedOntologyVersion ?? this.selectedOntologyVersion,
+      focusedNodeId: identical(focusedNodeId, _sentinel)
+          ? this.focusedNodeId
+          : focusedNodeId as String?,
     );
   }
 
@@ -299,6 +305,11 @@ class GraphNotifier extends StateNotifier<GraphState> {
       n.selected = n.id == nodeId;
     }
     state = state.copyWith(selectedNodeId: nodeId, nodes: [...state.nodes]);
+  }
+
+  /// 포커스 노드 설정 (3초 링 강조용)
+  void setFocusedNode(String? nodeId) {
+    state = state.copyWith(focusedNodeId: nodeId);
   }
 
   /// 사용자 정의 범주 + 자동 범주 재계산 후 그래프 상태 반영
