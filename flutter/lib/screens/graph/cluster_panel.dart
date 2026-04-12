@@ -869,28 +869,14 @@ class _ClusterTileState extends State<_ClusterTile> {
               ),
             ),
           ),
-          child: cluster.isCustom
-              // 사용자 정의: 노드 행 (롱프레스 → 이동)
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: clusterNodes.isEmpty
-                      ? [
-                          Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Text('노드 없음',
-                                style: AppTypography.caption.copyWith(
-                                    color: AppColors.textMuted)),
-                          )
-                        ]
-                      : clusterNodes
-                          .map((n) => _NodeRow(
-                                nodeId: n.id,
-                                nodeType: n.type,
-                                onMove: () => widget.onMoveNode(n.id),
-                              ))
-                          .toList(),
+          // 자동·사용자 정의 범주 모두 동일한 _ClassRow 형식으로 표시
+          child: byClass.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Text('노드 없음',
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textMuted)),
                 )
-              // 자동 범주: 클래스별 그룹 (기존 방식)
               : Column(
                   children: byClass.entries
                       .map((entry) => _ClassRow(
@@ -911,44 +897,7 @@ class _ClusterTileState extends State<_ClusterTile> {
   }
 }
 
-// ── 노드 행 (사용자 정의 범주 전용) ─────────────────────────────────────────────
-
-class _NodeRow extends StatelessWidget {
-  final String nodeId;
-  final String nodeType;
-  final VoidCallback onMove;
-
-  const _NodeRow({
-    required this.nodeId,
-    required this.nodeType,
-    required this.onMove,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPress: onMove,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-        child: Row(children: [
-          Expanded(
-            child: Text(nodeId,
-                style: AppTypography.caption.copyWith(
-                    color: AppColors.textSecondary),
-                overflow: TextOverflow.ellipsis),
-          ),
-          Text(_kClassLabelKo[nodeType] ?? nodeType,
-              style: AppTypography.caption.copyWith(
-                  color: AppColors.textMuted, fontSize: 10)),
-          const SizedBox(width: 4),
-          const Icon(Icons.open_with, size: 11, color: AppColors.textMuted),
-        ]),
-      ),
-    );
-  }
-}
-
-// ── 클래스 행 (자동 범주 전용) ───────────────────────────────────────────────────
+// ── 클래스 행 ─────────────────────────────────────────────────────────────────
 
 class _ClassRow extends StatefulWidget {
   final String className;
