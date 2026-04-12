@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:screenshot/screenshot.dart';
@@ -42,8 +43,9 @@ class _KnowledgeGraphScreenState
   ];
   bool _isDraggingNode = false;
   String? _draggingNodeId;
-  Offset? _lastDragPos;
-  bool _isOverNode = false;
+  bool _isOverNode     = false;
+  String? _pressedNodeId;
+  Timer? _longPressTimer;
   Size _viewportSize = Size.zero;
   bool _showClusterPanel = false;
   bool _isLayoutLoaded = false;
@@ -65,6 +67,7 @@ class _KnowledgeGraphScreenState
 
   @override
   void dispose() {
+    _longPressTimer?.cancel();
     _searchCtrl.dispose();
     _transformCtrl.dispose();
     _fitAnimCtrl?.dispose();
@@ -103,86 +106,80 @@ class _KnowledgeGraphScreenState
         local,
       );
 
-  // ── 노드 탭 감지 ──────────────────────────────────────────────────────────
+  // ── 좌표 변환 헬퍼 ───────────────────────────────────────────────────────
 
-  void _onTapCanvas(TapUpDetails d, GraphState gs) {
+  /// screenDelta → 캔버스 좌표계 delta (스케일로 나눔)
+  Offset _toCanvasDelta(Offset screenDelta) {
+    final scale = _transformCtrl.value.getMaxScaleOnAxis();
+    return screenDelta / scale;
+  }
+
+  // ── 탭 (정지 클릭) ────────────────────────────────────────────────────────
+
+  void _onNodeTap(String nodeId) =>
+      ref.read(graphProvider.notifier).selectNode(nodeId);
+
+  void _onTapUp(TapUpDetails d, GraphState gs) {
     final pos = _toCanvas(d.localPosition);
     for (final node in gs.nodes) {
-      if ((Offset(node.x, node.y) - pos).distance <= node.radius + 4) {
-        ref.read(graphProvider.notifier).selectNode(node.id);
+      if (!node.hidden &&
+          (Offset(node.x, node.y) - pos).distance <= node.radius + 4) {
+        _onNodeTap(node.id);
         return;
       }
     }
     ref.read(graphProvider.notifier).selectNode(null);
   }
 
-  // ── 노드 드래그 & 캔버스 패닝 ────────────────────────────────────────────
+  // ── 포인터 다운 — 300 ms 타이머로 드래그 모드 진입 ─────────────────────
 
-  void _onPanStart(DragStartDetails d, GraphState gs) {
+  void _onPanDown(DragDownDetails d, GraphState gs) {
     final pos = _toCanvas(d.localPosition);
     for (final node in gs.nodes) {
-      if ((Offset(node.x, node.y) - pos).distance <= node.radius + 8) {
-        setState(() {
-          _isDraggingNode = true;
-          _draggingNodeId = node.id;
-          _lastDragPos = pos;
+      if (!node.hidden &&
+          (Offset(node.x, node.y) - pos).distance <= node.radius + 8) {
+        _pressedNodeId  = node.id;
+        _longPressTimer?.cancel();
+        _longPressTimer = Timer(const Duration(milliseconds: 300), () {
+          if (_pressedNodeId != null && mounted) {
+            setState(() {
+              _isDraggingNode = true;
+              _draggingNodeId = _pressedNodeId;
+            });
+            HapticFeedback.mediumImpact(); // Windows 에서는 무시됨
+          }
         });
-        ref.read(graphProvider.notifier).selectNode(node.id);
         return;
       }
     }
-    // 노드 아님 — 캔버스 패닝
-    _isDraggingNode = false;
-    _draggingNodeId = null;
-    _lastDragPos = null;
   }
+
+  // ── 드래그 업데이트 ───────────────────────────────────────────────────────
 
   void _onPanUpdate(DragUpdateDetails d) {
     if (_isDraggingNode && _draggingNodeId != null) {
-      final pos = _toCanvas(d.localPosition);
-      if (_lastDragPos != null) {
-        final delta = pos - _lastDragPos!;
-        ref.read(graphProvider.notifier).onNodeDrag(_draggingNodeId!, delta);
-      }
-      _lastDragPos = _toCanvas(d.localPosition);
-    } else {
-      // 캔버스 패닝: delta(화면 좌표)를 matrix 이동량에 직접 가산
-      final matrix = _transformCtrl.value.clone();
-      matrix[12] += d.delta.dx;
-      matrix[13] += d.delta.dy;
-      _transformCtrl.value = matrix;
+      ref.read(graphProvider.notifier)
+          .onNodeDrag(_draggingNodeId!, _toCanvasDelta(d.delta));
     }
+    // 노드 위가 아니면 InteractiveViewer(panEnabled: true) 가 패닝 처리
   }
 
-  void _onPanEnd(DragEndDetails d) {
+  // ── 드래그 종료 ───────────────────────────────────────────────────────────
+
+  void _onPanEnd(DragEndDetails _) => _endGesture();
+
+  void _onPanCancel() => _endGesture();
+
+  void _endGesture() {
+    _longPressTimer?.cancel();
+    _longPressTimer = null;
     if (_isDraggingNode) {
       setState(() {
         _isDraggingNode = false;
         _draggingNodeId = null;
-        _lastDragPos = null;
       });
     }
-  }
-
-  // ── 스크롤 줌 ──────────────────────────────────────────────────────────────
-
-  void _onPointerSignal(PointerSignalEvent event) {
-    if (event is! PointerScrollEvent) return;
-    final scaleFactor = event.scrollDelta.dy > 0 ? 0.9 : 1.1;
-    final matrix = _transformCtrl.value.clone();
-    final currentScale = matrix.entry(0, 0);
-    final newScale = (currentScale * scaleFactor).clamp(0.05, 5.0);
-    if ((newScale - currentScale).abs() < 1e-4) return;
-    final ratio = newScale / currentScale;
-    final fx = event.localPosition.dx;
-    final fy = event.localPosition.dy;
-    final tx = matrix.entry(0, 3);
-    final ty = matrix.entry(1, 3);
-    _transformCtrl.value = Matrix4.identity()
-      ..setEntry(0, 0, newScale)
-      ..setEntry(1, 1, newScale)
-      ..setEntry(0, 3, fx + (tx - fx) * ratio)
-      ..setEntry(1, 3, fy + (ty - fy) * ratio);
+    _pressedNodeId  = null;
   }
 
   // ── 전체 보기 (fit-to-screen) ─────────────────────────────────────────────
@@ -765,30 +762,32 @@ class _KnowledgeGraphScreenState
                 Screenshot(
                   controller: _screenshotCtrl,
                   child: MouseRegion(
-                  cursor: _isOverNode
-                      ? SystemMouseCursors.grab
-                      : SystemMouseCursors.basic,
+                  cursor: _isDraggingNode
+                      ? SystemMouseCursors.grabbing
+                      : _isOverNode
+                          ? SystemMouseCursors.grab
+                          : SystemMouseCursors.basic,
                   onHover: (e) {
                     final pos = _toCanvas(e.localPosition);
                     final over = gs.nodes.any((n) =>
+                        !n.hidden &&
                         (Offset(n.x, n.y) - pos).distance <= n.radius + 4);
                     if (over != _isOverNode) {
                       setState(() => _isOverNode = over);
                     }
                   },
-                  child: Listener(
-                    onPointerSignal: _onPointerSignal,
-                    child: GestureDetector(
-                      onTapUp: (d) => _onTapCanvas(d, gs),
-                      onPanStart: (d) => _onPanStart(d, gs),
+                  child: GestureDetector(
+                      onTapUp: (d) => _onTapUp(d, gs),
+                      onPanDown: (d) => _onPanDown(d, gs),
                       onPanUpdate: _onPanUpdate,
                       onPanEnd: _onPanEnd,
+                      onPanCancel: _onPanCancel,
                       child: InteractiveViewer(
                         transformationController: _transformCtrl,
                         constrained: false,
-                        panEnabled: false,
-                        scaleEnabled: false,
-                        boundaryMargin: const EdgeInsets.all(300),
+                        panEnabled: !_isDraggingNode && !_isOverNode,
+                        scaleEnabled: true,
+                        boundaryMargin: const EdgeInsets.all(double.infinity),
                         minScale: 0.05,
                         maxScale: 5.0,
                         child: CustomPaint(
@@ -804,7 +803,6 @@ class _KnowledgeGraphScreenState
                         ),
                       ),
                     ),
-                  ),
                   ),  // MouseRegion
                 ),  // Screenshot
 
@@ -970,7 +968,7 @@ class _KnowledgeGraphScreenState
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
-                      '탭: 상세보기  ·  드래그: 노드 이동/화면 이동  ·  스크롤: 줌',
+                      '탭: 상세보기  ·  300ms 누르기: 노드 이동  ·  스크롤: 줌',
                       style:
                           TextStyle(fontSize: 10, color: Colors.white70),
                     ),
