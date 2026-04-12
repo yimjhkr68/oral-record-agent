@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,6 +12,7 @@ import 'package:screenshot/screenshot.dart';
 import '../../api/api_client.dart';
 import '../../providers/graph_provider.dart';
 import '../../services/graph_color_settings.dart';
+import '../../services/graph_visibility_settings.dart';
 import '../../services/graph_export_service.dart';
 import '../../widgets/graph/graph_painter.dart';
 import 'cluster_panel.dart';
@@ -113,9 +115,9 @@ class _KnowledgeGraphScreenState
     ref.read(graphProvider.notifier).selectNode(null);
   }
 
-  // ── 노드 드래그 (LongPress) ───────────────────────────────────────────────
+  // ── 노드 드래그 & 캔버스 패닝 ────────────────────────────────────────────
 
-  void _onLongPressStart(LongPressStartDetails d, GraphState gs) {
+  void _onPanStart(DragStartDetails d, GraphState gs) {
     final pos = _toCanvas(d.localPosition);
     for (final node in gs.nodes) {
       if ((Offset(node.x, node.y) - pos).distance <= node.radius + 8) {
@@ -128,26 +130,58 @@ class _KnowledgeGraphScreenState
         return;
       }
     }
+    // 노드 아님 — 캔버스 패닝
+    _isDraggingNode = false;
+    _draggingNodeId = null;
+    _lastDragPos = null;
   }
 
-  void _onLongPressDrag(LongPressMoveUpdateDetails d) {
-    if (!_isDraggingNode || _draggingNodeId == null) return;
-    final pos = _toCanvas(d.localPosition);
-    if (_lastDragPos == null) {
-      _lastDragPos = pos;
-      return;
+  void _onPanUpdate(DragUpdateDetails d) {
+    if (_isDraggingNode && _draggingNodeId != null) {
+      final pos = _toCanvas(d.localPosition);
+      if (_lastDragPos != null) {
+        final delta = pos - _lastDragPos!;
+        ref.read(graphProvider.notifier).onNodeDrag(_draggingNodeId!, delta);
+      }
+      _lastDragPos = _toCanvas(d.localPosition);
+    } else {
+      // 캔버스 패닝: delta(화면 좌표)를 matrix 이동량에 직접 가산
+      final matrix = _transformCtrl.value.clone();
+      matrix[12] += d.delta.dx;
+      matrix[13] += d.delta.dy;
+      _transformCtrl.value = matrix;
     }
-    final delta = pos - _lastDragPos!;
-    _lastDragPos = pos;
-    ref.read(graphProvider.notifier).onNodeDrag(_draggingNodeId!, delta);
   }
 
-  void _onLongPressEnd() {
-    setState(() {
-      _isDraggingNode = false;
-      _draggingNodeId = null;
-      _lastDragPos = null;
-    });
+  void _onPanEnd(DragEndDetails d) {
+    if (_isDraggingNode) {
+      setState(() {
+        _isDraggingNode = false;
+        _draggingNodeId = null;
+        _lastDragPos = null;
+      });
+    }
+  }
+
+  // ── 스크롤 줌 ──────────────────────────────────────────────────────────────
+
+  void _onPointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+    final scaleFactor = event.scrollDelta.dy > 0 ? 0.9 : 1.1;
+    final matrix = _transformCtrl.value.clone();
+    final currentScale = matrix.entry(0, 0);
+    final newScale = (currentScale * scaleFactor).clamp(0.05, 5.0);
+    if ((newScale - currentScale).abs() < 1e-4) return;
+    final ratio = newScale / currentScale;
+    final fx = event.localPosition.dx;
+    final fy = event.localPosition.dy;
+    final tx = matrix.entry(0, 3);
+    final ty = matrix.entry(1, 3);
+    _transformCtrl.value = Matrix4.identity()
+      ..setEntry(0, 0, newScale)
+      ..setEntry(1, 1, newScale)
+      ..setEntry(0, 3, fx + (tx - fx) * ratio)
+      ..setEntry(1, 3, fy + (ty - fy) * ratio);
   }
 
   // ── 전체 보기 (fit-to-screen) ─────────────────────────────────────────────
@@ -260,25 +294,37 @@ class _KnowledgeGraphScreenState
   }
 
   Future<void> _saveLayout(String name) async {
+    if (name.isEmpty) return;
     final gs = ref.read(graphProvider);
     if (gs.nodes.isEmpty) return;
 
-    final nodes = gs.nodes.map((n) => {
-      'id':     n.id,
-      'x':      n.x,
-      'y':      n.y,
-      'pinned': n.pinned,
-    }).toList();
+    // 보이는 노드만 저장 (hidden=false)
+    final visibleNodes = gs.nodes
+        .where((n) => !n.hidden)
+        .map((n) => {
+              'id':     n.id,
+              'x':      n.x,
+              'y':      n.y,
+              'pinned': n.pinned,
+            })
+        .toList();
+
+    // 저장 당시 표시 중인 범주 목록 (메타데이터)
+    final visibleClusters = gs.clusters
+        .where((c) => GraphVisibilitySettings.isVisible(c.narratorId))
+        .map((c) => c.narratorId)
+        .toList();
 
     try {
       await ref.read(apiClientProvider).post('/api/graph/layouts', data: {
-        'name': name,
+        'name':             name,
         'ontology_version': gs.selectedOntologyVersion,
-        'nodes': nodes,
+        'visible_clusters': visibleClusters,
+        'nodes':            visibleNodes,
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('레이아웃 저장됨: $name')),
+        SnackBar(content: Text('레이아웃 저장됨: $name (${visibleNodes.length}개 노드)')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -652,26 +698,30 @@ class _KnowledgeGraphScreenState
                       setState(() => _isOverNode = over);
                     }
                   },
-                  child: GestureDetector(
-                    onTapUp: (d) => _onTapCanvas(d, gs),
-                    onLongPressStart: (d) => _onLongPressStart(d, gs),
-                    onLongPressMoveUpdate: _onLongPressDrag,
-                    onLongPressEnd: (_) => _onLongPressEnd(),
-                    child: InteractiveViewer(
-                      transformationController: _transformCtrl,
-                      constrained: false,
-                      panEnabled: !_isDraggingNode,
-                      boundaryMargin: const EdgeInsets.all(300),
-                      minScale: 0.05,
-                      maxScale: 5.0,
-                      child: CustomPaint(
-                        size: const Size(3000, 3000),
-                        painter: GraphPainter(
-                          nodes: gs.nodes,
-                          edges: gs.edges,
-                          clusters: gs.clusters,
-                          classColors: GraphColorSettings.currentColors,
-                          selectedNodeId: gs.selectedNodeId,
+                  child: Listener(
+                    onPointerSignal: _onPointerSignal,
+                    child: GestureDetector(
+                      onTapUp: (d) => _onTapCanvas(d, gs),
+                      onPanStart: (d) => _onPanStart(d, gs),
+                      onPanUpdate: _onPanUpdate,
+                      onPanEnd: _onPanEnd,
+                      child: InteractiveViewer(
+                        transformationController: _transformCtrl,
+                        constrained: false,
+                        panEnabled: false,
+                        scaleEnabled: false,
+                        boundaryMargin: const EdgeInsets.all(300),
+                        minScale: 0.05,
+                        maxScale: 5.0,
+                        child: CustomPaint(
+                          size: const Size(3000, 3000),
+                          painter: GraphPainter(
+                            nodes: gs.nodes,
+                            edges: gs.edges,
+                            clusters: gs.clusters,
+                            classColors: GraphColorSettings.currentColors,
+                            selectedNodeId: gs.selectedNodeId,
+                          ),
                         ),
                       ),
                     ),
@@ -789,7 +839,7 @@ class _KnowledgeGraphScreenState
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Text(
-                      '탭: 상세보기  ·  길게 누르기: 노드 이동  ·  핀치/스크롤: 줌',
+                      '탭: 상세보기  ·  드래그: 노드 이동/화면 이동  ·  스크롤: 줌',
                       style:
                           TextStyle(fontSize: 10, color: Colors.white70),
                     ),
@@ -897,14 +947,31 @@ class _LoadLayoutDialog extends StatelessWidget {
                   final dateStr = savedAt.length >= 16
                       ? savedAt.substring(0, 16).replaceFirst('T', ' ')
                       : savedAt;
+                  final clusters =
+                      (layout['visible_clusters'] as List? ?? [])
+                          .cast<String>();
                   return ListTile(
                     dense: true,
                     title: Text(layout['name'] as String? ?? '',
                         style: const TextStyle(
                             fontSize: 13, fontWeight: FontWeight.w500)),
-                    subtitle: Text(
-                      '$dateStr  ·  노드 ${layout['node_count'] ?? 0}개',
-                      style: const TextStyle(fontSize: 11),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$dateStr  ·  노드 ${layout['node_count'] ?? 0}개',
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        if (clusters.isNotEmpty)
+                          Text(
+                            '범주: ${clusters.join(', ')}',
+                            style: const TextStyle(
+                                fontSize: 10, color: Colors.grey),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,

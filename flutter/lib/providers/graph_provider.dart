@@ -375,7 +375,6 @@ class GraphNotifier extends StateNotifier<GraphState> {
       final y  = (n['y'] as num? ?? 0).toDouble();
       if (id.isNotEmpty) posMap[id] = (x, y);
     }
-
     void applyPos(LayoutNode node) {
       if (posMap.containsKey(node.id)) {
         final (x, y) = posMap[node.id]!;
