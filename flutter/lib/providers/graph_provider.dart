@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../api/graph_api.dart';
 import '../models/triple.dart';
+import '../services/graph_visibility_settings.dart';
 import '../widgets/graph/graph_node_model.dart';
 import '../widgets/graph/force_layout.dart';
 import '../widgets/graph/cluster_detector.dart';
@@ -170,12 +171,16 @@ class GraphNotifier extends StateNotifier<GraphState> {
         t.cancel();
         // 군집 박스 겹침 분리 (노드 위치 직접 조정)
         ClusterDetector.separateClusters(state.clusters, _layout.nodes);
-        // 분리 후 군집 멤버십 재계산 + 상태 반영
+        // 분리 후 자동 군집 멤버십 재계산
+        final autoClusters =
+            ClusterDetector.detect(_layout.nodes, state.edges);
         state = state.copyWith(
           nodes: [..._layout.nodes],
-          clusters: ClusterDetector.detect(_layout.nodes, state.edges),
+          clusters: autoClusters,
           isSimulating: false,
         );
+        // 사용자 정의 범주 병합 (비동기, fire-and-forget)
+        reloadClusters();
       }
     });
   }
@@ -294,8 +299,87 @@ class GraphNotifier extends StateNotifier<GraphState> {
     state = state.copyWith(selectedNodeId: nodeId, nodes: [...state.nodes]);
   }
 
+  /// 사용자 정의 범주 + 자동 범주 재계산 후 그래프 상태 반영
+  Future<void> reloadClusters() async {
+    try {
+      final res = await _api.getCustomClusters();
+      final overrides = Map<String, String>.from(
+        (res['node_overrides'] as Map? ?? {})
+            .map((k, v) => MapEntry(k.toString(), v.toString())),
+      );
+      final customClusters = (res['clusters'] as List? ?? [])
+          .map((c) => NarratorCluster.fromCustomJson(
+              c as Map<String, dynamic>))
+          .toList();
+      final autoClusters = ClusterDetector.detect(
+          state.nodes, state.edges, nodeOverrides: overrides);
+
+      state = state.copyWith(
+          clusters: [...customClusters, ...autoClusters]);
+      applyVisibility();
+    } catch (_) {}
+  }
+
   /// 색상 설정 변경 후 그래프 화면 강제 갱신
   void applyColorSettings() {
+    state = state.copyWith(nodes: [...state.nodes]);
+  }
+
+  /// 범주 표시/숨김 설정 적용
+  void applyVisibility() {
+    final nodeMap = {for (final n in state.nodes) n.id: n};
+
+    // 범주별 숨김 적용
+    for (final cluster in state.clusters) {
+      final clusterVisible =
+          GraphVisibilitySettings.isVisible(cluster.narratorId);
+      for (final nodeId in cluster.nodeIds) {
+        final node = nodeMap[nodeId];
+        if (node != null) node.hidden = !clusterVisible;
+      }
+    }
+
+    // 미분류 노드 처리 (어떤 cluster에도 없는 노드 — 기본 표시)
+    final clusteredIds = state.clusters
+        .expand((c) => c.nodeIds)
+        .toSet();
+    for (final node in state.nodes) {
+      if (!clusteredIds.contains(node.id)) node.hidden = false;
+    }
+
+    // 엣지: 양쪽 노드 중 하나라도 숨겨지면 숨김
+    for (final edge in state.edges) {
+      final srcHidden = nodeMap[edge.sourceId]?.hidden ?? false;
+      final tgtHidden = nodeMap[edge.targetId]?.hidden ?? false;
+      edge.hidden = srcHidden || tgtHidden;
+    }
+
+    state = state.copyWith(
+      nodes: [...state.nodes],
+      edges: [...state.edges],
+    );
+  }
+
+  /// 저장된 레이아웃 노드 위치 적용
+  void applyLayout(List<dynamic> layoutNodes) {
+    final posMap = <String, (double, double)>{
+      for (final n in layoutNodes)
+        n['id'] as String: (
+          (n['x'] as num).toDouble(),
+          (n['y'] as num).toDouble(),
+        ),
+    };
+
+    for (final node in state.nodes) {
+      if (posMap.containsKey(node.id)) {
+        final (x, y) = posMap[node.id]!;
+        node.x = x;
+        node.y = y;
+        node.pinned = true;
+        node.vx = 0;
+        node.vy = 0;
+      }
+    }
     state = state.copyWith(nodes: [...state.nodes]);
   }
 

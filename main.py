@@ -19,6 +19,8 @@ from api.router_records            import router as records_router
 from api.router_history            import router as history_router
 from api.router_published_ontology import router as published_ontology_router
 from api.router_settings           import router as settings_router
+from api.router_graph_layout       import router as graph_layout_router
+from api.router_cluster            import router as cluster_router
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -45,6 +47,8 @@ app.include_router(records_router)
 app.include_router(history_router)
 app.include_router(published_ontology_router)
 app.include_router(settings_router)
+app.include_router(graph_layout_router)
+app.include_router(cluster_router)
 
 
 @app.get("/health", tags=["서버"])

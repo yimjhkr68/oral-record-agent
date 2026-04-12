@@ -19,4 +19,9 @@ class GraphApi {
     final res = await _client.get('/api/graph/search', params: {'q': q});
     return GraphData.fromJson(res.data as Map<String, dynamic>);
   }
+
+  Future<Map<String, dynamic>> getCustomClusters() async {
+    final res = await _client.get('/api/graph/custom-clusters');
+    return res.data as Map<String, dynamic>;
+  }
 }
