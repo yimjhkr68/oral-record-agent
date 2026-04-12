@@ -46,6 +46,7 @@ class _KnowledgeGraphScreenState
   bool _isOverNode = false;
   Size _viewportSize = Size.zero;
   bool _showClusterPanel = false;
+  bool _isLayoutLoaded = false;
   AnimationController? _fitAnimCtrl;
   Animation<Matrix4>? _fitAnim;
 
@@ -391,26 +392,31 @@ class _KnowledgeGraphScreenState
         return;
       }
 
-      // Step 1: 범주 가시성 복원 (cluster_visibility 필드가 있을 때만)
-      final rawVis = res.data['cluster_visibility'];
-      if (rawVis is Map && rawVis.isNotEmpty) {
-        for (final entry in rawVis.entries) {
-          await GraphVisibilitySettings.setVisible(
-              entry.key.toString(), entry.value as bool);
-        }
-        ref.read(graphProvider.notifier).applyVisibility();
+      // Step 1: 저장된 노드 ID 집합 수집
+      final savedIds = layoutNodes
+          .map((n) => '${n['id']}'.trim())
+          .where((id) => id.isNotEmpty)
+          .toSet();
+
+      // Step 2: 범주 가시성 → 소속 노드가 하나라도 savedIds 에 있으면 visible
+      final gs = ref.read(graphProvider);
+      for (final cluster in gs.clusters) {
+        final visible = cluster.nodeIds.any(savedIds.contains);
+        await GraphVisibilitySettings.setVisible(cluster.narratorId, visible);
       }
 
-      // Step 2: 노드 위치 복원
+      // Step 3: 노드 위치 + 숨김 적용 (applyLayout 이 hidden 도 설정)
       ref.read(graphProvider.notifier).applyLayout(layoutNodes);
 
-      // Step 3: 화면 맞춤 (레이아웃 확정 후 실행)
+      // Step 4: 화면 맞춤 (레이아웃 확정 후 실행)
       await Future.delayed(const Duration(milliseconds: 100));
       if (mounted) _fitToScreen();
 
       if (!mounted) return;
+      setState(() => _isLayoutLoaded = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('레이아웃 불러옴: ${res.data["name"]}')),
+        SnackBar(content: Text(
+            '레이아웃 불러옴: ${res.data["name"]} (${layoutNodes.length}개 노드)')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -421,6 +427,16 @@ class _KnowledgeGraphScreenState
         ),
       );
     }
+  }
+
+  // ── 전체 복원 ──────────────────────────────────────────────────────────────
+
+  Future<void> _restoreFullGraph() async {
+    for (final cluster in ref.read(graphProvider).clusters) {
+      await GraphVisibilitySettings.setVisible(cluster.narratorId, true);
+    }
+    ref.read(graphProvider.notifier).applyVisibility();
+    setState(() => _isLayoutLoaded = false);
   }
 
   // ── Print (PNG / PDF) ─────────────────────────────────────────────────────
@@ -797,8 +813,10 @@ class _KnowledgeGraphScreenState
                                       .toList(),
                                   onChanged: (v) {
                                     final version = v ?? '';
-                                    setState(() =>
-                                        _selectedOntology = version);
+                                    setState(() {
+                                      _selectedOntology = version;
+                                      _isLayoutLoaded = false;
+                                    });
                                     _searchCtrl.clear();
                                     ref
                                         .read(graphProvider.notifier)
@@ -826,10 +844,13 @@ class _KnowledgeGraphScreenState
                         onToggleClusterPanel: () => setState(
                             () => _showClusterPanel = !_showClusterPanel),
                         clusterPanelActive: _showClusterPanel,
-                        onRefresh: () => ref
-                            .read(graphProvider.notifier)
-                            .loadGraph(
-                                ontologyVersion: _selectedOntology),
+                        onRefresh: () {
+                          setState(() => _isLayoutLoaded = false);
+                          ref
+                              .read(graphProvider.notifier)
+                              .loadGraph(
+                                  ontologyVersion: _selectedOntology);
+                        },
                         stats: {
                           ...gs.stats,
                           'visible_nodes': visibleNodeCount,
@@ -841,6 +862,53 @@ class _KnowledgeGraphScreenState
                                 ? '필터 그래프 내보내기 ($visibleNodeCount개 노드)'
                                 : '그래프 내보내기',
                       ),
+                      // 레이아웃 적용 중 배너 — 전체 복원 버튼 포함
+                      if (_isLayoutLoaded)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade800
+                                      .withValues(alpha: 0.88),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.layers,
+                                        size: 14, color: Colors.white),
+                                    const SizedBox(width: 6),
+                                    const Text(
+                                      '레이아웃 적용 중',
+                                      style: TextStyle(
+                                          fontSize: 11, color: Colors.white),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    GestureDetector(
+                                      onTap: _restoreFullGraph,
+                                      child: const Text(
+                                        '전체 복원',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          decoration:
+                                              TextDecoration.underline,
+                                          decorationColor: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),

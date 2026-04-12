@@ -364,35 +364,55 @@ class GraphNotifier extends StateNotifier<GraphState> {
 
   /// 저장된 레이아웃 노드 위치 적용
   void applyLayout(List<dynamic> layoutNodes) {
-    // 시뮬레이션 즉시 중단 — 타이머 콜백이 위치를 덮어쓰지 않도록
+    // 시뮬레이션 즉시 중단
     _simTimer?.cancel();
     _simTimer = null;
 
-    final posMap = <String, (double, double)>{};
+    // 저장된 노드 ID 집합 + 위치 맵
+    final savedIds = <String>{};
+    final posMap   = <String, (double, double)>{};
     for (final n in layoutNodes) {
       final id = '${n['id']}'.trim();
-      final x  = (n['x'] as num? ?? 0).toDouble();
-      final y  = (n['y'] as num? ?? 0).toDouble();
-      if (id.isNotEmpty) posMap[id] = (x, y);
+      if (id.isEmpty) continue;
+      savedIds.add(id);
+      posMap[id] = (
+        (n['x'] as num?)?.toDouble() ?? 0,
+        (n['y'] as num?)?.toDouble() ?? 0,
+      );
     }
-    void applyPos(LayoutNode node) {
-      if (posMap.containsKey(node.id)) {
+
+    // 노드: 저장된 것은 위치 복원+표시, 나머지는 숨김
+    for (final node in state.nodes) {
+      if (savedIds.contains(node.id)) {
         final (x, y) = posMap[node.id]!;
-        node.x = x;
-        node.y = y;
+        node.x      = x;
+        node.y      = y;
         node.pinned = true;
-        node.vx = 0;
-        node.vy = 0;
+        node.vx     = 0;
+        node.vy     = 0;
+        node.hidden = false;
+      } else {
+        node.hidden = true;
       }
     }
 
-    // state.nodes 위치 수정
-    for (final node in state.nodes) { applyPos(node); }
     // _layout 인스턴스도 동기화 (시뮬레이션 재시작 시 덮어쓰기 방지)
-    for (final node in _layout.nodes) { applyPos(node); }
+    for (final node in _layout.nodes) {
+      if (savedIds.contains(node.id)) {
+        final (x, y) = posMap[node.id]!;
+        node.x = x; node.y = y; node.pinned = true; node.vx = 0; node.vy = 0;
+      }
+    }
+
+    // 엣지: 양쪽 노드 모두 보일 때만 표시
+    for (final edge in state.edges) {
+      edge.hidden = !(savedIds.contains(edge.sourceId) &&
+                      savedIds.contains(edge.targetId));
+    }
 
     state = state.copyWith(
-      nodes: List.from(state.nodes),   // 새 리스트 참조로 rebuild 보장
+      nodes:        List<LayoutNode>.from(state.nodes),
+      edges:        List<LayoutEdge>.from(state.edges),
       isSimulating: false,
     );
   }
