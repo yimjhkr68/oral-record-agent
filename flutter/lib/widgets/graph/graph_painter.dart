@@ -1,10 +1,14 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'graph_node_model.dart';
+import 'cluster_detector.dart';
 
 /// CustomPainter — LayoutNode + LayoutEdge 기반 그래프 렌더링
 class GraphPainter extends CustomPainter {
   final List<LayoutNode> nodes;
   final List<LayoutEdge> edges;
+  final List<NarratorCluster> clusters;
   final Map<String, Color> classColors;
   final String? selectedNodeId;
 
@@ -12,6 +16,7 @@ class GraphPainter extends CustomPainter {
     required this.nodes,
     required this.edges,
     required this.classColors,
+    this.clusters = const [],
     this.selectedNodeId,
   });
 
@@ -20,6 +25,8 @@ class GraphPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 0. 군집 배경 (엣지/노드 뒤)
+    _drawClusters(canvas);
     // 1. 엣지 (노드 뒤)
     for (final edge in edges) {
       _drawEdge(canvas, edge);
@@ -30,7 +37,106 @@ class GraphPainter extends CustomPainter {
     }
   }
 
+  void _drawClusters(Canvas canvas) {
+    for (final cluster in clusters) {
+      final clusterNodes = nodes
+          .where((n) => cluster.nodeIds.contains(n.id) && !n.hidden)
+          .toList();
+      // 자동 범주: 2개 이상, 사용자 정의 범주: 1개 이상
+      final minCount = cluster.isCustom ? 1 : 2;
+      if (clusterNodes.length < minCount) continue;
+      _drawClusterBackground(canvas, clusterNodes, cluster.color,
+          isCustom: cluster.isCustom,
+          label: cluster.isCustom ? cluster.displayName : null);
+    }
+  }
+
+  void _drawClusterBackground(
+      Canvas canvas, List<LayoutNode> clusterNodes, Color color,
+      {bool isCustom = false, String? label}) {
+    final pad = isCustom ? 50.0 : 40.0;
+    double minX = clusterNodes.map((n) => n.x - n.radius).reduce(min) - pad;
+    double maxX = clusterNodes.map((n) => n.x + n.radius).reduce(max) + pad;
+    double minY = clusterNodes.map((n) => n.y - n.radius).reduce(min) - pad;
+    double maxY = clusterNodes.map((n) => n.y + n.radius).reduce(max) + pad;
+
+    final rect  = Rect.fromLTRB(minX, minY, maxX, maxY);
+    final rrect = RRect.fromRectAndRadius(
+        rect, Radius.circular(isCustom ? 24 : 32));
+
+    // 반투명 채우기 (사용자 정의는 약간 더 진하게)
+    final fillAlpha = isCustom ? 0.10 : color.a;
+    canvas.drawRRect(
+        rrect, Paint()..color = color.withValues(alpha: fillAlpha));
+
+    if (isCustom) {
+      // 사용자 정의: 점선 테두리
+      final borderPaint = Paint()
+        ..color = color.withValues(alpha: 0.7)
+        ..strokeWidth = 1.8
+        ..style = PaintingStyle.stroke;
+      _drawDashedRRect(canvas, rrect, borderPaint);
+    } else {
+      // 자동 범주: 실선 테두리
+      canvas.drawRRect(
+        rrect,
+        Paint()
+          ..color = color.withValues(alpha: (color.a * 4).clamp(0.0, 1.0))
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
+    }
+
+    // 사용자 정의 범주: 좌상단 이름 레이블
+    if (label != null && label.isNotEmpty) {
+      _drawClusterLabel(canvas, minX + 10, minY + 6, label, color);
+    }
+  }
+
+  /// 점선 RRect 그리기
+  void _drawDashedRRect(Canvas canvas, RRect rrect, Paint paint) {
+    const dashLen = 7.0;
+    const dashGap = 4.0;
+    final path = Path()..addRRect(rrect);
+    for (final metric in path.computeMetrics()) {
+      double dist = 0;
+      while (dist < metric.length) {
+        canvas.drawPath(
+          metric.extractPath(dist, (dist + dashLen).clamp(0, metric.length)),
+          paint,
+        );
+        dist += dashLen + dashGap;
+      }
+    }
+  }
+
+  /// 범주 이름 레이블
+  void _drawClusterLabel(Canvas canvas, double x, double y,
+      String label, Color color) {
+    final tp = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: color.withValues(alpha: 0.85),
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: 180);
+    // 레이블 배경 (읽기 쉽게)
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(x - 3, y - 2, tp.width + 6, tp.height + 4),
+        const Radius.circular(4),
+      ),
+      Paint()..color = Colors.white.withValues(alpha: 0.75),
+    );
+    tp.paint(canvas, Offset(x, y));
+  }
+
   void _drawEdge(Canvas canvas, LayoutEdge edge) {
+    if (edge.hidden) return;
     final s = _nodeById(edge.sourceId);
     final t = _nodeById(edge.targetId);
     if (s == null || t == null) return;
@@ -46,17 +152,26 @@ class GraphPainter extends CustomPainter {
     final lineEnd = dst - dir * (t.radius + 8);
 
     final op = edge.opacity;
+    final isHighlighted = edge.highlighted; // 술어 매칭 강조
 
-    // 엣지 선
+    // 엣지 선 — 강조 시 파란색 + 굵은 선
+    final lineColor = isHighlighted
+        ? Colors.blue.shade500.withValues(alpha: op)
+        : Colors.blueGrey.shade300.withValues(alpha: op * 0.8);
+    final strokeWidth = isHighlighted ? 2.5 : 1.2;
+
     final linePaint = Paint()
-      ..color = Colors.blueGrey.shade300.withValues(alpha: op * 0.8)
-      ..strokeWidth = 1.2
+      ..color = lineColor
+      ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke;
     canvas.drawLine(lineStart, lineEnd, linePaint);
 
     // 화살표 머리
+    final arrowColor = isHighlighted
+        ? Colors.blue.shade600.withValues(alpha: op)
+        : Colors.blueGrey.shade400.withValues(alpha: op);
     final arrowPaint = Paint()
-      ..color = Colors.blueGrey.shade400.withValues(alpha: op)
+      ..color = arrowColor
       ..style = PaintingStyle.fill;
     final tip = lineEnd;
     const arrowSize = 7.0;
@@ -74,16 +189,24 @@ class GraphPainter extends CustomPainter {
       ..close();
     canvas.drawPath(path, arrowPaint);
 
-    // 술어 레이블 (엣지 중간, 충분히 길 때만)
-    if (op > 0.4 && dist > 60) {
+    // 술어 레이블 — 강조 엣지는 항상 표시, 일반 엣지는 충분히 길 때만
+    if ((isHighlighted && op > 0.3) || (op > 0.4 && dist > 60)) {
       final mid = (lineStart + lineEnd) / 2;
+      final labelColor = isHighlighted
+          ? Colors.blue.shade800.withValues(alpha: op)
+          : Colors.blueGrey.shade700.withValues(alpha: op);
+      final bgColor = isHighlighted
+          ? Colors.blue.shade50.withValues(alpha: 0.85 * op)
+          : Colors.white.withValues(alpha: 0.7 * op);
       final tp = TextPainter(
         text: TextSpan(
           text: edge.predicate,
           style: TextStyle(
-            fontSize: 9,
-            color: Colors.blueGrey.shade700.withValues(alpha: op),
-            backgroundColor: Colors.white.withValues(alpha: 0.7 * op),
+            fontSize: isHighlighted ? 10 : 9,
+            fontWeight:
+                isHighlighted ? FontWeight.w600 : FontWeight.normal,
+            color: labelColor,
+            backgroundColor: bgColor,
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -93,6 +216,7 @@ class GraphPainter extends CustomPainter {
   }
 
   void _drawNode(Canvas canvas, LayoutNode node) {
+    if (node.hidden) return;
     final pos = Offset(node.x, node.y);
     final r = node.radius;
     final op = node.opacity;
@@ -180,6 +304,7 @@ class GraphPainter extends CustomPainter {
   bool shouldRepaint(GraphPainter old) =>
       old.nodes != nodes ||
       old.edges != edges ||
+      old.clusters != clusters ||
       old.selectedNodeId != selectedNodeId;
 }
 

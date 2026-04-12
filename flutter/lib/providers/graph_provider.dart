@@ -154,6 +154,8 @@ class GraphNotifier extends StateNotifier<GraphState> {
       );
 
       _startSimulation();
+      // 사용자 정의 범주 즉시 병합 (시뮬레이션 수렴 대기 불필요)
+      reloadClusters();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: _graphError(e));
     }
