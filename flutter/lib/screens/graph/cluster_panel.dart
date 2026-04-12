@@ -776,6 +776,7 @@ class _ClusterTileState extends State<_ClusterTile> {
                           : AppColors.textMuted,
                     ),
                     overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                   if (cluster.isCustom)
                     Text('사용자 정의',
@@ -946,9 +947,13 @@ class _ClassRowState extends State<_ClassRow> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(_classDisplayName(widget.className),
-                    style: AppTypography.caption.copyWith(
-                        color: AppColors.textSecondary)),
+                child: Text(
+                  _classDisplayName(widget.className),
+                  style: AppTypography.caption.copyWith(
+                      color: AppColors.textSecondary),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ),
               Text('${widget.nodeCount}',
                   style: AppTypography.caption

@@ -333,14 +333,14 @@ class _KnowledgeGraphScreenState
       final layoutNodes =
           (res.data['nodes'] ?? res.data['node_positions'] ?? []) as List;
       ref.read(graphProvider.notifier).applyLayout(layoutNodes);
+      // 위치 복원 후 전체 보기 (postFrame — 레이아웃 확정 후 실행)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fitToScreen();
+      });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('레이아웃 불러옴: ${res.data["name"]}')),
       );
-      // 위치 복원 후 전체 보기
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _fitToScreen();
-      });
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
