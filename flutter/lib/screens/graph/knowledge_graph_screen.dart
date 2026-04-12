@@ -309,18 +309,18 @@ class _KnowledgeGraphScreenState
             })
         .toList();
 
-    // 저장 당시 표시 중인 범주 목록 (메타데이터)
-    final visibleClusters = gs.clusters
-        .where((c) => GraphVisibilitySettings.isVisible(c.narratorId))
-        .map((c) => c.narratorId)
-        .toList();
+    // 각 범주의 표시/숨김 상태를 key-value 로 저장
+    final clusterVisibility = <String, bool>{
+      for (final c in gs.clusters)
+        c.narratorId: GraphVisibilitySettings.isVisible(c.narratorId),
+    };
 
     try {
       await ref.read(apiClientProvider).post('/api/graph/layouts', data: {
-        'name':             name,
-        'ontology_version': gs.selectedOntologyVersion,
-        'visible_clusters': visibleClusters,
-        'nodes':            visibleNodes,
+        'name':               name,
+        'ontology_version':   gs.selectedOntologyVersion,
+        'cluster_visibility': clusterVisibility,
+        'nodes':              visibleNodes,
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -376,13 +376,38 @@ class _KnowledgeGraphScreenState
     try {
       final res = await ref.read(apiClientProvider)
           .get('/api/graph/layouts/$filename');
+
       final layoutNodes =
           (res.data['nodes'] ?? res.data['node_positions'] ?? []) as List;
+
+      if (layoutNodes.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('저장된 노드 위치가 없습니다'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      // Step 1: 범주 가시성 복원 (cluster_visibility 필드가 있을 때만)
+      final rawVis = res.data['cluster_visibility'];
+      if (rawVis is Map && rawVis.isNotEmpty) {
+        for (final entry in rawVis.entries) {
+          await GraphVisibilitySettings.setVisible(
+              entry.key.toString(), entry.value as bool);
+        }
+        ref.read(graphProvider.notifier).applyVisibility();
+      }
+
+      // Step 2: 노드 위치 복원
       ref.read(graphProvider.notifier).applyLayout(layoutNodes);
-      // 위치 복원 후 전체 보기 (postFrame — 레이아웃 확정 후 실행)
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _fitToScreen();
-      });
+
+      // Step 3: 화면 맞춤 (레이아웃 확정 후 실행)
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) _fitToScreen();
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('레이아웃 불러옴: ${res.data["name"]}')),
@@ -947,9 +972,8 @@ class _LoadLayoutDialog extends StatelessWidget {
                   final dateStr = savedAt.length >= 16
                       ? savedAt.substring(0, 16).replaceFirst('T', ' ')
                       : savedAt;
-                  final clusters =
-                      (layout['visible_clusters'] as List? ?? [])
-                          .cast<String>();
+                  final visMap = Map<String, dynamic>.from(
+                      layout['cluster_visibility'] as Map? ?? {});
                   return ListTile(
                     dense: true,
                     title: Text(layout['name'] as String? ?? '',
@@ -963,14 +987,40 @@ class _LoadLayoutDialog extends StatelessWidget {
                           '$dateStr  ·  노드 ${layout['node_count'] ?? 0}개',
                           style: const TextStyle(fontSize: 11),
                         ),
-                        if (clusters.isNotEmpty)
-                          Text(
-                            '범주: ${clusters.join(', ')}',
-                            style: const TextStyle(
-                                fontSize: 10, color: Colors.grey),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        if (visMap.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Wrap(
+                            spacing: 4,
+                            runSpacing: 3,
+                            children: [
+                              for (final e in visMap.entries)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (e.value as bool)
+                                        ? Colors.green
+                                            .withValues(alpha: 0.15)
+                                        : Colors.grey
+                                            .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: (e.value as bool)
+                                          ? Colors.green
+                                              .withValues(alpha: 0.4)
+                                          : Colors.grey
+                                              .withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '${(e.value as bool) ? "👁" : "🚫"} ${e.key}',
+                                    style:
+                                        const TextStyle(fontSize: 10),
+                                  ),
+                                ),
+                            ],
                           ),
+                        ],
                       ],
                     ),
                     trailing: Row(
