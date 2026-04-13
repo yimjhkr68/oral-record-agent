@@ -3,6 +3,9 @@ class OralRecord {
   final String title;
   final String sourceType; // 'text' | 'file'
   final String fileName;
+  final String filePath;   // 서버 저장 경로
+  final String fileExt;    // 'docx' | 'pdf' | 'txt' | ''
+  final String source;     // 'manual' | 'ontology' | 'triple'
   final String? contentPreview; // 목록용 (200자)
   final String? content;        // 상세용 전문
   final int charCount;
@@ -15,6 +18,9 @@ class OralRecord {
     required this.title,
     required this.sourceType,
     required this.fileName,
+    this.filePath = '',
+    this.fileExt = '',
+    this.source = 'manual',
     this.contentPreview,
     this.content,
     required this.charCount,
@@ -28,6 +34,9 @@ class OralRecord {
         title: json['title'] ?? '',
         sourceType: json['source_type'] ?? 'text',
         fileName: json['file_name'] ?? '',
+        filePath: json['file_path'] ?? '',
+        fileExt: json['file_ext'] ?? '',
+        source: json['source'] ?? 'manual',
         contentPreview: json['content_preview'] as String?,
         content: json['content'] as String?,
         charCount: (json['char_count'] as num?)?.toInt() ?? 0,
@@ -38,4 +47,5 @@ class OralRecord {
 
   String get dateLabel => createdAt.length >= 10 ? createdAt.substring(0, 10) : createdAt;
   bool get isFile => sourceType == 'file';
+  bool get hasFile => fileExt.isNotEmpty;
 }

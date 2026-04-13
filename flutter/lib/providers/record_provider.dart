@@ -38,10 +38,18 @@ class RecordListNotifier extends StateNotifier<RecordListState> {
     load();
   }
 
-  Future<void> load({String q = '', String sourceType = ''}) async {
+  Future<void> load({
+    String q = '',
+    String sourceType = '',
+    String source = '',
+  }) async {
     state = state.copyWith(loading: true, error: null);
     try {
-      final records = await _api.list(q: q, sourceType: sourceType);
+      final records = await _api.list(
+        q: q,
+        sourceType: sourceType,
+        source: source,
+      );
       state = state.copyWith(records: records, loading: false);
     } catch (e) {
       state = state.copyWith(loading: false, error: e.toString());
@@ -56,6 +64,27 @@ class RecordListNotifier extends StateNotifier<RecordListState> {
     try {
       final record = await _api.createText(
           title: title, content: content, note: note);
+      await load();
+      return record;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return null;
+    }
+  }
+
+  Future<OralRecord?> createFileFromBytes({
+    required List<int> bytes,
+    required String fileName,
+    String note = '',
+    String source = 'manual',
+  }) async {
+    try {
+      final record = await _api.createFileFromBytes(
+        bytes: bytes,
+        fileName: fileName,
+        note: note,
+        source: source,
+      );
       await load();
       return record;
     } catch (e) {

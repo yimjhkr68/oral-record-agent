@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/oral_record.dart';
 import '../../providers/record_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/common/empty_state.dart';
 
 class RecordDetailScreen extends ConsumerStatefulWidget {
   final String recordId;
@@ -88,9 +91,9 @@ class _RecordDetailScreenState extends ConsumerState<RecordDetailScreen>
           : _error != null
               ? Center(
                   child: Text(_error!,
-                      style: const TextStyle(color: Colors.red)))
+                      style: AppTypography.body.copyWith(color: AppColors.error)))
               : _record == null
-                  ? const Center(child: Text('기록을 찾을 수 없습니다'))
+                  ? Center(child: Text('기록을 찾을 수 없습니다', style: AppTypography.body))
                   : Column(children: [
                       // 메타 정보
                       _MetaBar(record: _record!),
@@ -168,24 +171,22 @@ class _MetaBar extends StatelessWidget {
         Icon(
           record.isFile ? Icons.description : Icons.text_snippet,
           size: 16,
-          color: Colors.grey,
+          color: AppColors.textMuted,
         ),
         const SizedBox(width: 6),
         Text(
           record.isFile ? '파일 · ${record.fileName}' : '텍스트 입력',
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: AppTypography.caption,
         ),
         const SizedBox(width: 12),
-        Text(record.dateLabel,
-            style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(record.dateLabel, style: AppTypography.caption),
         const SizedBox(width: 12),
-        Text('${record.charCount}자',
-            style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text('${record.charCount}자', style: AppTypography.caption),
         if (record.note.isNotEmpty) ...[
           const SizedBox(width: 12),
           Expanded(
             child: Text('메모: ${record.note}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: AppTypography.caption,
                 overflow: TextOverflow.ellipsis),
           ),
         ],
@@ -206,7 +207,8 @@ class _ContentTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: SelectableText(
         content.isEmpty ? '(내용 없음)' : content,
-        style: const TextStyle(fontSize: 14, height: 1.6),
+        style: AppTypography.body.copyWith(
+            color: AppColors.textPrimary, height: 1.8),
       ),
     );
   }
@@ -221,22 +223,17 @@ class _UsageTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (usage.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.history, size: 40, color: Colors.grey),
-            SizedBox(height: 8),
-            Text('트리플 생성 이력이 없습니다',
-                style: TextStyle(color: Colors.grey)),
-          ],
-        ),
+      return const EmptyState(
+        icon: Icons.history_outlined,
+        title: '트리플 생성 이력이 없습니다',
+        description: '이 기록으로 트리플을 추출하면\n이력이 기록됩니다.',
       );
     }
     return ListView.separated(
       padding: const EdgeInsets.all(12),
       itemCount: usage.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
+      separatorBuilder: (_, __) =>
+          const Divider(height: 1, color: AppColors.border),
       itemBuilder: (_, i) {
         final s = usage[i];
         final status = s['status'] ?? '';
@@ -245,17 +242,16 @@ class _UsageTab extends StatelessWidget {
           dense: true,
           leading: Icon(
             status == 'completed' ? Icons.check_circle : Icons.circle_outlined,
-            color: status == 'completed' ? Colors.green : Colors.grey,
+            color: status == 'completed' ? AppColors.confirmed : AppColors.textMuted,
             size: 18,
           ),
           title: Text(s['ontology_version_id'] ?? '',
-              style: const TextStyle(fontSize: 13)),
+              style: AppTypography.body.copyWith(color: AppColors.textPrimary)),
           subtitle: Text(
             '추출 ${s['extracted_count'] ?? 0}개 → 확정 ${s['confirmed_count'] ?? 0}개',
-            style: const TextStyle(fontSize: 11),
+            style: AppTypography.caption,
           ),
-          trailing: Text(date,
-              style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          trailing: Text(date, style: AppTypography.caption),
         );
       },
     );

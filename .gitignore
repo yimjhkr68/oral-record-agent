@@ -6,3 +6,9 @@ __pycache__/
 data/triples/graph.json
 data/triples/archive/
 data/*.db
+data/*.db-shm
+data/*.db-wal
+server.log
+.claude/settings.local.json
+*.hwp
+*.hwpx

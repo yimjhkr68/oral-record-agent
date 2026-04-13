@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/triple_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
 import 'triple_step1_extract.dart';
 import 'triple_step2_review.dart';
 import 'triple_step3_list.dart';
@@ -58,41 +60,47 @@ class _TripleScreenState extends ConsumerState<TripleScreen>
       body: Column(
         children: [
           // ── 탭바 ─────────────────────────────────────────────────────────
-          Material(
-            color: Theme.of(context).colorScheme.surface,
-            elevation: 1,
-            child: TabBar(
-              controller: _tabCtrl,
-              onTap: (index) {
-                if (!_programmaticChange) {
-                  ref.read(tripleWorkProvider.notifier).setStep(index);
-                }
-              },
-              tabs: [
-                const Tab(text: 'Step 1  추출 설정'),
-                Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Step 2  검토'),
-                      if (pending > 0) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text('$pending',
-                              style: const TextStyle(
-                                  color: Colors.white, fontSize: 11)),
-                        ),
-                      ],
-                    ],
-                  ),
+          Container(
+            color: AppColors.surface,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TabBar(
+                  controller: _tabCtrl,
+                  onTap: (index) {
+                    if (!_programmaticChange) {
+                      ref.read(tripleWorkProvider.notifier).setStep(index);
+                    }
+                  },
+                  tabs: [
+                    const Tab(text: 'Step 1  추출 설정'),
+                    Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Step 2  검토'),
+                          if (pending > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text('$pending',
+                                  style: AppTypography.badge.copyWith(
+                                      color: Colors.white)),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const Tab(text: 'Step 3  저장된 트리플'),
+                  ],
                 ),
-                const Tab(text: 'Step 3  저장된 트리플'),
+                const Divider(height: 1, thickness: 1,
+                    color: AppColors.border),
               ],
             ),
           ),

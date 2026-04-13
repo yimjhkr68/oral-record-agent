@@ -1,0 +1,803 @@
+{
+  "version_id": "v1_ontology",
+  "status": "confirmed",
+  "classes": [
+    {
+      "name": "OralHistoryNarrator",
+      "label_ko": "구술자",
+      "color": "#4A90D9",
+      "description": "구술 증언을 직접 제공한 사람. 사건의 직접 경험자이거나 가족·공동체를 통해 역사적 사실을 전승한 당사자.",
+      "examples": [
+        "김순덕"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.95,
+          "note": "구술자는 인물 개체임"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.88,
+          "note": ""
+        },
+        {
+          "curie": "foaf:Person",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Interviewer",
+      "label_ko": "면담자",
+      "color": "#5BA85A",
+      "description": "구술 면담을 진행하고 기록을 수집한 연구자 또는 아카이비스트.",
+      "examples": [
+        "고미영 연구원"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.93,
+          "note": "면담자도 인물 개체"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        },
+        {
+          "curie": "dcterms:Agent",
+          "ontology_id": "dcmi",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": "기록 행위의 주체로서 에이전트"
+        }
+      ],
+      "mapping_confirmed": true
+    },
+    {
+      "name": "Victim",
+      "label_ko": "희생자",
+      "color": "#C0392B",
+      "description": "제주 4.3 사건으로 인해 생명을 잃거나 직접적 피해를 당한 인물.",
+      "examples": [
+        "구술자의 아버지 (42세, 1949년 1월 17일 총살)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.95,
+          "note": "희생자는 인물 개체이며 사망 사건과 연결됨"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        },
+        {
+          "curie": "crm:E69_Death",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.7,
+          "note": "희생자의 사망 사건 자체와 구분하기 위해 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": true
+    },
+    {
+      "name": "SurvivorFamily",
+      "label_ko": "유가족 / 생존 가족",
+      "color": "#E67E22",
+      "description": "희생자의 가족으로서 사건 이후 생존하며 트라우마와 사회적 낙인을 감내한 인물.",
+      "examples": [
+        "구술자 어머니 (4남매 홀로 양육)",
+        "구술자 김순덕 (4남매 중 한 명)"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.93,
+          "note": "유가족은 인물 개체"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        },
+        {
+          "curie": "crm:E74_Group",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.6,
+          "note": "집단적 맥락에서 유가족 집단으로 볼 수 있음"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "MilitaryUnit",
+      "label_ko": "군·경 부대 / 무장 세력",
+      "color": "#7F8C8D",
+      "description": "제주 4.3 사건 당시 마을에 진입하여 학살을 자행한 군인 또는 경찰 조직.",
+      "examples": [
+        "북촌리 진입 군인들"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E74_Group",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.88,
+          "note": "집단 행위자로서 군·경 부대"
+        },
+        {
+          "curie": "schema:Organization",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": ""
+        },
+        {
+          "curie": "crm:E40_Legal_Body",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.65,
+          "note": "국가 공권력 기관으로서의 측면"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "HistoricalMassacreEvent",
+      "label_ko": "집단 학살 사건",
+      "color": "#922B21",
+      "description": "특정 날짜·장소에서 군·경에 의해 다수의 민간인이 집단으로 살해된 역사적 사건.",
+      "examples": [
+        "1949년 1월 17일 북촌리 대학살 (300명 이상 희생)"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.95,
+          "note": "구체적 시공간에서 발생한 사건"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        },
+        {
+          "curie": "crm:E4_Period",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.55,
+          "note": "역사적 시기와 중첩되나 단일 사건에 가까움"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "HistoricalPeriod",
+      "label_ko": "역사적 시기",
+      "color": "#8E44AD",
+      "description": "제주 4.3 사건이 발생한 역사적·정치적 시기. 1947~1954년 제주 4.3 전반의 맥락을 포함.",
+      "examples": [
+        "제주 4.3 사건 (1947~1954)"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E4_Period",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.95,
+          "note": "역사적 시기를 나타내는 핵심 클래스"
+        },
+        {
+          "curie": "dcterms:PeriodOfTime",
+          "ontology_id": "dcmi",
+          "is_primary": false,
+          "confidence": 0.88,
+          "note": ""
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.6,
+          "note": "단일 사건보다 넓은 시기이나 보조 매핑 가능"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "DeathEvent",
+      "label_ko": "사망 / 희생",
+      "color": "#641E16",
+      "description": "희생자 개인의 사망 사실. 날짜·방식·장소 등의 정보를 담음.",
+      "examples": [
+        "구술자 아버지의 총살 (1949-01-17, 북촌리)"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E69_Death",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.97,
+          "note": "개인의 사망 사건에 직접 대응"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.7,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Place",
+      "label_ko": "장소",
+      "color": "#1A8A6E",
+      "description": "사건·면담·활동이 발생하거나 연관된 지리적 장소.",
+      "examples": [
+        "북촌리",
+        "제주시 조천면 북촌리"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E53_Place",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E53_Place",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.97,
+          "note": "지리적 장소에 직접 대응"
+        },
+        {
+          "curie": "schema:Place",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.9,
+          "note": ""
+        },
+        {
+          "curie": "dcterms:Location",
+          "ontology_id": "dcmi",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": true
+    },
+    {
+      "name": "OralHistoryRecord",
+      "label_ko": "구술 기록",
+      "color": "#2471A3",
+      "description": "면담을 통해 수집된 구술 텍스트·음성·영상 등의 1차 기록물. 아카이브의 핵심 객체.",
+      "examples": [
+        "김순덕 구술 기록 (2026-01-15 면담)"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E33_Linguistic_Object",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.93,
+          "note": "언어적 구술 내용에 직접 대응"
+        },
+        {
+          "curie": "schema:CreativeWork",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": ""
+        },
+        {
+          "curie": "foaf:Document",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.75,
+          "note": ""
+        },
+        {
+          "curie": "crm:E31_Document",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": "문서화된 기록물로서의 측면"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "InterviewSession",
+      "label_ko": "면담 세션",
+      "color": "#117A65",
+      "description": "구술 기록이 수집된 구체적인 면담 행위. 일시·장소·참여자 정보를 포함.",
+      "examples": [
+        "2026-01-15 제주시 조천면 북촌리 면담 (고미영 연구원 진행)"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.92,
+          "note": "면담은 인간의 의도적 활동"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.78,
+          "note": ""
+        },
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.75,
+          "note": "활동보다 넓은 사건 개념으로도 볼 수 있음"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "CommemorativeAct",
+      "label_ko": "추모 / 제례 행위",
+      "color": "#6C3483",
+      "description": "희생자를 기억하고 애도하기 위해 수행된 의례적·공식적 행위. 비밀 제사부터 국가 공인 위령제까지 포함.",
+      "examples": [
+        "어머니의 비밀 제사 (4월 3일)",
+        "국가 공인 위령제"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.88,
+          "note": "추모 행위는 의도적 인간 활동"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": "위령제 등 공식 행사 맥락"
+        },
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.72,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "SocialStigma",
+      "label_ko": "사회적 낙인 / 연좌제 피해",
+      "color": "#B7950B",
+      "description": "4.3 유가족이 '빨갱이 가족'으로 낙인찍혀 받은 사회적 차별·억압·침묵 강요 등의 피해 상황.",
+      "examples": [
+        "'빨갱이 가족' 낙인",
+        "아버지 이야기 금지",
+        "제사 비밀 거행"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.65,
+          "note": "낙인은 사회적 사건·상태로 볼 수 있음"
+        },
+        {
+          "curie": "crm:E55_Type",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.6,
+          "note": "피해 유형의 분류 개념으로 볼 수 있음"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "StateRecognition",
+      "label_ko": "국가 공인 / 명예 회복",
+      "color": "#1F618D",
+      "description": "국가가 4.3 사건 희생자와 유가족의 피해를 공식 인정하고 명예를 회복시키는 행정·법적 행위.",
+      "examples": [
+        "국가의 4.3 희생자 공식 인정",
+        "진상 규명 활동"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.82,
+          "note": "국가 기관의 의도적 행위"
+        },
+        {
+          "curie": "crm:E40_Legal_Body",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.55,
+          "note": "법적 기관의 행위 측면"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.7,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Archive",
+      "label_ko": "아카이브 / 컬렉션",
+      "color": "#2E4053",
+      "description": "구술 기록을 수집·보존·활용하는 아카이브 기관 또는 컬렉션 단위.",
+      "examples": [
+        "제주 4.3 구술기록 아카이브"
+      ],
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E78_Curated_Holding",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.9,
+          "note": "큐레이션된 소장 컬렉션에 직접 대응"
+        },
+        {
+          "curie": "schema:ArchiveComponent",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.82,
+          "note": ""
+        },
+        {
+          "curie": "foaf:Organization",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.65,
+          "note": "아카이브 기관 측면"
+        }
+      ],
+      "mapping_confirmed": false
+    }
+  ],
+  "predicates": [
+    {
+      "name": "구술함",
+      "domain": [
+        "OralHistoryNarrator"
+      ],
+      "range_": [
+        "OralHistoryRecord"
+      ],
+      "description": "구술자가 면담을 통해 구술 기록을 생성·제공하는 행위",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "면담 진행함",
+      "domain": [
+        "Interviewer"
+      ],
+      "range_": [
+        "InterviewSession"
+      ],
+      "description": "면담자가 구술 면담 세션을 기획하고 진행함",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "면담 세션에서 수집됨",
+      "domain": [
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "InterviewSession"
+      ],
+      "description": "구술 기록이 특정 면담 세션을 통해 수집되었음을 나타냄",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "면담 장소임",
+      "domain": [
+        "InterviewSession"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "면담 세션이 진행된 장소",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "가족 관계임",
+      "domain": [
+        "OralHistoryNarrator",
+        "SurvivorFamily"
+      ],
+      "range_": [
+        "Victim",
+        "SurvivorFamily",
+        "OralHistoryNarrator"
+      ],
+      "description": "구술자·유가족과 희생자 간의 가족 관계 (예: 자녀-부모, 형제자매)",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "희생됨",
+      "domain": [
+        "Victim"
+      ],
+      "range_": [
+        "HistoricalMassacreEvent"
+      ],
+      "description": "희생자가 특정 집단 학살 사건에서 희생되었음",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "사망 사건을 가짐",
+      "domain": [
+        "Victim"
+      ],
+      "range_": [
+        "DeathEvent"
+      ],
+      "description": "희생자 개인에게 귀속되는 사망 사건",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생 장소임",
+      "domain": [
+        "HistoricalMassacreEvent",
+        "DeathEvent",
+        "CommemorativeAct"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "사건·활동이 발생한 지리적 장소",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생 시기임",
+      "domain": [
+        "HistoricalMassacreEvent",
+        "DeathEvent",
+        "CommemorativeAct",
+        "InterviewSession"
+      ],
+      "range_": [
+        "HistoricalPeriod"
+      ],
+      "description": "사건·활동이 속하는 역사적 시기",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "자행함",
+      "domain": [
+        "MilitaryUnit"
+      ],
+      "range_": [
+        "HistoricalMassacreEvent"
+      ],
+      "description": "군·경 부대가 집단 학살 사건을 자행함",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "사회적 낙인을 경험함",
+      "domain": [
+        "SurvivorFamily",
+        "OralHistoryNarrator"
+      ],
+      "range_": [
+        "SocialStigma"
+      ],
+      "description": "유가족이나 구술자가 사건 이후 사회적 낙인 피해를 경험함",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "추모 행위를 수행함",
+      "domain": [
+        "SurvivorFamily",
+        "OralHistoryNarrator"
+      ],
+      "range_": [
+        "CommemorativeAct"
+      ],
+      "description": "유가족 또는 구술자가 희생자를 위한 추모·제례 행위를 수행함",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "추모 대상임",
+      "domain": [
+        "CommemorativeAct"
+      ],
+      "range_": [
+        "Victim"
+      ],
+      "description": "추모 행위의 대상이 되는 희생자",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "국가 공인을 받음",
+      "domain": [
+        "Victim",
+        "SurvivorFamily"
+      ],
+      "range_": [
+        "StateRecognition"
+      ],
+      "description": "희생자 또는 유가족이 국가로부터 공식 인정·명예 회복을 받음",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "아카이브에 소장됨",
+      "domain": [
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "Archive"
+      ],
+      "description": "구술 기록이 특정 아카이브 컬렉션에 소장·보존됨",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "증언 대상 사건임",
+      "domain": [
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "HistoricalMassacreEvent",
+        "HistoricalPeriod"
+      ],
+      "description": "구술 기록이 증언하고 있는 역사적 사건 또는 시기",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "역사적 시기에 속함",
+      "domain": [
+        "HistoricalMassacreEvent",
+        "DeathEvent"
+      ],
+      "range_": [
+        "HistoricalPeriod"
+      ],
+      "description": "개별 사건이 더 넓은 역사적 시기 내에 포함됨",
+      "note": "",
+      "standard_tag": "",
+      "merge_note": "",
+      "mapping_confirmed": false
+    }
+  ],
+  "created_at": "2026-04-11T13:19:28.957058",
+  "confirmed_at": "2026-04-11T13:25:08.306762",
+  "archived_at": null,
+  "description": "AI 자동 생성 (샘플 기반)",
+  "based_on": null
+}

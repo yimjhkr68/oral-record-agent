@@ -1,0 +1,438 @@
+{
+  "version_id": "강옥희+v1 온톨로지",
+  "status": "draft",
+  "classes": [
+    {
+      "name": "ChildWitness",
+      "label_ko": "아동 목격자",
+      "color": "#F39C12",
+      "description": "역사적 사건을 어린 나이에 직접 목격하고 경험한 인물. 구술자가 사건 당시 아동이었던 경우에 해당.",
+      "examples": [
+        "여덟 살에 초토화 작전을 목격한 구술자"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.92,
+          "note": "아동 목격자도 인물 개체"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        },
+        {
+          "curie": "foaf:Person",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.82,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "ScorchingOperation",
+      "label_ko": "초토화 작전",
+      "color": "#C0392B",
+      "description": "군·경이 마을 전체를 불태우고 주민을 강제 소개(疏開)시킨 군사 작전. 1948년 제주 4.3 진압 과정에서 자행된 마을 방화·소각 작전.",
+      "examples": [
+        "1948년 11월 마을 방화 초토화 작전"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.93,
+          "note": "특정 시공간에서 발생한 군사 작전 사건"
+        },
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": "군의 의도적 행위로서의 측면"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.78,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "VillageDestruction",
+      "label_ko": "마을 소각 / 파괴",
+      "color": "#E74C3C",
+      "description": "군·경에 의해 마을의 가옥·시설이 방화·파괴된 사건. 주민들의 삶의 기반이 물리적으로 소멸된 상태를 포함.",
+      "examples": [
+        "1948년 11월 마을 가옥 방화",
+        "짚으로 된 지붕 소각"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.9,
+          "note": "마을 파괴는 특정 시공간의 사건"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.75,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "ForcedDisplacement",
+      "label_ko": "강제 피난 / 소개",
+      "color": "#E67E22",
+      "description": "초토화 작전·마을 소각으로 인해 주민들이 거주지를 떠나 피난하거나 강제로 이주된 사건.",
+      "examples": [
+        "어머니와 함께 가옥에서 탈출",
+        "아무것도 챙기지 못한 채 피난"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E53_Place",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E9_Move",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.92,
+          "note": "강제 이동·피난에 직접 대응하는 클래스"
+        },
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.75,
+          "note": "이동 사건으로도 볼 수 있음"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.7,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "TraditionalDwelling",
+      "label_ko": "전통 가옥 / 피해 주거지",
+      "color": "#795548",
+      "description": "초토화 작전의 피해를 입은 전통적 구조의 가옥. 당시 제주의 짚 지붕 가옥 등 물리적 거주 공간.",
+      "examples": [
+        "짚으로 된 지붕 가옥",
+        "불탄 집"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E27_Site",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.85,
+          "note": "거주 현장·유적지 개념에 대응"
+        },
+        {
+          "curie": "crm:E53_Place",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": "장소 개념으로도 볼 수 있음"
+        },
+        {
+          "curie": "schema:Place",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.72,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "EyewitnessTestimony",
+      "label_ko": "목격 증언",
+      "color": "#2980B9",
+      "description": "구술자가 사건을 직접 목격한 경험을 바탕으로 서술한 구술 내용의 단위. 감각적·현장적 기억을 담은 1인칭 증언.",
+      "examples": [
+        "군인들이 집에 불을 지르는 장면 목격",
+        "짚 지붕이 타오르는 장면"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E33_Linguistic_Object",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.9,
+          "note": "언어로 표현된 목격 증언 내용"
+        },
+        {
+          "curie": "schema:CreativeWork",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.68,
+          "note": ""
+        },
+        {
+          "curie": "foaf:Document",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.65,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "TraumaticMemory",
+      "label_ko": "트라우마 기억",
+      "color": "#6C3483",
+      "description": "사건 당시의 극한 공포·상실 경험이 구술자의 기억 속에 각인된 심리적 상태. 아동기 트라우마 포함.",
+      "examples": [
+        "여덟 살에 목격한 방화",
+        "아무것도 못 챙긴 채 뛰어나온 기억"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E28_Conceptual_Object",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E55_Type",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.62,
+          "note": "트라우마 기억은 경험의 유형·상태로 분류 가능"
+        },
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.55,
+          "note": "기억된 사건으로도 볼 수 있음"
+        }
+      ],
+      "mapping_confirmed": false
+    }
+  ],
+  "predicates": [
+    {
+      "name": "목격함",
+      "domain": [
+        "ChildWitness",
+        "OralHistoryNarrator",
+        "SurvivorFamily"
+      ],
+      "range_": [
+        "ScorchingOperation",
+        "VillageDestruction",
+        "HistoricalMassacreEvent"
+      ],
+      "description": "구술자 또는 아동 목격자가 특정 사건을 현장에서 직접 목격함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "초토화 작전을 자행함",
+      "domain": [
+        "MilitaryUnit"
+      ],
+      "range_": [
+        "ScorchingOperation"
+      ],
+      "description": "군·경 부대가 마을에 대한 초토화 작전을 실행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "마을을 소각함",
+      "domain": [
+        "ScorchingOperation"
+      ],
+      "range_": [
+        "VillageDestruction"
+      ],
+      "description": "초토화 작전의 결과로 마을 소각·파괴가 발생함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "강제 피난을 유발함",
+      "domain": [
+        "ScorchingOperation",
+        "VillageDestruction"
+      ],
+      "range_": [
+        "ForcedDisplacement"
+      ],
+      "description": "초토화 작전 또는 마을 소각이 주민의 강제 피난을 야기함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "피난함",
+      "domain": [
+        "ChildWitness",
+        "OralHistoryNarrator",
+        "SurvivorFamily"
+      ],
+      "range_": [
+        "ForcedDisplacement"
+      ],
+      "description": "구술자·유가족이 마을 소각으로 인해 강제로 피난길에 오름",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "피난 출발지임",
+      "domain": [
+        "ForcedDisplacement"
+      ],
+      "range_": [
+        "Place",
+        "TraditionalDwelling"
+      ],
+      "description": "강제 피난이 시작된 장소 (소각된 마을 또는 가옥)",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "소각 피해를 입음",
+      "domain": [
+        "TraditionalDwelling"
+      ],
+      "range_": [
+        "VillageDestruction"
+      ],
+      "description": "전통 가옥이 초토화 작전으로 인해 소각·파괴 피해를 입음",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생 시기임",
+      "domain": [
+        "ScorchingOperation",
+        "VillageDestruction",
+        "ForcedDisplacement"
+      ],
+      "range_": [
+        "HistoricalPeriod"
+      ],
+      "description": "초토화 작전·마을 소각·피난이 속하는 역사적 시기",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "트라우마 기억을 보유함",
+      "domain": [
+        "ChildWitness",
+        "OralHistoryNarrator",
+        "SurvivorFamily"
+      ],
+      "range_": [
+        "TraumaticMemory"
+      ],
+      "description": "구술자 또는 목격자가 사건으로 인한 트라우마 기억을 지니고 있음",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "목격 증언을 포함함",
+      "domain": [
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "EyewitnessTestimony"
+      ],
+      "description": "구술 기록이 특정 사건에 대한 목격 증언을 포함하고 있음",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "트라우마 기억에서 비롯됨",
+      "domain": [
+        "EyewitnessTestimony"
+      ],
+      "range_": [
+        "TraumaticMemory"
+      ],
+      "description": "목격 증언이 구술자의 트라우마 기억에 근거하고 있음",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "아동기 경험 사건임",
+      "domain": [
+        "ChildWitness"
+      ],
+      "range_": [
+        "ScorchingOperation",
+        "VillageDestruction",
+        "ForcedDisplacement"
+      ],
+      "description": "해당 사건이 구술자가 아동이었던 시기에 직접 경험한 사건임",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    }
+  ],
+  "created_at": "2026-04-13T13:16:25.792661",
+  "confirmed_at": null,
+  "archived_at": null,
+  "description": "AI 자동 생성 (샘플 기반, 기반: v1_ontology)",
+  "based_on": "v1_ontology"
+}

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/history.dart';
 import '../../providers/history_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/common/app_card.dart';
+import '../../widgets/common/empty_state.dart';
 
 class ExtractionHistoryTab extends ConsumerStatefulWidget {
   const ExtractionHistoryTab({super.key});
@@ -134,16 +138,10 @@ class _ExtractionHistoryTabState
         // ── 목록 ────────────────────────────────────────────────────────────
         if (state.sessions.isEmpty)
           const Expanded(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.auto_awesome_outlined, size: 48, color: Colors.grey),
-                  SizedBox(height: 8),
-                  Text('트리플 생성 이력이 없습니다',
-                      style: TextStyle(color: Colors.grey, fontSize: 14)),
-                ],
-              ),
+            child: EmptyState(
+              icon: Icons.auto_awesome_outlined,
+              title: '트리플 생성 이력이 없습니다',
+              description: 'Step 1에서 트리플을 추출하면\n이력이 기록됩니다.',
             ),
           )
         else
@@ -197,101 +195,92 @@ class _SessionCard extends StatelessWidget {
             ? '실패'
             : '진행 중';
 
-    return GestureDetector(
+    return AppCard(
+      selected: selected,
       onTap: selectMode ? onToggle : null,
-      child: Card(
-        margin: EdgeInsets.zero,
-        color: selected ? Colors.red.withValues(alpha: 0.05) : null,
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 헤더 행
-              Row(children: [
-                if (selectMode)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Checkbox(
-                      value: selected,
-                      onChanged: (_) => onToggle(),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                  )
-                else
-                  Icon(Icons.circle, size: 10, color: statusColor),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            if (selectMode)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Checkbox(
+                  value: selected,
+                  onChanged: (_) => onToggle(),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              )
+            else
+              Icon(Icons.circle, size: 8, color: statusColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(session.ontologyVersionId,
+                  style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary),
+                  overflow: TextOverflow.ellipsis),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: statusColor.withValues(alpha: 0.35)),
+              ),
+              child: Text(statusLabel,
+                  style: AppTypography.badge.copyWith(color: statusColor)),
+            ),
+            const SizedBox(width: 8),
+            Text(session.dateLabel, style: AppTypography.caption),
+            if (!selectMode) ...[
+              const SizedBox(width: 4),
+              IconButton(
+                icon: const Icon(Icons.delete_outline,
+                    size: 15, color: AppColors.error),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: '삭제',
+                onPressed: onDelete,
+              ),
+            ],
+          ]),
+          const SizedBox(height: 6),
+          Row(children: [
+            _StatChip('기록 ${session.totalRecords}건'),
+            const SizedBox(width: 6),
+            _StatChip('추출 ${session.extractedCount}개'),
+            if (session.isCompleted) ...[
+              const SizedBox(width: 6),
+              _StatChip('확정 ${session.confirmedCount}개',
+                  color: AppColors.confirmed),
+              if (session.rejectedCount > 0) ...[
                 const SizedBox(width: 6),
-                Expanded(
-                  child: Text(session.ontologyVersionId,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, fontSize: 13),
-                      overflow: TextOverflow.ellipsis),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
-                    border:
-                        Border.all(color: statusColor.withValues(alpha: 0.4)),
-                  ),
-                  child: Text(statusLabel,
-                      style: TextStyle(fontSize: 10, color: statusColor)),
-                ),
-                const SizedBox(width: 8),
-                Text(session.dateLabel,
-                    style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                if (!selectMode) ...[
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline,
-                        size: 16, color: Colors.red),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    tooltip: '삭제',
-                    onPressed: onDelete,
-                  ),
-                ],
-              ]),
-              const SizedBox(height: 6),
-              // 통계 행
-              Row(children: [
-                _StatChip('기록 ${session.totalRecords}건'),
-                const SizedBox(width: 6),
-                _StatChip('추출 ${session.extractedCount}개'),
-                if (session.isCompleted) ...[
-                  const SizedBox(width: 6),
-                  _StatChip('확정 ${session.confirmedCount}개',
-                      color: Colors.green.shade700),
-                  if (session.rejectedCount > 0) ...[
-                    const SizedBox(width: 6),
-                    _StatChip('제외 ${session.rejectedCount}개',
-                        color: Colors.grey),
-                  ],
-                ],
-              ]),
-              if (session.records.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 4,
-                  runSpacing: 2,
-                  children: session.records
-                      .map((r) => Chip(
-                            label: Text(r.title,
-                                style: const TextStyle(fontSize: 11)),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            padding: EdgeInsets.zero,
-                            visualDensity: VisualDensity.compact,
-                          ))
-                      .toList(),
-                ),
+                _StatChip('제외 ${session.rejectedCount}개',
+                    color: AppColors.textMuted),
               ],
             ],
-          ),
-        ),
+          ]),
+          if (session.records.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 4,
+              runSpacing: 2,
+              children: session.records
+                  .map((r) => Chip(
+                        label: Text(r.title,
+                            style: AppTypography.caption),
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ))
+                  .toList(),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -307,12 +296,13 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(4),
+        color: AppColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border),
       ),
       child: Text(label,
-          style: TextStyle(
-              fontSize: 11, color: color ?? Colors.grey.shade700)),
+          style: AppTypography.caption.copyWith(
+              color: color ?? AppColors.textSecondary)),
     );
   }
 }

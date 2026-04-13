@@ -1,0 +1,454 @@
+{
+  "version_id": "고태봉+v1 온톨로지",
+  "status": "draft",
+  "classes": [
+    {
+      "name": "BirthEvent",
+      "label_ko": "출생 사건",
+      "color": "#27AE60",
+      "description": "구술자 또는 관련 인물의 출생 사실. 역사적 사건과 동일한 날짜에 발생하여 특별한 의미를 갖는 경우를 포함.",
+      "examples": [
+        "고태봉 구술자의 출생 (1948년 4월 3일, 4.3 사건 당일)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E5_Event",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E67_Birth",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.97,
+          "note": "개인의 출생 사건에 직접 대응"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.65,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "FamilyVictim",
+      "label_ko": "가족 희생자",
+      "color": "#C0392B",
+      "description": "구술자의 직계 가족 또는 친척 중 4.3 사건으로 인해 희생된 인물. 기존 Victim 클래스의 하위 개념으로, 가족 관계가 명확히 서술된 경우.",
+      "examples": [
+        "고태봉 구술자의 삼촌 (토벌대에 끌려가 사망)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.95,
+          "note": "가족 희생자는 인물 개체"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        },
+        {
+          "curie": "crm:E69_Death",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.65,
+          "note": "희생자의 사망 사건과 연결"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "CommunityVictim",
+      "label_ko": "마을 공동체 희생자",
+      "color": "#E74C3C",
+      "description": "구술자의 가족은 아니나 같은 마을·공동체에 속해 4.3 사건으로 희생된 이웃 인물. 공동체 전체의 피해를 증언하는 맥락에서 등장.",
+      "examples": [
+        "이웃집 아저씨 (토벌대에 끌려가 사망, 금능리)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E74_Group",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.93,
+          "note": "마을 희생자도 인물 개체"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.83,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "SilenceCulture",
+      "label_ko": "침묵 강요 문화",
+      "color": "#839192",
+      "description": "4.3 관련 발언을 금기시하는 사회적 분위기. '말하면 죽는다'는 공포로 인해 가정·학교·공동체에서 역사적 사실에 대한 침묵이 강요된 상태.",
+      "examples": [
+        "'말하면 죽는다'는 금기",
+        "학교에서의 4.3 언급 금지",
+        "어른들의 입막음"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.6,
+          "note": "사회적 억압 상태를 지속적 사건·상황으로 볼 수 있음"
+        },
+        {
+          "curie": "crm:E55_Type",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.58,
+          "note": "침묵 강요를 피해 유형으로 분류 가능"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "IdentityTransformation",
+      "label_ko": "정체성 변화 / 역사 인식 전환",
+      "color": "#8E44AD",
+      "description": "구술자가 4.3에 대한 수치·은폐에서 역사적 의미 부여와 자긍심으로 인식을 전환하는 내면적 과정. 생일과 역사적 사건의 날짜 일치를 부끄럼에서 특별함으로 재해석하는 경험 포함.",
+      "examples": [
+        "4월 3일 생일을 창피하게 여기다 특별하게 인식하게 됨",
+        "4.3 희생자를 기억하는 날로 생일을 재의미화"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.62,
+          "note": "의식적 인식 전환 과정을 내면적 활동으로 볼 수 있음"
+        },
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.55,
+          "note": "심리적 전환점으로서의 사건"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "ArmedSuppressionUnit",
+      "label_ko": "토벌대",
+      "color": "#7F8C8D",
+      "description": "4.3 사건 당시 마을 주민을 체포·학살한 토벌 부대. 기존 MilitaryUnit보다 구체적으로 '토벌대'로 명시된 행위 주체.",
+      "examples": [
+        "금능리 토벌대 (삼촌·이웃 주민 연행 및 살해)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E74_Group",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.9,
+          "note": "집단 행위자로서 토벌대"
+        },
+        {
+          "curie": "schema:Organization",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.78,
+          "note": ""
+        },
+        {
+          "curie": "crm:E40_Legal_Body",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.6,
+          "note": "국가 공권력 기관으로서의 측면"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "GunfireSound",
+      "label_ko": "총소리 / 폭력의 청각적 기억",
+      "color": "#B03A2E",
+      "description": "4.3 사건 당시 또는 그 직후 주민들이 경험한 총소리 등 폭력 상황의 청각적 기억. 구술에서 역사적 사건의 생생한 증거로 기능하는 감각적 경험.",
+      "examples": [
+        "어머니가 출산 중 들은 총소리 (1948년 4월 3일)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E33_Linguistic_Object",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.45,
+          "note": "구술 증언 속 언어화된 감각 기억"
+        },
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.65,
+          "note": "총격 발생 사건의 감각적 증거로서 사건의 일부"
+        }
+      ],
+      "mapping_confirmed": false
+    }
+  ],
+  "predicates": [
+    {
+      "name": "출생 사건을 가짐",
+      "domain": [
+        "OralHistoryNarrator",
+        "Victim",
+        "FamilyVictim"
+      ],
+      "range_": [
+        "BirthEvent"
+      ],
+      "description": "인물이 특정 출생 사건과 연결됨. 특히 역사적 사건과 날짜가 일치하는 경우 의미 부여.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "역사적 사건과 날짜가 일치함",
+      "domain": [
+        "BirthEvent"
+      ],
+      "range_": [
+        "HistoricalMassacreEvent",
+        "HistoricalPeriod"
+      ],
+      "description": "출생 사건의 날짜가 역사적 집단 학살 사건 또는 시기의 날짜와 동일함. 구술자의 정체성 형성에 영향을 미치는 역사적 우연의 일치.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "가족 희생자로 보유함",
+      "domain": [
+        "OralHistoryNarrator",
+        "SurvivorFamily"
+      ],
+      "range_": [
+        "FamilyVictim"
+      ],
+      "description": "구술자 또는 유가족이 4.3 사건으로 희생된 가족 구성원을 가짐.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "토벌대에 의해 연행·희생됨",
+      "domain": [
+        "FamilyVictim",
+        "CommunityVictim",
+        "Victim"
+      ],
+      "range_": [
+        "ArmedSuppressionUnit"
+      ],
+      "description": "희생자가 토벌대에 의해 강제 연행되어 살해되었음.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "토벌을 자행함",
+      "domain": [
+        "ArmedSuppressionUnit"
+      ],
+      "range_": [
+        "HistoricalMassacreEvent"
+      ],
+      "description": "토벌대가 특정 마을에서 집단 학살 행위를 자행함.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "공동체 피해를 증언함",
+      "domain": [
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "CommunityVictim"
+      ],
+      "description": "구술 기록이 마을 공동체 내 이웃의 희생을 증언하고 있음.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "침묵 강요를 경험함",
+      "domain": [
+        "OralHistoryNarrator",
+        "SurvivorFamily"
+      ],
+      "range_": [
+        "SilenceCulture"
+      ],
+      "description": "구술자나 유가족이 4.3에 대한 발언을 금기시하는 침묵 강요 문화를 경험함.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "침묵 강요의 공간임",
+      "domain": [
+        "SilenceCulture"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "침묵 강요가 이루어진 특정 공간 (가정, 학교, 마을 등).",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "정체성 전환을 경험함",
+      "domain": [
+        "OralHistoryNarrator"
+      ],
+      "range_": [
+        "IdentityTransformation"
+      ],
+      "description": "구술자가 4.3에 대한 수치나 회피에서 역사적 의미 부여와 자긍심으로의 인식 전환을 경험함.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "정체성 전환의 계기가 됨",
+      "domain": [
+        "CommemorativeAct",
+        "HistoricalMassacreEvent",
+        "BirthEvent"
+      ],
+      "range_": [
+        "IdentityTransformation"
+      ],
+      "description": "위령제 참가, 역사적 사건의 재인식, 출생일과 사건일의 일치 등이 구술자의 정체성 전환의 계기가 됨.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "청각적 기억을 포함함",
+      "domain": [
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "GunfireSound"
+      ],
+      "description": "구술 기록이 총소리 등 폭력 상황의 청각적 기억을 증언으로 포함함.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "청각적 기억의 경험 주체임",
+      "domain": [
+        "OralHistoryNarrator",
+        "SurvivorFamily"
+      ],
+      "range_": [
+        "GunfireSound"
+      ],
+      "description": "구술자 또는 가족이 사건 당시 총소리 등의 청각적 폭력을 직접 경험한 주체임.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "위령제에 참여함",
+      "domain": [
+        "OralHistoryNarrator",
+        "SurvivorFamily"
+      ],
+      "range_": [
+        "CommemorativeAct"
+      ],
+      "description": "구술자 또는 유가족이 해마다 4.3 위령제에 참여함. 생일과 위령제 날짜의 일치로 특별한 의미를 지님.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "마을 공동체 피해를 나타냄",
+      "domain": [
+        "CommunityVictim"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "마을 공동체 희생자가 특정 마을(금능리 등)에 거주하며 해당 지역의 집단적 피해를 대표함.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "사회적 낙인과 연관됨",
+      "domain": [
+        "SilenceCulture"
+      ],
+      "range_": [
+        "SocialStigma"
+      ],
+      "description": "침묵 강요 문화가 '빨갱이 가족' 등의 사회적 낙인과 긴밀히 연관되어 작동함.",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    }
+  ],
+  "created_at": "2026-04-13T10:22:15.570787",
+  "confirmed_at": null,
+  "archived_at": null,
+  "description": "AI 자동 생성 (샘플 기반, 기반: v1_ontology)",
+  "based_on": "v1_ontology"
+}

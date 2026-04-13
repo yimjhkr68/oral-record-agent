@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/ontology.dart';
+import '../../models/published_ontology.dart';
 import '../../models/triple.dart';
 import '../../providers/ontology_provider.dart';
 import '../../providers/triple_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/common/app_card.dart';
+import '../../widgets/common/empty_state.dart';
 
 // ── 클래스별 색상 (그래프 화면과 동일) ──────────────────────────────────────────
 const _classColors = <String, Color>{
@@ -33,20 +38,15 @@ class TripleStep2Review extends ConsumerWidget {
     final pending = state.pendingTriples;
 
     if (pending.isEmpty) {
-      return Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.rule_outlined, size: 56, color: Colors.grey),
-          const SizedBox(height: 12),
-          const Text('Step 1에서 트리플을 생성하면\n여기서 검토할 수 있습니다.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 16),
-          OutlinedButton(
-            onPressed: () =>
-                ref.read(tripleWorkProvider.notifier).setStep(0),
-            child: const Text('Step 1로 이동'),
-          ),
-        ]),
+      return EmptyState(
+        icon: Icons.rule_outlined,
+        title: '검토할 트리플 없음',
+        description: 'Step 1에서 트리플을 생성하면\n여기서 검토할 수 있습니다.',
+        action: OutlinedButton(
+          onPressed: () =>
+              ref.read(tripleWorkProvider.notifier).setStep(0),
+          child: const Text('Step 1로 이동'),
+        ),
       );
     }
 
@@ -62,12 +62,12 @@ class TripleStep2Review extends ConsumerWidget {
       children: [
         // ── 상단 요약 바 ──────────────────────────────────────────────────
         Container(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: AppColors.surfaceElevated,
           padding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(children: [
             _StatChip(Icons.hub_outlined, '생성 $added개',
-                Theme.of(context).colorScheme.primary),
+                AppColors.primary),
             const SizedBox(width: 6),
             if (state.editedCount > 0) ...[
               _StatChip(Icons.edit_outlined, '수정 ${state.editedCount}개',
@@ -198,7 +198,7 @@ class TripleStep2Review extends ConsumerWidget {
 
 // ── 트리플 카드 ───────────────────────────────────────────────────────────────
 
-class _TripleReviewCard extends StatefulWidget {
+class _TripleReviewCard extends ConsumerStatefulWidget {
   final int index;
   final PendingTriple triple;
   final String? ontologyVersionId;
@@ -214,10 +214,10 @@ class _TripleReviewCard extends StatefulWidget {
   });
 
   @override
-  State<_TripleReviewCard> createState() => _TripleReviewCardState();
+  ConsumerState<_TripleReviewCard> createState() => _TripleReviewCardState();
 }
 
-class _TripleReviewCardState extends State<_TripleReviewCard> {
+class _TripleReviewCardState extends ConsumerState<_TripleReviewCard> {
   bool _editing = false;
   late TextEditingController _subjCtrl;
   late TextEditingController _predCtrl;
@@ -250,15 +250,31 @@ class _TripleReviewCardState extends State<_TripleReviewCard> {
     setState(() => _editing = false);
   }
 
+  // 온톨로지 버전에서 클래스 매핑 조회
+  List<ClassMapping> _mappingsFor(String typeName) {
+    if (widget.ontologyVersionId == null) return const [];
+    final versions = ref.read(ontologyProvider).versions;
+    final version = versions.cast<OntologyVersion?>().firstWhere(
+      (v) => v?.versionId == widget.ontologyVersionId,
+      orElse: () => null,
+    );
+    return version?.classes
+            .cast<OntologyClass?>()
+            .firstWhere((c) => c?.name == typeName, orElse: () => null)
+            ?.mappings ??
+        const [];
+  }
+
   @override
   Widget build(BuildContext context) {
     final t        = widget.triple;
     final subjColor = _colorForType(t.subjectType);
     final objColor  = _colorForType(t.objectType);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppCard(
+        elevated: true,
         padding: const EdgeInsets.fromLTRB(14, 12, 10, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -266,7 +282,8 @@ class _TripleReviewCardState extends State<_TripleReviewCard> {
             // ── 주어 → 술어 → 목적어 ───────────────────────────────────────
             Row(
               children: [
-                _TypeBadge(t.subjectType, subjColor),
+                _TypeBadge(t.subjectType, subjColor,
+                    mappings: _mappingsFor(t.subjectType)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: _editing
@@ -275,12 +292,13 @@ class _TripleReviewCardState extends State<_TripleReviewCard> {
                           decoration: const InputDecoration(
                               isDense: true,
                               border: OutlineInputBorder()),
-                          style: const TextStyle(fontSize: 13),
-                          readOnly: true, // subject는 수정 불가
+                          style: AppTypography.body,
+                          readOnly: true,
                         )
                       : Text(t.subject,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 13)),
+                          style: AppTypography.body.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary)),
                 ),
               ],
             ),
@@ -293,24 +311,23 @@ class _TripleReviewCardState extends State<_TripleReviewCard> {
                           isDense: true,
                           labelText: '술어',
                           border: OutlineInputBorder()),
-                      style: const TextStyle(fontSize: 13),
+                      style: AppTypography.body,
                     )
                   : Row(children: [
                       const SizedBox(width: 4),
-                      Icon(Icons.arrow_downward,
-                          size: 14,
-                          color: Theme.of(context).colorScheme.primary),
+                      const Icon(Icons.arrow_downward,
+                          size: 13, color: AppColors.primary),
                       const SizedBox(width: 4),
                       Text(t.predicate,
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: Theme.of(context).colorScheme.primary,
+                          style: AppTypography.body.copyWith(
+                              color: AppColors.primary,
                               fontWeight: FontWeight.w600)),
                     ]),
             ),
             Row(
               children: [
-                _TypeBadge(t.objectType, objColor),
+                _TypeBadge(t.objectType, objColor,
+                    mappings: _mappingsFor(t.objectType)),
                 const SizedBox(width: 6),
                 Expanded(
                   child: _editing
@@ -320,10 +337,10 @@ class _TripleReviewCardState extends State<_TripleReviewCard> {
                               isDense: true,
                               labelText: '목적어',
                               border: OutlineInputBorder()),
-                          style: const TextStyle(fontSize: 13),
+                          style: AppTypography.body,
                         )
-                      : Text(t.object,
-                          style: const TextStyle(fontSize: 13)),
+                      : Text(t.object, style: AppTypography.body.copyWith(
+                            color: AppColors.textPrimary)),
                 ),
               ],
             ),
@@ -332,8 +349,7 @@ class _TripleReviewCardState extends State<_TripleReviewCard> {
 
             // ── 신뢰도 슬라이더 ──────────────────────────────────────────────
             Row(children: [
-              const Text('신뢰도',
-                  style: TextStyle(fontSize: 11, color: Colors.grey)),
+              Text('신뢰도', style: AppTypography.caption),
               Expanded(
                 child: Slider(
                   value: _editing ? _confidence : t.confidence,
@@ -356,8 +372,7 @@ class _TripleReviewCardState extends State<_TripleReviewCard> {
             Row(children: [
               Expanded(
                 child: Text('출처: ${t.sourceRecordId}',
-                    style: const TextStyle(
-                        fontSize: 11, color: Colors.grey),
+                    style: AppTypography.caption,
                     overflow: TextOverflow.ellipsis),
               ),
               if (_editing) ...[
@@ -547,20 +562,42 @@ class _AddTripleDialogState extends ConsumerState<_AddTripleDialog> {
 class _TypeBadge extends StatelessWidget {
   final String type;
   final Color color;
-  const _TypeBadge(this.type, this.color);
+  final List<ClassMapping> mappings;
+  const _TypeBadge(this.type, this.color, {this.mappings = const []});
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
-          border: Border.all(color: color.withValues(alpha: 0.5)),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(type.isEmpty ? '??' : type,
-            style:
-                TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
-      );
+  Widget build(BuildContext context) {
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(type.isEmpty ? '??' : type,
+            style: TextStyle(
+                fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+        if (mappings.isNotEmpty) ...[
+          const SizedBox(width: 3),
+          Icon(Icons.link, size: 9, color: color.withValues(alpha: 0.7)),
+        ],
+      ]),
+    );
+
+    if (mappings.isEmpty) return badge;
+
+    final primary = mappings.where((m) => m.isPrimary).toList();
+    final secondary = mappings.where((m) => !m.isPrimary).toList();
+    final lines = [
+      if (primary.isNotEmpty) '주: ${primary.map((m) => m.curie).join(', ')}',
+      if (secondary.isNotEmpty) '부: ${secondary.map((m) => m.curie).join(', ')}',
+    ];
+    return Tooltip(
+      message: lines.join('\n'),
+      child: badge,
+    );
+  }
 }
 
 class _StatChip extends StatelessWidget {

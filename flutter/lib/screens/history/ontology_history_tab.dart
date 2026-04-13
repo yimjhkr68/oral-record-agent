@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/history.dart';
 import '../../providers/history_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/common/app_card.dart';
+import '../../widgets/common/empty_state.dart';
 
 class OntologyHistoryTab extends ConsumerStatefulWidget {
   const OntologyHistoryTab({super.key});
@@ -132,16 +136,10 @@ class _OntologyHistoryTabState extends ConsumerState<OntologyHistoryTab> {
         // ── 목록 ────────────────────────────────────────────────────────────
         if (state.events.isEmpty)
           const Expanded(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.history_edu, size: 48, color: Colors.grey),
-                  SizedBox(height: 8),
-                  Text('온톨로지 이력이 없습니다',
-                      style: TextStyle(color: Colors.grey, fontSize: 14)),
-                ],
-              ),
+            child: EmptyState(
+              icon: Icons.history_edu_outlined,
+              title: '온톨로지 이력이 없습니다',
+              description: '온톨로지를 생성하거나 확정하면\n이력이 기록됩니다.',
             ),
           )
         else
@@ -149,8 +147,7 @@ class _OntologyHistoryTabState extends ConsumerState<OntologyHistoryTab> {
             child: ListView.separated(
               padding: const EdgeInsets.all(12),
               itemCount: state.events.length,
-              separatorBuilder: (_, __) =>
-                  const Divider(height: 1, indent: 48),
+              separatorBuilder: (_, __) => const SizedBox(height: 4),
               itemBuilder: (_, i) {
                 final event = state.events[i];
                 return _EventTile(
@@ -185,45 +182,59 @@ class _EventTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
+    return AppCard(
+      selected: selected,
       onTap: selectMode ? onToggle : null,
-      leading: selectMode
-          ? Checkbox(
-              value: selected,
-              onChanged: (_) => onToggle(),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          if (selectMode)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Checkbox(
+                value: selected,
+                onChanged: (_) => onToggle(),
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
             )
-          : _EventIcon(eventType: event.eventType),
-      title: Row(children: [
-        Text(event.versionId,
-            style: const TextStyle(
-                fontWeight: FontWeight.w600, fontSize: 13)),
-        const SizedBox(width: 8),
-        _EventChip(eventType: event.eventType),
-      ]),
-      subtitle: event.detail.isNotEmpty
-          ? Text(event.detail,
-              style: const TextStyle(fontSize: 11, color: Colors.grey))
-          : null,
-      trailing: selectMode
-          ? null
-          : Row(
-              mainAxisSize: MainAxisSize.min,
+          else
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: _EventIcon(eventType: event.eventType),
+            ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(event.dateLabel,
-                    style: const TextStyle(
-                        fontSize: 11, color: Colors.grey)),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline,
-                      size: 16, color: Colors.red),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  tooltip: '삭제',
-                  onPressed: onDelete,
-                ),
+                Row(children: [
+                  Text(event.versionId,
+                      style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary)),
+                  const SizedBox(width: 8),
+                  _EventChip(eventType: event.eventType),
+                ]),
+                if (event.detail.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(event.detail, style: AppTypography.caption),
+                ],
               ],
             ),
+          ),
+          Text(event.dateLabel, style: AppTypography.caption),
+          if (!selectMode) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.delete_outline,
+                  size: 15, color: AppColors.error),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: '삭제',
+              onPressed: onDelete,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -235,16 +246,16 @@ class _EventIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, color) = switch (eventType) {
-      'confirmed' => (Icons.check_circle, Colors.green),
-      'created'   => (Icons.add_circle_outline, Colors.blue),
-      'updated'   => (Icons.edit, Colors.orange),
-      'deleted'   => (Icons.delete_outline, Colors.red),
-      'archived'  => (Icons.archive_outlined, Colors.grey),
-      'generated' => (Icons.auto_awesome, Colors.purple),
-      'merged'    => (Icons.merge, Colors.teal),
-      _           => (Icons.circle_outlined, Colors.grey),
+      'confirmed' => (Icons.check_circle, AppColors.confirmed),
+      'created'   => (Icons.add_circle_outline, AppColors.primary),
+      'updated'   => (Icons.edit, AppColors.draft),
+      'deleted'   => (Icons.delete_outline, AppColors.error),
+      'archived'  => (Icons.archive_outlined, AppColors.archived),
+      'generated' => (Icons.auto_awesome, AppColors.secondary),
+      'merged'    => (Icons.merge, AppColors.secondary),
+      _           => (Icons.circle_outlined, AppColors.textMuted),
     };
-    return Icon(icon, color: color, size: 20);
+    return Icon(icon, color: color, size: 18);
   }
 }
 
@@ -264,14 +275,25 @@ class _EventChip extends StatelessWidget {
       'merged'    => '병합',
       _           => eventType,
     };
+    final color = switch (eventType) {
+      'confirmed' => AppColors.confirmed,
+      'created'   => AppColors.primary,
+      'updated'   => AppColors.draft,
+      'deleted'   => AppColors.error,
+      'archived'  => AppColors.archived,
+      'generated' => AppColors.secondary,
+      'merged'    => AppColors.secondary,
+      _           => AppColors.textMuted,
+    };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(label,
-          style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          style: AppTypography.badge.copyWith(color: color)),
     );
   }
 }

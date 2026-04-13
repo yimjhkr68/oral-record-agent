@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/history_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
 import 'ontology_history_tab.dart';
 import 'extraction_history_tab.dart';
 
@@ -120,8 +122,9 @@ class _SummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return Container(
+      color: AppColors.surfaceElevated,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
@@ -131,7 +134,7 @@ class _SummaryBar extends StatelessWidget {
           _Stat('추출 세션', summary.extractionSessions),
           if (summary.lastActivity.isNotEmpty)
             Text('마지막 활동: ${summary.lastActivity}',
-                style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                style: AppTypography.caption),
         ],
       ),
     );
@@ -149,12 +152,9 @@ class _Stat extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text('$value',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary)),
-        Text(label,
-            style: const TextStyle(fontSize: 11, color: Colors.grey)),
+            style: AppTypography.heading1.copyWith(
+                color: AppColors.primary, letterSpacing: 0)),
+        Text(label, style: AppTypography.caption),
       ],
     );
   }

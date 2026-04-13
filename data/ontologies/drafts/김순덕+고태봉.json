@@ -1,0 +1,648 @@
+{
+  "version_id": "김순덕+고태봉",
+  "status": "draft",
+  "classes": [
+    {
+      "name": "OralHistoryNarrator",
+      "label_ko": "구술자",
+      "color": "#4A90D9",
+      "description": "구술 면담의 주체로서 자신의 직접 경험 또는 가족·공동체를 통해 전해들은 역사적 사건을 증언하는 인물",
+      "examples": [
+        "김순덕",
+        "고태봉"
+      ],
+      "note": "",
+      "standard_tag": "rico:Person",
+      "merge_note": "OralHistoryNarrator(김순덕) + Narrator(고태봉) 통합. 도메인 명확성을 위해 OralHistoryNarrator 채택",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Interviewer",
+      "label_ko": "면담자",
+      "color": "#7B68EE",
+      "description": "구술 채록을 기획하고 수행하는 연구자 또는 아카이브 담당자",
+      "examples": [
+        "고미영 연구원",
+        "강민준 연구원"
+      ],
+      "note": "",
+      "standard_tag": "rico:Person",
+      "merge_note": "두 드래프트의 동일 클래스 중복 제거",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "HistoricalPerson",
+      "label_ko": "역사적 관련 인물",
+      "color": "#B0C4DE",
+      "description": "구술 내용에 등장하는 구술자 외의 인물로, 희생자·생존자·가족·이웃 등 사건과 직간접적으로 연관된 자. Victim(희생자)과 Survivor(생존자·유족)를 포괄하는 상위 개념",
+      "examples": [
+        "구술자의 아버지(희생자)",
+        "구술자의 어머니(유족)",
+        "삼촌",
+        "이웃집 아저씨"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "고태봉 드래프트의 HistoricalPerson 보존. Victim·Survivor를 하위 유형으로 흡수하여 인물 관계망 표현 일원화",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Victim",
+      "label_ko": "희생자",
+      "color": "#C0392B",
+      "description": "역사적 폭력 사건으로 인해 사망하거나 직접적 피해를 입은 인물. HistoricalPerson의 하위 유형",
+      "examples": [
+        "김순덕의 아버지(1949년 1월 17일 총살)",
+        "삼촌(토벌대에 연행 후 사망)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "김순덕 드래프트의 Victim 보존. HistoricalPerson의 하위 유형으로 위치 재정의",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Survivor",
+      "label_ko": "생존자·유족",
+      "color": "#E67E22",
+      "description": "학살·탄압에서 살아남거나 희생자의 가족으로서 사건의 영향을 지속적으로 받은 인물. HistoricalPerson의 하위 유형",
+      "examples": [
+        "김순덕의 어머니(4남매 홀로 양육)",
+        "김순덕(구술자 본인)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "김순덕 드래프트의 Survivor 보존. HistoricalPerson의 하위 유형으로 위치 재정의",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "PerpetratorGroup",
+      "label_ko": "가해 집단(군경·토벌대)",
+      "color": "#6C3483",
+      "description": "역사적 폭력 사건 당시 학살·진압·토벌 활동을 수행한 군·경 조직 또는 무장 집단",
+      "examples": [
+        "북촌리 진입 군인들",
+        "토벌대"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E74_Group",
+      "merge_note": "MilitaryUnit(김순덕) + ArmedForce(고태봉) 통합. 더 포괄적인 PerpetratorGroup으로 재명명",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "HistoricalEvent",
+      "label_ko": "역사적 사건(제주 4.3)",
+      "color": "#B03A2E",
+      "description": "1948~1954년 제주도에서 발생한 무장봉기 및 군경의 대규모 탄압·학살을 포괄하는 역사적 사건·시기. 개별 MassacreEvent를 포함하는 상위 개념",
+      "examples": [
+        "제주 4.3 사건(1948년 4월 3일~)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E5_Event",
+      "merge_note": "HistoricalIncident(김순덕) + HistoricalEvent(고태봉) 통합. CIDOC-CRM E4_Period/E5_Event 양면 포괄",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "MassacreEvent",
+      "label_ko": "학살 사건",
+      "color": "#922B21",
+      "description": "특정 일시·장소에서 군경에 의해 다수의 민간인이 집단 살해된 개별 사건. HistoricalEvent의 하위 사건",
+      "examples": [
+        "1949년 1월 17일 북촌리 대학살(300명 이상 사망)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E5_Event",
+      "merge_note": "김순덕 드래프트의 MassacreEvent 보존. HistoricalEvent의 하위 개념으로 위치 재정의",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "ViolentAct",
+      "label_ko": "폭력 행위·희생",
+      "color": "#FF4500",
+      "description": "역사적 사건 과정에서 발생한 학살·연행·총살·사망 등 구체적인 폭력 행위 및 그 결과. 개인 단위의 희생(사망 포함)을 표현",
+      "examples": [
+        "아버지의 총살(1949년 1월 17일)",
+        "삼촌이 토벌대에 끌려가서 죽음",
+        "이웃집 아저씨의 죽음"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "Death(김순덕) + ViolenceAct(고태봉) 통합. 개인 사망(Death)은 ViolentAct의 하위 유형으로 흡수",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "OralHistoryRecord",
+      "label_ko": "구술 기록",
+      "color": "#2E86C1",
+      "description": "면담을 통해 채록된 구술 내용을 담은 언어적 기록물로, 역사적 사료로 보존되는 아카이브 구성 요소",
+      "examples": [
+        "김순덕 구술 기록(북촌리 대학살의 기억)",
+        "고태봉 구술자 면담 기록(2026-02-10)"
+      ],
+      "note": "",
+      "standard_tag": "rico:Record",
+      "merge_note": "두 드래프트의 동일 클래스 중복 제거. CIDOC-CRM E33_Linguistic_Object 기반",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "InterviewSession",
+      "label_ko": "면담 세션",
+      "color": "#5DADE2",
+      "description": "면담자와 구술자 간에 수행된 구체적인 채록 면담 활동 및 그 맥락. 구술 기록 생산의 직접적 행위",
+      "examples": [
+        "고미영 연구원의 김순덕 면담(2026-01-15, 북촌리)",
+        "2026-02-10 금능리 면담"
+      ],
+      "note": "",
+      "standard_tag": "rico:Record",
+      "merge_note": "InterviewActivity(김순덕) + InterviewSession(고태봉) 통합. InterviewSession이 구체적 면담 단위를 더 명확히 표현",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Place",
+      "label_ko": "장소",
+      "color": "#1E8449",
+      "description": "사건·면담·구술 내용과 관련된 지리적 위치",
+      "examples": [
+        "북촌리",
+        "제주시 조천면 북촌리",
+        "금능리",
+        "제주시 한림읍 금능리"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E53_Place",
+      "merge_note": "두 드래프트의 동일 클래스 중복 제거. CIDOC-CRM E53_Place 기반",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "TimeSpan",
+      "label_ko": "시간 범위·날짜",
+      "color": "#117A65",
+      "description": "사건·면담·추모 행사와 관련된 특정 날짜, 시점 또는 역사적 시기",
+      "examples": [
+        "1949년 1월 17일",
+        "1948년 4월 3일",
+        "면담일 2026-01-15",
+        "면담일 2026-02-10",
+        "매년 위령제 시기"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E52_Time-Span",
+      "merge_note": "TimeSpan(김순덕) + TimePeriod(고태봉) 통합. CIDOC-CRM E52_Time-Span 기반",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Archive",
+      "label_ko": "아카이브",
+      "color": "#1A5276",
+      "description": "구술 기록을 수집·보존·관리하는 아카이브 기관 또는 컬렉션 체계",
+      "examples": [
+        "제주 4.3 구술기록 아카이브"
+      ],
+      "note": "",
+      "standard_tag": "rico:RecordSet",
+      "merge_note": "두 드래프트의 동일 클래스 중복 제거. CIDOC-CRM E78_Curated_Holding 기반",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "CommemorativeEvent",
+      "label_ko": "추모 행사·의례",
+      "color": "#6E2FBE",
+      "description": "희생자를 기리기 위해 수행되거나 정기적으로 개최되는 추모·위령 의례 및 행사",
+      "examples": [
+        "4월 3일 위령제",
+        "아버지 제사(비공개·비밀리에 진행)",
+        "4.3 위령제"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E5_Event",
+      "merge_note": "CommemorativeRitual(김순덕) + MemorialEvent(고태봉) 통합. 의례·행사 양면 포괄하는 CommemorativeEvent로 재명명",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "StateRecognition",
+      "label_ko": "국가 공식 인정",
+      "color": "#148F77",
+      "description": "국가가 사건의 진상을 공식적으로 인정하고 희생자 명예를 회복하는 행정·법적 행위",
+      "examples": [
+        "제주 4.3 국가 인정",
+        "희생자 명예 회복"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E73_Information_Object",
+      "merge_note": "김순덕 드래프트의 StateRecognition 보존. 구술 아카이브의 역사 인정 맥락에서 중요",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "SocialStigma",
+      "label_ko": "사회적 낙인",
+      "color": "#717D7E",
+      "description": "특정 이념적 프레임으로 피해자 가족에게 부과된 사회적 낙인과 그로 인한 억압·차별",
+      "examples": [
+        "'빨갱이 가족' 낙인",
+        "사회적 배제와 차별"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E28_Conceptual_Object",
+      "merge_note": "김순덕 드래프트의 SocialStigma 보존. SuppressedMemory와 연관되나 사회적 분류 개념으로 독립 유지",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "SuppressedMemory",
+      "label_ko": "억압된 기억·침묵",
+      "color": "#20B2AA",
+      "description": "역사적 폭력 사건에서 비롯된 심리적 트라우마, 개인의 억압된 기억, 그리고 사회적으로 강요된 침묵·금기 문화를 포괄하는 개념. 구술을 통해 표면화됨",
+      "examples": [
+        "어머니의 침묵과 혼자 울기",
+        "4월 3일 방문 잠금",
+        "'말하면 죽는다'는 금기",
+        "학교에서의 발화 금기",
+        "생일이 4.3이라는 사실에 대한 수치심",
+        "총소리를 들으며 출산한 어머니의 기억"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "Trauma(김순덕) + SilenceCulture(고태봉) + PersonalMemory(고태봉) 통합. 억압된 기억의 심리적·사회적·개인적 층위를 하나의 클래스로 표현",
+      "mappings": [],
+      "mapping_confirmed": false
+    }
+  ],
+  "predicates": [
+    {
+      "name": "구술하다",
+      "domain": [
+        "OralHistoryNarrator"
+      ],
+      "range_": [
+        "OralHistoryRecord"
+      ],
+      "description": "구술자가 자신의 경험과 기억을 언어로 진술하여 구술 기록을 생성함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "두 드래프트의 동일 속성 통합. domain을 통합된 OralHistoryNarrator로 재정의",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "면담하다",
+      "domain": [
+        "Interviewer"
+      ],
+      "range_": [
+        "OralHistoryNarrator"
+      ],
+      "description": "면담자가 구술자를 대상으로 채록 면담을 수행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "두 드래프트의 동일 속성 통합. range를 통합된 OralHistoryNarrator로 재정의",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "진행하다",
+      "domain": [
+        "Interviewer"
+      ],
+      "range_": [
+        "InterviewSession"
+      ],
+      "description": "면담자가 면담 세션을 기획하고 진행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "고태봉 드래프트의 속성 보존. range를 통합된 InterviewSession으로 유지",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "생산하다",
+      "domain": [
+        "InterviewSession"
+      ],
+      "range_": [
+        "OralHistoryRecord"
+      ],
+      "description": "면담 세션의 결과로 구술 기록이 생산됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "'면담을 수행하다(InterviewActivity→OralHistoryRecord)' + '수집되다(OralHistoryRecord→InterviewSession)' 통합 재정의. 방향을 InterviewSession→OralHistoryRecord로 명확화",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "증언하다",
+      "domain": [
+        "OralHistoryNarrator"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "MassacreEvent",
+        "ViolentAct"
+      ],
+      "description": "구술자가 자신의 경험이나 전해들은 내용을 토대로 역사적 사건 및 폭력 행위에 대해 증언함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "김순덕 드래프트의 '증언하다' 보존. range를 통합된 클래스로 재정의",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "기억하다",
+      "domain": [
+        "OralHistoryNarrator"
+      ],
+      "range_": [
+        "SuppressedMemory",
+        "HistoricalEvent",
+        "ViolentAct"
+      ],
+      "description": "구술자가 사건·경험을 기억하고 구술을 통해 표현함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "고태봉 드래프트의 '기억하다' 보존. domain을 통합된 OralHistoryNarrator로, range에 SuppressedMemory 추가",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "경험하다",
+      "domain": [
+        "OralHistoryNarrator",
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "ViolentAct",
+        "SuppressedMemory",
+        "SocialStigma"
+      ],
+      "description": "구술자 및 관련 인물이 역사적 사건, 폭력 행위, 억압된 기억, 사회적 낙인을 직간접적으로 경험함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "고태봉 드래프트의 '경험하다' 보존. SilenceCulture를 SuppressedMemory로 대체, SocialStigma 추가",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "포함하다",
+      "domain": [
+        "HistoricalEvent",
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "MassacreEvent",
+        "ViolentAct",
+        "SuppressedMemory"
+      ],
+      "description": "역사적 사건이 개별 학살 사건을 포함하고, 구술 기록이 폭력 행위 및 억압된 기억을 포함함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "'포함하다(HistoricalIncident→MassacreEvent)' + '포함하다(OralHistoryRecord→PersonalMemory)' 통합. 다중 domain/range로 재정의",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생 장소이다",
+      "domain": [
+        "MassacreEvent",
+        "ViolentAct",
+        "InterviewSession",
+        "CommemorativeEvent"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "사건·활동·행사가 특정 장소에서 발생하거나 진행됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "'발생 장소이다(김순덕)' + '발생하다(폭력행위)(고태봉)' + '진행되다(고태봉)' + '개최되다(고태봉)' 통합. domain을 통합된 클래스로 확장",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생 시점이다",
+      "domain": [
+        "MassacreEvent",
+        "ViolentAct",
+        "InterviewSession",
+        "CommemorativeEvent",
+        "HistoricalEvent"
+      ],
+      "range_": [
+        "TimeSpan"
+      ],
+      "description": "사건·활동·행사가 특정 날짜·기간에 발생하거나 진행됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "'발생 시점이다(김순덕)' + '발생하다(고태봉)' + '진행되다(고태봉)' + '개최되다(고태봉)' 통합. range를 통합된 TimeSpan으로 재정의",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "희생되다",
+      "domain": [
+        "Victim"
+      ],
+      "range_": [
+        "ViolentAct"
+      ],
+      "description": "희생자가 학살·폭력 행위로 인해 피해를 입거나 사망함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "'희생되다(김순덕)' 보존. range를 Death에서 통합된 ViolentAct로 재정의",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "자행하다",
+      "domain": [
+        "PerpetratorGroup"
+      ],
+      "range_": [
+        "ViolentAct",
+        "MassacreEvent"
+      ],
+      "description": "가해 집단(군경·토벌대)이 폭력 행위 및 학살 사건을 자행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "'학살하다(MilitaryUnit→MassacreEvent)(김순덕)' + '자행하다(ArmedForce→ViolenceAct)(고태봉)' 통합. domain을 PerpetratorGroup으로 재정의",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "피해를 입다",
+      "domain": [
+        "HistoricalPerson",
+        "Victim"
+      ],
+      "range_": [
+        "ViolentAct"
+      ],
+      "description": "역사적 관련 인물 및 희생자가 폭력 행위의 피해를 입음",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "고태봉 드래프트의 '피해를 입다' 보존. domain에 Victim 추가",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "가족 관계이다",
+      "domain": [
+        "OralHistoryNarrator",
+        "Survivor",
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "Victim",
+        "Survivor",
+        "HistoricalPerson"
+      ],
+      "description": "구술자·생존자·관련 인물이 희생자 또는 다른 관련 인물과 가족 관계(부녀, 모자, 형제 등)에 있음",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "'가족 관계이다(김순덕)' 보존. domain/range에 HistoricalPerson 추가",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "관련되다",
+      "domain": [
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "OralHistoryNarrator"
+      ],
+      "description": "역사적 관련 인물이 구술자와 가족·이웃 등의 관계로 연결됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "고태봉 드래프트의 '관련되다' 보존",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "낙인을 받다",
+      "domain": [
+        "Survivor",
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "SocialStigma"
+      ],
+      "description": "생존자·유족 및 관련 인물이 이념적 낙인을 부과받아 사회적 억압을 경험함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "김순덕 드래프트의 '낙인을 받다' 보존. domain에 HistoricalPerson 추가",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "억압된기억을겪다",
+      "domain": [
+        "OralHistoryNarrator",
+        "Survivor",
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "SuppressedMemory"
+      ],
+      "description": "구술자·생존자·관련 인물이 학살 경험으로 인한 트라우마, 개인 기억, 침묵·금기 문화를 겪음",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "'트라우마를 겪다(김순덕)' 통합 재정의. SuppressedMemory로 통합된 클래스를 range로 설정",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "추모행사에참석하다",
+      "domain": [
+        "OralHistoryNarrator",
+        "Survivor",
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "CommemorativeEvent"
+      ],
+      "description": "구술자·생존자·관련 인물이 위령제 등 추모 행사에 참석하거나 추모 의례를 수행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "'추모 의례를 수행하다(김순덕)' + '참석하다(고태봉)' 통합. CommemorativeEvent로 통합된 클래스를 range로 설정",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "공식인정을받다",
+      "domain": [
+        "Victim",
+        "HistoricalEvent"
+      ],
+      "range_": [
+        "StateRecognition"
+      ],
+      "description": "희생자 또는 역사적 사건이 국가로부터 공식적으로 인정됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "김순덕 드래프트의 '공식 인정을 받다' 보존. domain의 HistoricalIncident를 HistoricalEvent로 재정의",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "형성하다",
+      "domain": [
+        "HistoricalEvent",
+        "SocialStigma"
+      ],
+      "range_": [
+        "SuppressedMemory"
+      ],
+      "description": "역사적 사건과 사회적 낙인이 억압된 기억·침묵 문화를 형성함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "고태봉 드래프트의 '형성하다' 보존. range의 SilenceCulture를 SuppressedMemory로 재정의, domain에 SocialStigma 추가",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "소장하다",
+      "domain": [
+        "Archive"
+      ],
+      "range_": [
+        "OralHistoryRecord"
+      ],
+      "description": "아카이브가 구술 기록을 수집·보존·관리함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "'소장하다(김순덕)' + '소장되다(고태봉)' 통합. 능동형으로 정규화",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "거주하다",
+      "domain": [
+        "OralHistoryNarrator",
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "구술자 및 관련 인물이 특정 장소에 거주하거나 연고를 가짐",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "고태봉 드래프트의 '거주하다' 보존. domain의 Narrator를 OralHistoryNarrator로 재정의",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "상징하다",
+      "domain": [
+        "TimeSpan"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "CommemorativeEvent"
+      ],
+      "description": "특정 날짜(4월 3일)가 역사적 사건과 추모를 동시에 상징함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "고태봉 드래프트의 '상징하다' 보존. domain의 TimePeriod를 TimeSpan으로, range의 MemorialEvent를 CommemorativeEvent로 재정의",
+      "mapping_confirmed": false
+    }
+  ],
+  "created_at": "2026-04-13T10:39:41.773016",
+  "confirmed_at": null,
+  "archived_at": null,
+  "description": "AI 종합 병합 (김순덕 기반 온톨로지, 고태봉 기반 온톨로지)",
+  "based_on": "김순덕 기반 온톨로지"
+}

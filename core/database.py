@@ -26,6 +26,9 @@ def init_db():
                 title        TEXT NOT NULL,
                 source_type  TEXT NOT NULL CHECK(source_type IN ('text','file')),
                 file_name    TEXT DEFAULT '',
+                file_path    TEXT DEFAULT '',
+                file_ext     TEXT DEFAULT '',
+                source       TEXT DEFAULT 'manual',
                 content      TEXT NOT NULL,
                 char_count   INTEGER DEFAULT 0,
                 note         TEXT DEFAULT '',
@@ -77,4 +80,24 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_session_records
                 ON session_records(session_id);
         """)
+    # 기존 DB에 신규 컬럼 추가 (ALTER TABLE — 이미 있으면 무시)
+    _migrate_oral_records(conn)
     conn.close()
+
+
+def _migrate_oral_records(conn: sqlite3.Connection):
+    """oral_records 테이블에 신규 컬럼이 없으면 추가."""
+    existing = {
+        row[1]
+        for row in conn.execute("PRAGMA table_info(oral_records)").fetchall()
+    }
+    migrations = [
+        "ALTER TABLE oral_records ADD COLUMN file_path TEXT DEFAULT ''",
+        "ALTER TABLE oral_records ADD COLUMN file_ext  TEXT DEFAULT ''",
+        "ALTER TABLE oral_records ADD COLUMN source     TEXT DEFAULT 'manual'",
+    ]
+    col_names = ["file_path", "file_ext", "source"]
+    with conn:
+        for col, sql in zip(col_names, migrations):
+            if col not in existing:
+                conn.execute(sql)

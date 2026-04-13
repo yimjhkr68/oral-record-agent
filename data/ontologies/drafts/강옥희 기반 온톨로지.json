@@ -1,0 +1,616 @@
+{
+  "version_id": "강옥희 기반 온톨로지",
+  "status": "draft",
+  "classes": [
+    {
+      "name": "OralHistoryNarrative",
+      "label_ko": "구술 서사",
+      "color": "#7B68EE",
+      "description": "구술자가 직접 경험한 역사적 사건에 대해 증언한 구술 기록 텍스트",
+      "examples": [
+        "여덟 살에 겪은 초토화 작전 구술",
+        "마을 소개 경험 증언"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E33_Linguistic_Object",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.95,
+          "note": "구술 언어 객체로서 가장 직접적 매핑"
+        },
+        {
+          "curie": "schema:CreativeWork",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.72,
+          "note": "기록물로서의 보조 매핑"
+        },
+        {
+          "curie": "foaf:Document",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.68,
+          "note": "문서 형태의 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Narrator",
+      "label_ko": "구술자",
+      "color": "#FF6B6B",
+      "description": "역사적 사건을 직접 경험하고 구술 증언을 제공한 인물",
+      "examples": [
+        "1948년 당시 여덟 살이었던 마을 주민"
+      ],
+      "note": "",
+      "standard_tag": "rico:Person",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.95,
+          "note": "구술 행위의 주체 인물"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.9,
+          "note": "인물 보조 매핑"
+        },
+        {
+          "curie": "foaf:Person",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": "foaf 인물 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "HistoricalEvent",
+      "label_ko": "역사적 사건",
+      "color": "#FF4500",
+      "description": "구술 증언에서 언급된 제주 4.3 관련 역사적 사건 및 작전",
+      "examples": [
+        "초토화 작전",
+        "마을 방화"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E5_Event",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.92,
+          "note": "역사적 사건의 직접 매핑"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": "사건 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "ScorchingOperation",
+      "label_ko": "초토화 작전",
+      "color": "#B22222",
+      "description": "제주 4.3 당시 군경이 마을을 소각하고 주민을 강제 이주시킨 군사 작전",
+      "examples": [
+        "1948년 11월 마을 소각 작전"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.88,
+          "note": "군사 활동/행위로서의 매핑"
+        },
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.82,
+          "note": "역사적 사건으로서의 보조 매핑"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.75,
+          "note": "사건 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "VillageBurning",
+      "label_ko": "마을 방화",
+      "color": "#CD853F",
+      "description": "초토화 작전 중 군인들이 민가에 불을 지른 구체적 행위",
+      "examples": [
+        "짚 지붕 가옥 방화",
+        "1948년 11월 마을 방화"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.85,
+          "note": "구체적 방화 행위로서의 매핑"
+        },
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.78,
+          "note": "사건으로서의 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Evacuation",
+      "label_ko": "피난/대피",
+      "color": "#4682B4",
+      "description": "방화 및 군사 작전으로 인해 주민이 집을 떠나 도피한 행위",
+      "examples": [
+        "어머니가 자녀를 이끌고 불타는 집에서 탈출한 행위"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E9_Move",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.9,
+          "note": "이동/피난 행위로서 직접 매핑"
+        },
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.75,
+          "note": "활동으로서의 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "MilitaryForce",
+      "label_ko": "군인/군경",
+      "color": "#556B2F",
+      "description": "초토화 작전을 수행한 군사 세력 또는 개별 군인",
+      "examples": [
+        "마을에 들어와 방화를 실시한 군인들"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E74_Group",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.82,
+          "note": "집단적 군사 행위자로서의 매핑"
+        },
+        {
+          "curie": "schema:Organization",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.7,
+          "note": "조직으로서의 보조 매핑"
+        },
+        {
+          "curie": "crm:E39_Actor",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.78,
+          "note": "행위자로서의 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Village",
+      "label_ko": "마을",
+      "color": "#228B22",
+      "description": "구술 증언에서 언급된 피해 마을 또는 거주 공동체",
+      "examples": [
+        "불탄 마을",
+        "구술자가 거주하던 제주 마을"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E53_Place",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.88,
+          "note": "장소로서의 직접 매핑"
+        },
+        {
+          "curie": "schema:Place",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": "장소 보조 매핑"
+        },
+        {
+          "curie": "dcterms:Location",
+          "ontology_id": "dcterms",
+          "is_primary": false,
+          "confidence": 0.75,
+          "note": "위치 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Dwelling",
+      "label_ko": "가옥/주거지",
+      "color": "#8B4513",
+      "description": "구술 증언에 등장하는 주민의 거주 건물, 특히 짚 지붕 전통 가옥",
+      "examples": [
+        "짚 지붕 가옥",
+        "불태워진 집"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E27_Site",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.8,
+          "note": "건조물/유적지로서의 매핑"
+        },
+        {
+          "curie": "crm:E53_Place",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.75,
+          "note": "장소로서의 보조 매핑"
+        },
+        {
+          "curie": "schema:Place",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.7,
+          "note": "장소 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "HistoricalPeriod",
+      "label_ko": "역사적 시기",
+      "color": "#9370DB",
+      "description": "구술 증언이 지칭하는 역사적 시기 (제주 4.3 사건 시기)",
+      "examples": [
+        "1948년 11월",
+        "제주 4.3 사건 시기"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E4_Period",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E4_Period",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.92,
+          "note": "역사적 시기로서의 직접 매핑"
+        },
+        {
+          "curie": "dcterms:PeriodOfTime",
+          "ontology_id": "dcterms",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": "시기 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "FamilyMember",
+      "label_ko": "가족 구성원",
+      "color": "#FF69B4",
+      "description": "구술 증언에 등장하는 구술자의 가족, 특히 피난 과정에서 함께한 인물",
+      "examples": [
+        "어머니",
+        "자녀(구술자 포함)"
+      ],
+      "note": "",
+      "standard_tag": "rico:Family",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.93,
+          "note": "인물로서의 직접 매핑"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.88,
+          "note": "인물 보조 매핑"
+        },
+        {
+          "curie": "foaf:Person",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": "foaf 인물 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "TraumaticExperience",
+      "label_ko": "피해 경험",
+      "color": "#DC143C",
+      "description": "구술자가 직접 겪은 피해·공포·상실의 경험으로 구술에 명시된 내용",
+      "examples": [
+        "집이 불타는 것을 목격",
+        "아무것도 챙기지 못하고 도망친 경험"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E5_Event",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.78,
+          "note": "경험된 사건으로서의 매핑"
+        },
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.65,
+          "note": "활동으로서의 보조 매핑"
+        }
+      ],
+      "mapping_confirmed": false
+    }
+  ],
+  "predicates": [
+    {
+      "name": "구술함",
+      "domain": [
+        "Narrator"
+      ],
+      "range_": [
+        "OralHistoryNarrative"
+      ],
+      "description": "구술자가 구술 서사를 직접 말하고 증언하는 관계",
+      "note": "",
+      "standard_tag": "rico:isOrWasCreatedBy",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "경험함",
+      "domain": [
+        "Narrator",
+        "FamilyMember"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "ScorchingOperation",
+        "VillageBurning",
+        "Evacuation",
+        "TraumaticExperience"
+      ],
+      "description": "인물이 특정 역사적 사건이나 피해 경험을 직접 겪은 관계",
+      "note": "",
+      "standard_tag": "cidoc:P12i_was_present_at",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "수행함",
+      "domain": [
+        "MilitaryForce"
+      ],
+      "range_": [
+        "ScorchingOperation",
+        "VillageBurning"
+      ],
+      "description": "군인/군경이 초토화 작전 또는 방화 행위를 실행한 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생 장소임",
+      "domain": [
+        "HistoricalEvent",
+        "ScorchingOperation",
+        "VillageBurning",
+        "Evacuation"
+      ],
+      "range_": [
+        "Village",
+        "Dwelling"
+      ],
+      "description": "사건이나 행위가 특정 마을 또는 가옥에서 발생한 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "거주함",
+      "domain": [
+        "Narrator",
+        "FamilyMember"
+      ],
+      "range_": [
+        "Village",
+        "Dwelling"
+      ],
+      "description": "인물이 특정 마을 또는 가옥에 거주하였던 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "피난 출발지임",
+      "domain": [
+        "Dwelling",
+        "Village"
+      ],
+      "range_": [
+        "Evacuation"
+      ],
+      "description": "가옥 또는 마을이 피난 행위의 출발 장소인 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "동반함",
+      "domain": [
+        "FamilyMember"
+      ],
+      "range_": [
+        "Narrator",
+        "FamilyMember"
+      ],
+      "description": "가족 구성원이 피난 또는 경험 과정에서 다른 인물과 함께한 관계 (예: 어머니가 자녀를 이끌고 탈출)",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생 시기임",
+      "domain": [
+        "HistoricalEvent",
+        "ScorchingOperation",
+        "VillageBurning"
+      ],
+      "range_": [
+        "HistoricalPeriod"
+      ],
+      "description": "사건이 특정 역사적 시기에 발생한 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "언급함",
+      "domain": [
+        "OralHistoryNarrative"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "ScorchingOperation",
+        "VillageBurning",
+        "Evacuation",
+        "Village",
+        "Dwelling",
+        "MilitaryForce",
+        "FamilyMember",
+        "HistoricalPeriod",
+        "TraumaticExperience"
+      ],
+      "description": "구술 서사가 특정 개념이나 대상을 언급·서술하는 관계",
+      "note": "",
+      "standard_tag": "cidoc:P67_refers_to",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "포함함",
+      "domain": [
+        "ScorchingOperation"
+      ],
+      "range_": [
+        "VillageBurning",
+        "Evacuation"
+      ],
+      "description": "초토화 작전이 방화 및 피난을 구성 요소로 포함하는 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "초래함",
+      "domain": [
+        "VillageBurning",
+        "ScorchingOperation"
+      ],
+      "range_": [
+        "Evacuation",
+        "TraumaticExperience"
+      ],
+      "description": "방화 또는 초토화 작전이 피난 및 피해 경험을 유발한 인과 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "속함",
+      "domain": [
+        "ScorchingOperation",
+        "VillageBurning",
+        "Evacuation"
+      ],
+      "range_": [
+        "HistoricalPeriod"
+      ],
+      "description": "사건 및 행위가 제주 4.3 역사적 시기에 속하는 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    }
+  ],
+  "created_at": "2026-04-13T13:06:21.374974",
+  "confirmed_at": null,
+  "archived_at": null,
+  "description": "AI 자동 생성 (샘플 기반)",
+  "based_on": null
+}

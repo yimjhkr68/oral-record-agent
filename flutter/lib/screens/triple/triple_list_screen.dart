@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/triple.dart';
 import '../../providers/triple_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/common/app_card.dart';
+import '../../widgets/common/empty_state.dart';
 
 class TripleListScreen extends ConsumerStatefulWidget {
   const TripleListScreen({super.key});
@@ -57,10 +61,8 @@ class _TripleListScreenState extends ConsumerState<TripleListScreen>
           preferredSize: const Size.fromHeight(96),
           child: Column(
             children: [
-              // 검색 바
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: TextField(
                   controller: _searchCtrl,
                   decoration: InputDecoration(
@@ -87,12 +89,11 @@ class _TripleListScreenState extends ConsumerState<TripleListScreen>
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8)),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.surface,
                   ),
                   onSubmitted: (_) => _submitSearch(),
                 ),
               ),
-              // 탭 (Active | Archived)
               TabBar(
                 controller: _tabController,
                 tabs: const [
@@ -110,7 +111,8 @@ class _TripleListScreenState extends ConsumerState<TripleListScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('오류: $e', style: const TextStyle(color: Colors.red)),
+              Text('오류: $e',
+                  style: AppTypography.body.copyWith(color: AppColors.error)),
               const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () => ref.invalidate(tripleListProvider),
@@ -119,43 +121,29 @@ class _TripleListScreenState extends ConsumerState<TripleListScreen>
             ],
           ),
         ),
-        data: (graph) {
-          final triples = graph.triples;
+        data: (triples) {
           if (triples.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.list_alt_outlined,
-                      size: 64, color: Colors.grey),
-                  const SizedBox(height: 12),
-                  Text(
-                    ref.watch(tripleQueryProvider).isEmpty
-                        ? '트리플이 없습니다.\n[AI 추출]로 구술자료에서 추출하세요.'
-                        : '검색 결과가 없습니다.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                ],
-              ),
+            return EmptyState(
+              icon: Icons.list_alt_outlined,
+              title: ref.watch(tripleQueryProvider).isEmpty
+                  ? '트리플이 없습니다'
+                  : '검색 결과가 없습니다',
+              description: ref.watch(tripleQueryProvider).isEmpty
+                  ? '[AI 추출]로 구술자료에서 추출하세요.'
+                  : null,
             );
           }
           return Column(
             children: [
-              // 통계 헤더
-              _StatsBar(
-                  total: triples.length, nodes: graph.nodes.length),
-              const Divider(height: 1),
-              // 트리플 목록
+              _StatsBar(total: triples.length),
+              const Divider(height: 1, color: AppColors.border),
               Expanded(
                 child: RefreshIndicator(
-                  onRefresh: () async =>
-                      ref.invalidate(tripleListProvider),
+                  onRefresh: () async => ref.invalidate(tripleListProvider),
                   child: ListView.separated(
                     padding: const EdgeInsets.all(12),
                     itemCount: triples.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: 6),
+                    separatorBuilder: (_, __) => const SizedBox(height: 6),
                     itemBuilder: (_, i) => _TripleCard(triple: triples[i]),
                   ),
                 ),
@@ -172,18 +160,16 @@ class _TripleListScreenState extends ConsumerState<TripleListScreen>
 
 class _StatsBar extends StatelessWidget {
   final int total;
-  final int nodes;
-  const _StatsBar({required this.total, required this.nodes});
+  const _StatsBar({required this.total});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+    return Container(
+      color: AppColors.surfaceElevated,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           _Stat(label: '트리플', value: total),
-          const SizedBox(width: 20),
-          _Stat(label: '노드', value: nodes),
         ],
       ),
     );
@@ -199,11 +185,11 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(children: [
       Text('$value',
-          style: const TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 15)),
+          style: AppTypography.body.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary)),
       const SizedBox(width: 4),
-      Text(label,
-          style: const TextStyle(fontSize: 13, color: Colors.grey)),
+      Text(label, style: AppTypography.caption),
     ]);
   }
 }
@@ -218,78 +204,78 @@ class _TripleCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isArchived = triple.status == TripleStatus.archived;
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        side: BorderSide(
-            color: isArchived
-                ? Colors.grey.withValues(alpha: 0.3)
-                : Colors.blueGrey.withValues(alpha: 0.25)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 주어 → 속성 → 목적어
-            Row(
-              children: [
-                _NodeChip(label: triple.subject, type: triple.subjectType),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(children: [
-                    const Icon(Icons.arrow_forward, size: 14,
-                        color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(triple.predicate,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward, size: 14,
-                        color: Colors.grey),
-                  ]),
+    return AppCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 주어 → 속성 → 목적어
+          Row(
+            children: [
+              _NodeChip(label: triple.subject, type: triple.subjectType),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(children: [
+                  const Icon(Icons.arrow_forward, size: 14,
+                      color: AppColors.textMuted),
+                  const SizedBox(width: 4),
+                  Text(triple.predicate,
+                      style: AppTypography.body.copyWith(
+                          color: AppColors.secondary,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward, size: 14,
+                      color: AppColors.textMuted),
+                ]),
+              ),
+              _NodeChip(label: triple.object, type: triple.objectType),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              _MetaChip(
+                  icon: Icons.layers_outlined,
+                  label: triple.ontologyVersion),
+              const SizedBox(width: 6),
+              _MetaChip(
+                  icon: Icons.percent,
+                  label: '${(triple.confidence * 100).toStringAsFixed(0)}%'),
+              const SizedBox(width: 6),
+              _MetaChip(
+                  icon: Icons.calendar_today_outlined,
+                  label: triple.createdAt.length >= 10
+                      ? triple.createdAt.substring(0, 10)
+                      : triple.createdAt),
+              if (triple.note.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(triple.note,
+                      style: AppTypography.caption,
+                      overflow: TextOverflow.ellipsis),
                 ),
-                _NodeChip(label: triple.object, type: triple.objectType),
               ],
-            ),
-            const SizedBox(height: 6),
-            // 메타 정보 + 액션
-            Row(
-              children: [
-                _MetaChip(
-                    icon: Icons.layers_outlined,
-                    label: triple.ontologyVersion),
+              if (isArchived) ...[
                 const SizedBox(width: 6),
-                _MetaChip(
-                    icon: Icons.percent,
-                    label:
-                        '${(triple.confidence * 100).toStringAsFixed(0)}%'),
-                const SizedBox(width: 6),
-                _MetaChip(
-                    icon: Icons.calendar_today_outlined,
-                    label: triple.createdAt.length >= 10
-                        ? triple.createdAt.substring(0, 10)
-                        : triple.createdAt),
-                if (triple.note.isNotEmpty) ...[
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(triple.note,
-                        style: const TextStyle(
-                            fontSize: 11, color: Colors.grey),
-                        overflow: TextOverflow.ellipsis),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.archived.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                        color: AppColors.archived.withValues(alpha: 0.3)),
                   ),
-                ],
-                const Spacer(),
-                // 액션 메뉴
-                if (!isArchived)
-                  _ActionMenu(triple: triple),
+                  child: Text('아카이브',
+                      style: AppTypography.badge
+                          .copyWith(color: AppColors.archived)),
+                ),
               ],
-            ),
-          ],
-        ),
+              const Spacer(),
+              if (!isArchived) _ActionMenu(triple: triple),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -303,21 +289,22 @@ class _NodeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.blueGrey.withValues(alpha: 0.1),
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(label,
-              style: const TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w600)),
+              style: AppTypography.body.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary)),
           if (type.isNotEmpty)
-            Text(type,
-                style: const TextStyle(fontSize: 10, color: Colors.grey)),
+            Text(type, style: AppTypography.caption),
         ],
       ),
     );
@@ -332,9 +319,9 @@ class _MetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 11, color: Colors.grey),
+      Icon(icon, size: 11, color: AppColors.textMuted),
       const SizedBox(width: 3),
-      Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+      Text(label, style: AppTypography.caption),
     ]);
   }
 }
@@ -373,8 +360,8 @@ class _ActionMenu extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('오류: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('오류: $e'),
+              backgroundColor: AppColors.error),
         );
       }
     }
@@ -394,7 +381,7 @@ class _ActionMenu extends ConsumerWidget {
               child: const Text('취소')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: AppColors.error,
                 foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('삭제'),
@@ -409,8 +396,8 @@ class _ActionMenu extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('오류: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('오류: $e'),
+              backgroundColor: AppColors.error),
         );
       }
     }

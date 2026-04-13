@@ -9,11 +9,13 @@ class RecordApi {
   Future<List<OralRecord>> list({
     String q = '',
     String sourceType = '',
+    String source = '',
     int limit = 100,
   }) async {
     final res = await _client.get('/api/records/', params: {
       if (q.isNotEmpty) 'q': q,
       if (sourceType.isNotEmpty) 'source_type': sourceType,
+      if (source.isNotEmpty) 'source': source,
       'limit': limit,
     });
     final List items = res.data['records'] ?? [];
@@ -38,17 +40,29 @@ class RecordApi {
     return OralRecord.fromJson(res.data);
   }
 
-  Future<OralRecord> createFile({
-    required String filePath,
+  /// bytes 기반 파일 업로드 (Windows desktop 호환)
+  Future<OralRecord> createFileFromBytes({
+    required List<int> bytes,
     required String fileName,
     String note = '',
+    String source = 'manual',
   }) async {
     final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(filePath, filename: fileName),
-      if (note.isNotEmpty) 'note': note,
+      'file': MultipartFile.fromBytes(bytes, filename: fileName),
+      'note': note,
+      'source': source,
     });
     final res = await _client.postFormData('/api/records/file', formData);
     return OralRecord.fromJson(res.data);
+  }
+
+  /// 원본 파일 다운로드 — bytes 반환
+  Future<List<int>> downloadFile(String id) async {
+    final res = await _client.get(
+      '/api/records/$id/download',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return (res.data as List<dynamic>).cast<int>();
   }
 
   Future<OralRecord> update(

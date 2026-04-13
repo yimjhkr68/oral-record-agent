@@ -1,0 +1,654 @@
+{
+  "version_id": "강옥희+김순덕",
+  "status": "confirmed",
+  "classes": [
+    {
+      "name": "OralHistoryNarrator",
+      "label_ko": "구술자",
+      "color": "#4A90D9",
+      "description": "구술 기록의 증언자로서 역사적 사건을 직접 경험하거나 가족·공동체를 통해 전달하는 인물. 구술 서사를 생산하는 핵심 행위자",
+      "examples": [
+        "김순덕",
+        "1948년 당시 여덟 살이었던 마을 주민"
+      ],
+      "note": "",
+      "standard_tag": "rico:Person",
+      "merge_note": "OralHistoryNarrator + Narrator 통합. Narrator 제거",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Interviewer",
+      "label_ko": "면담자",
+      "color": "#7B68EE",
+      "description": "구술 채록을 수행하는 연구자 또는 아카이브 담당자",
+      "examples": [
+        "고미영 연구원"
+      ],
+      "note": "",
+      "standard_tag": "rico:Person",
+      "merge_note": "단독 클래스 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Victim",
+      "label_ko": "희생자",
+      "color": "#C0392B",
+      "description": "제주 4.3 사건 등 역사적 폭력으로 인해 사망하거나 직접적 피해를 입은 인물",
+      "examples": [
+        "김순덕의 아버지 (1949년 1월 17일 총살)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "단독 클래스 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Survivor",
+      "label_ko": "생존자·유족",
+      "color": "#E67E22",
+      "description": "학살·탄압에서 살아남거나 희생자의 가족으로서 사건의 영향을 직접 받은 인물",
+      "examples": [
+        "어머니 (4남매를 홀로 양육)",
+        "김순덕 (구술자 본인)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "단독 클래스 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "FamilyMember",
+      "label_ko": "가족 구성원",
+      "color": "#FF69B4",
+      "description": "구술 증언에 등장하는 구술자의 가족. 피난·경험 과정에서 함께한 인물로 서사 내 중요 역할을 담당",
+      "examples": [
+        "어머니",
+        "자녀(구술자 포함)"
+      ],
+      "note": "",
+      "standard_tag": "rico:Family",
+      "merge_note": "draft-강옥희에서 독립 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "MilitaryForce",
+      "label_ko": "군인/군경",
+      "color": "#6C3483",
+      "description": "제주 4.3 사건 당시 주민 학살·진압 작전·초토화 작전을 수행한 군사 세력 또는 군인 집단",
+      "examples": [
+        "북촌리에 진입하여 주민을 학살한 군인들",
+        "마을에 들어와 방화를 실시한 군인들"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "MilitaryUnit + MilitaryForce 통합",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "HistoricalEvent",
+      "label_ko": "역사적 사건",
+      "color": "#922B21",
+      "description": "구술 증언에서 언급된 역사적 사건. 특정 일시·장소에서 발생한 학살·진압·방화·군사작전 등을 포함하며, 제주 4.3 관련 구체적 사건들을 망라함",
+      "examples": [
+        "1949년 1월 17일 북촌리 대학살 (300명 이상 사망)",
+        "초토화 작전 (1948년 11월)",
+        "마을 방화",
+        "아버지의 총살"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E5_Event",
+      "merge_note": "HistoricalEvent + MassacreEvent + ScorchingOperation + VillageBurning 통합. 하위 유형은 examples로 표현",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "HistoricalPeriod",
+      "label_ko": "역사적 시기",
+      "color": "#9370DB",
+      "description": "구술 증언이 지칭하는 역사적 시기. 1948~1954년 제주 4.3 사건 전체를 포괄하는 시간적 범위를 포함",
+      "examples": [
+        "제주 4.3 사건 (1948~1954)",
+        "1948년 11월 초토화 시기"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E4_Period",
+      "merge_note": "HistoricalIncident + HistoricalPeriod 통합",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Death",
+      "label_ko": "사망·희생",
+      "color": "#641E16",
+      "description": "희생자가 총살 등 폭력 행위로 사망한 사건",
+      "examples": [
+        "아버지의 총살 (1949년 1월 17일)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E69_Death",
+      "merge_note": "단독 클래스 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Evacuation",
+      "label_ko": "피난/대피",
+      "color": "#4682B4",
+      "description": "방화 및 군사 작전으로 인해 주민이 집을 떠나 도피한 행위",
+      "examples": [
+        "어머니가 자녀를 이끌고 불타는 집에서 탈출한 행위"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "draft-강옥희에서 독립 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Place",
+      "label_ko": "장소",
+      "color": "#1E8449",
+      "description": "사건·면담·구술 내용과 관련된 지리적 위치. 마을(Village)·가옥(Dwelling) 등 하위 장소 유형을 포괄",
+      "examples": [
+        "북촌리",
+        "제주시 조천면 북촌리",
+        "불탄 마을",
+        "짚 지붕 가옥"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E53_Place",
+      "merge_note": "Place + Village + Dwelling 통합. standard_tag 원본값 그대로 유지",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "TimeSpan",
+      "label_ko": "시간 범위·날짜",
+      "color": "#117A65",
+      "description": "사건 또는 면담과 관련된 특정 날짜·기간",
+      "examples": [
+        "1949년 1월 17일",
+        "2026-01-15 (면담일)",
+        "1948년 11월"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E52_Time-Span",
+      "merge_note": "단독 클래스 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "OralHistoryRecord",
+      "label_ko": "구술 기록",
+      "color": "#2E86C1",
+      "description": "면담을 통해 채록된 구술 내용을 담은 언어적 기록물. 구술자가 직접 경험한 역사적 사건에 대해 증언한 구술 서사 텍스트를 포함",
+      "examples": [
+        "김순덕 구술 기록 (북촌리 대학살의 기억)",
+        "여덟 살에 겪은 초토화 작전 구술",
+        "마을 소개 경험 증언"
+      ],
+      "note": "",
+      "standard_tag": "rico:Record",
+      "merge_note": "OralHistoryRecord + OralHistoryNarrative 통합",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "InterviewActivity",
+      "label_ko": "면담 활동",
+      "color": "#5DADE2",
+      "description": "면담자가 구술자를 대상으로 수행한 채록 면담 행위",
+      "examples": [
+        "고미영 연구원의 김순덕 면담 (2026-01-15, 북촌리)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E7_Activity",
+      "merge_note": "단독 클래스 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Archive",
+      "label_ko": "아카이브",
+      "color": "#1A5276",
+      "description": "구술 기록을 수집·보존·관리하는 아카이브 기관 또는 컬렉션",
+      "examples": [
+        "제주 4.3 구술기록 아카이브"
+      ],
+      "note": "",
+      "standard_tag": "rico:RecordSet",
+      "merge_note": "단독 클래스 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "CommemorativeRitual",
+      "label_ko": "추모 의례",
+      "color": "#6E2FBE",
+      "description": "희생자를 기리기 위해 수행되는 제례·위령제 등의 의례 행위",
+      "examples": [
+        "4월 3일 위령제",
+        "아버지 제사 (비공개·비밀리에 진행)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E7_Activity",
+      "merge_note": "단독 클래스 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "StateRecognition",
+      "label_ko": "국가 공식 인정",
+      "color": "#148F77",
+      "description": "국가가 사건의 진상을 공식적으로 인정하고 희생자 명예를 회복하는 행정·법적 행위",
+      "examples": [
+        "제주 4.3 국가 인정",
+        "희생자 명예 회복"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E73_Information_Object",
+      "merge_note": "단독 클래스 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "SocialStigma",
+      "label_ko": "사회적 낙인",
+      "color": "#717D7E",
+      "description": "특정 이념적 프레임으로 피해자 가족에게 부과된 사회적 낙인과 그로 인한 억압·침묵",
+      "examples": [
+        "'빨갱이 가족' 낙인",
+        "제사·추모 금지·은폐"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E28_Conceptual_Object",
+      "merge_note": "단독 클래스 보존",
+      "mappings": [],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Trauma",
+      "label_ko": "트라우마·피해 경험",
+      "color": "#F0B27A",
+      "description": "학살·탄압 경험에서 비롯된 심리적 상처와 억압된 기억, 그리고 구술자가 직접 겪은 피해·공포·상실의 경험을 포괄",
+      "examples": [
+        "어머니의 침묵과 혼자 울기",
+        "4월 3일 방문 잠금",
+        "아버지 이야기 금지",
+        "집이 불타는 것을 목격",
+        "아무것도 챙기지 못하고 도망친 경험"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E28_Conceptual_Object",
+      "merge_note": "Trauma + TraumaticExperience 통합",
+      "mappings": [],
+      "mapping_confirmed": false
+    }
+  ],
+  "predicates": [
+    {
+      "name": "구술하다",
+      "domain": [
+        "OralHistoryNarrator"
+      ],
+      "range_": [
+        "OralHistoryRecord"
+      ],
+      "description": "구술자가 자신의 경험과 기억을 언어로 진술하여 구술 기록을 생성함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "OralHistoryNarrator로 도메인 재설정. '구술함' 속성과 통합",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "면담하다",
+      "domain": [
+        "Interviewer"
+      ],
+      "range_": [
+        "OralHistoryNarrator"
+      ],
+      "description": "면담자가 구술자를 대상으로 채록 면담을 수행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "도메인/범위 유지",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "면담을 수행하다",
+      "domain": [
+        "InterviewActivity"
+      ],
+      "range_": [
+        "OralHistoryRecord"
+      ],
+      "description": "면담 활동의 결과로 구술 기록이 생산됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "도메인/범위 유지",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생 장소이다",
+      "domain": [
+        "HistoricalEvent",
+        "InterviewActivity",
+        "CommemorativeRitual",
+        "Evacuation"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "사건·활동이 특정 장소에서 발생함. Village·Dwelling을 Place로 통합하여 범위 재설정",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "MassacreEvent→HistoricalEvent, Village/Dwelling→Place 반영. '발생 장소임' 속성과 통합",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생 시점이다",
+      "domain": [
+        "HistoricalEvent",
+        "Death",
+        "InterviewActivity",
+        "CommemorativeRitual"
+      ],
+      "range_": [
+        "TimeSpan"
+      ],
+      "description": "사건·활동이 특정 날짜·기간에 발생함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "MassacreEvent→HistoricalEvent 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생 시기임",
+      "domain": [
+        "HistoricalEvent",
+        "Evacuation"
+      ],
+      "range_": [
+        "HistoricalPeriod"
+      ],
+      "description": "사건이 특정 역사적 시기에 발생한 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "ScorchingOperation·VillageBurning→HistoricalEvent 반영. '속함' 속성과 통합",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "희생되다",
+      "domain": [
+        "Victim"
+      ],
+      "range_": [
+        "Death"
+      ],
+      "description": "희생자가 학살 사건으로 인해 사망함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "도메인/범위 유지",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "학살하다",
+      "domain": [
+        "MilitaryForce"
+      ],
+      "range_": [
+        "HistoricalEvent"
+      ],
+      "description": "군경이 학살·진압 사건을 자행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "MilitaryUnit→MilitaryForce, MassacreEvent→HistoricalEvent 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "포함하다",
+      "domain": [
+        "HistoricalPeriod"
+      ],
+      "range_": [
+        "HistoricalEvent"
+      ],
+      "description": "제주 4.3 역사적 시기가 개별 역사적 사건을 포함함. 초토화 작전의 구성 요소 포함 관계도 포괄",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "HistoricalIncident→HistoricalPeriod, MassacreEvent→HistoricalEvent 반영. '포함함' 속성과 통합",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "가족 관계이다",
+      "domain": [
+        "OralHistoryNarrator",
+        "Survivor",
+        "FamilyMember"
+      ],
+      "range_": [
+        "Victim",
+        "Survivor",
+        "FamilyMember"
+      ],
+      "description": "구술자·생존자·가족 구성원이 희생자 또는 다른 가족과 가족 관계에 있음",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "FamilyMember 추가 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "낙인을 받다",
+      "domain": [
+        "Survivor",
+        "FamilyMember"
+      ],
+      "range_": [
+        "SocialStigma"
+      ],
+      "description": "생존자·유족·가족 구성원이 이념적 낙인을 부과받아 사회적 억압을 경험함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "FamilyMember 도메인 추가",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "트라우마를 겪다",
+      "domain": [
+        "Survivor",
+        "OralHistoryNarrator",
+        "FamilyMember"
+      ],
+      "range_": [
+        "Trauma"
+      ],
+      "description": "생존자·구술자·가족 구성원이 학살·피난 경험으로 인한 심리적 트라우마와 피해 경험을 지속적으로 겪음",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "TraumaticExperience→Trauma, FamilyMember 추가 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "추모 의례를 수행하다",
+      "domain": [
+        "Survivor",
+        "OralHistoryNarrator",
+        "FamilyMember"
+      ],
+      "range_": [
+        "CommemorativeRitual"
+      ],
+      "description": "생존자·유족·가족 구성원이 희생자를 위한 제사·위령제 등 추모 의례를 행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "FamilyMember 도메인 추가",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "공식 인정을 받다",
+      "domain": [
+        "Victim",
+        "HistoricalPeriod"
+      ],
+      "range_": [
+        "StateRecognition"
+      ],
+      "description": "희생자 또는 역사적 사건·시기가 국가로부터 공식적으로 인정됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "HistoricalIncident→HistoricalPeriod 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "소장하다",
+      "domain": [
+        "Archive"
+      ],
+      "range_": [
+        "OralHistoryRecord"
+      ],
+      "description": "아카이브가 구술 기록을 수집·보존·관리함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "도메인/범위 유지",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "증언하다",
+      "domain": [
+        "OralHistoryNarrator"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "HistoricalPeriod",
+        "Death"
+      ],
+      "description": "구술자가 자신의 경험이나 전해들은 내용을 토대로 역사적 사건·시기·사망에 대해 증언함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "MassacreEvent→HistoricalEvent, HistoricalIncident→HistoricalPeriod 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "경험함",
+      "domain": [
+        "OralHistoryNarrator",
+        "FamilyMember"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "Evacuation",
+        "Trauma"
+      ],
+      "description": "인물이 특정 역사적 사건·피난·트라우마를 직접 겪은 관계",
+      "note": "",
+      "standard_tag": "cidoc:P12i_was_present_at",
+      "merge_note": "Narrator→OralHistoryNarrator, ScorchingOperation/VillageBurning→HistoricalEvent, TraumaticExperience→Trauma 반영. standard_tag 원본값 그대로 유지",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "수행함",
+      "domain": [
+        "MilitaryForce"
+      ],
+      "range_": [
+        "HistoricalEvent"
+      ],
+      "description": "군인/군경이 초토화 작전·방화 등 역사적 사건을 실행한 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "ScorchingOperation·VillageBurning→HistoricalEvent 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "거주함",
+      "domain": [
+        "OralHistoryNarrator",
+        "FamilyMember"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "인물이 특정 장소(마을·가옥)에 거주하였던 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "Narrator→OralHistoryNarrator, Village/Dwelling→Place 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "피난 출발지임",
+      "domain": [
+        "Place"
+      ],
+      "range_": [
+        "Evacuation"
+      ],
+      "description": "장소(가옥 또는 마을)가 피난 행위의 출발 지점인 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "Dwelling/Village→Place 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "동반함",
+      "domain": [
+        "FamilyMember"
+      ],
+      "range_": [
+        "OralHistoryNarrator",
+        "FamilyMember"
+      ],
+      "description": "가족 구성원이 피난 또는 경험 과정에서 다른 인물과 함께한 관계 (예: 어머니가 자녀를 이끌고 탈출)",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "Narrator→OralHistoryNarrator 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "언급함",
+      "domain": [
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "Evacuation",
+        "Place",
+        "MilitaryForce",
+        "FamilyMember",
+        "HistoricalPeriod",
+        "Trauma"
+      ],
+      "description": "구술 기록이 특정 사건·장소·인물·시기·경험을 언급·서술하는 관계",
+      "note": "",
+      "standard_tag": "cidoc:P67_refers_to",
+      "merge_note": "OralHistoryNarrative→OralHistoryRecord, 통합된 클래스명 반영",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "초래함",
+      "domain": [
+        "HistoricalEvent"
+      ],
+      "range_": [
+        "Evacuation",
+        "Trauma"
+      ],
+      "description": "역사적 사건(방화·초토화 작전 등)이 피난 및 트라우마를 유발한 인과 관계",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "VillageBurning/ScorchingOperation→HistoricalEvent, TraumaticExperience→Trauma 반영",
+      "mapping_confirmed": false
+    }
+  ],
+  "created_at": "2026-04-13T14:16:22.439859",
+  "confirmed_at": "2026-04-13T15:03:44.992892",
+  "archived_at": null,
+  "description": "AI 종합 병합 (김순덕 기반 온톨로지, 강옥희 기반 온톨로지)",
+  "based_on": "김순덕 기반 온톨로지"
+}

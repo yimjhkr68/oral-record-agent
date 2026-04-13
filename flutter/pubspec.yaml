@@ -32,6 +32,12 @@ dependencies:
   # 색상 유틸
   flex_color_scheme: ^7.3.0
 
+  # 폰트
+  google_fonts: ^6.2.1
+
+  # 로딩 shimmer
+  shimmer: ^3.0.0
+
   # 파일 선택
   file_picker: ^8.0.0
   flutter_colorpicker: ^1.1.0

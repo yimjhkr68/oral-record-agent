@@ -1,0 +1,791 @@
+{
+  "version_id": "고태봉 기반 온톨로지",
+  "status": "draft",
+  "classes": [
+    {
+      "name": "Narrator",
+      "label_ko": "구술자",
+      "color": "#4A90D9",
+      "description": "구술 면담의 주체로서 자신의 경험과 기억을 진술하는 인물",
+      "examples": [
+        "고태봉"
+      ],
+      "note": "",
+      "standard_tag": "rico:Person",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.95,
+          "note": "구술자는 면담의 주체 인물"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        },
+        {
+          "curie": "foaf:Person",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Interviewer",
+      "label_ko": "면담자",
+      "color": "#7B68EE",
+      "description": "구술 면담을 진행하고 기록을 수집하는 연구자 또는 담당자",
+      "examples": [
+        "강민준 연구원"
+      ],
+      "note": "",
+      "standard_tag": "rico:Person",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.92,
+          "note": "면담자는 활동을 수행하는 인물"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        },
+        {
+          "curie": "foaf:Person",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "HistoricalPerson",
+      "label_ko": "역사적 관련 인물",
+      "color": "#B0C4DE",
+      "description": "구술 내용에 등장하는 구술자 외 인물(가족, 이웃 등)로 사건과 직·간접적으로 연관된 자",
+      "examples": [
+        "구술자의 어머니",
+        "구술자의 삼촌",
+        "이웃집 아저씨"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E21_Person",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.93,
+          "note": "역사적 사건에 연루된 개별 인물"
+        },
+        {
+          "curie": "schema:Person",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.82,
+          "note": ""
+        },
+        {
+          "curie": "dcterms:Agent",
+          "ontology_id": "dcterms",
+          "is_primary": false,
+          "confidence": 0.65,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "ArmedForce",
+      "label_ko": "무장 세력/토벌대",
+      "color": "#8B0000",
+      "description": "4.3 사건 당시 진압·토벌 활동을 수행한 군·경 조직 또는 무장 집단",
+      "examples": [
+        "토벌대"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E74_Group",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.85,
+          "note": "집단적 행위자로서의 토벌대"
+        },
+        {
+          "curie": "schema:Organization",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.75,
+          "note": ""
+        },
+        {
+          "curie": "foaf:Organization",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.7,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "HistoricalEvent",
+      "label_ko": "역사적 사건",
+      "color": "#CC3300",
+      "description": "구술 내용의 핵심 배경이 되는 역사적 사건 (제주 4.3 사건)",
+      "examples": [
+        "제주 4.3 사건 (1948년 4월 3일)"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E5_Event",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.97,
+          "note": "4.3은 명확한 역사적 사건"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.88,
+          "note": ""
+        },
+        {
+          "curie": "dcterms:PeriodOfTime",
+          "ontology_id": "dcterms",
+          "is_primary": false,
+          "confidence": 0.6,
+          "note": "사건 기간 측면"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "ViolenceAct",
+      "label_ko": "폭력 행위/희생",
+      "color": "#FF4500",
+      "description": "4.3 사건 과정에서 발생한 학살, 연행, 사망 등 구체적인 폭력 행위 및 그 결과",
+      "examples": [
+        "삼촌이 토벌대에 끌려가서 죽음",
+        "이웃집 아저씨의 죽음",
+        "총소리"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E5_Event",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E69_Death",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.88,
+          "note": "희생자의 사망 사건"
+        },
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.72,
+          "note": "연행 등 행위 측면"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.65,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "MemorialEvent",
+      "label_ko": "추모 행사/위령제",
+      "color": "#9370DB",
+      "description": "4.3 희생자를 기리기 위해 정기적으로 거행되는 추모·위령 행사",
+      "examples": [
+        "4.3 위령제"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E5_Event",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.88,
+          "note": "반복적으로 수행되는 추모 활동"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": "행사/이벤트로서의 위령제"
+        },
+        {
+          "curie": "crm:E5_Event",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.7,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "SilenceCulture",
+      "label_ko": "침묵/금기 문화",
+      "color": "#708090",
+      "description": "4.3 사건에 대한 언급이 억압·금기시되어 공적·사적 담론에서 배제된 사회적 현상",
+      "examples": [
+        "'말하면 죽는다'는 금기",
+        "학교에서의 발화 금기",
+        "어른들의 입막음"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E1_CRM_Entity",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E4_Period",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.65,
+          "note": "특정 역사적 시기에 형성된 사회적 현상"
+        },
+        {
+          "curie": "crm:E55_Type",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.6,
+          "note": "사회적 관행의 유형"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "PersonalMemory",
+      "label_ko": "개인 기억/경험",
+      "color": "#20B2AA",
+      "description": "구술자가 직접 경험하거나 가족을 통해 전해들은 4.3 관련 기억과 감정",
+      "examples": [
+        "생일이 4.3이라는 사실에 대한 수치심과 자긍심의 변화",
+        "총소리를 들으며 출산한 어머니의 기억",
+        "위령제 참석 경험"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E21_Person",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E33_Linguistic_Object",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.78,
+          "note": "언어적으로 표현된 기억과 경험"
+        },
+        {
+          "curie": "schema:CreativeWork",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.55,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "OralHistoryRecord",
+      "label_ko": "구술기록",
+      "color": "#DAA520",
+      "description": "면담을 통해 수집된 구술 자료 전체로서 역사적 사료로 보존되는 기록물",
+      "examples": [
+        "고태봉 구술자 면담 기록 (2026-02-10)"
+      ],
+      "note": "",
+      "standard_tag": "rico:Record",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E33_Linguistic_Object",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.95,
+          "note": "구술은 언어적 객체의 전형"
+        },
+        {
+          "curie": "crm:E31_Document",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": "문서화된 기록물로서의 측면"
+        },
+        {
+          "curie": "schema:CreativeWork",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.75,
+          "note": ""
+        },
+        {
+          "curie": "foaf:Document",
+          "ontology_id": "foaf",
+          "is_primary": false,
+          "confidence": 0.7,
+          "note": ""
+        },
+        {
+          "curie": "schema:ArchiveComponent",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": "아카이브 구성 요소"
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "InterviewSession",
+      "label_ko": "면담 세션",
+      "color": "#3CB371",
+      "description": "구술 기록 수집을 위한 면담자와 구술자 간의 구체적인 면담 활동 및 그 맥락",
+      "examples": [
+        "2026-02-10 금능리 면담"
+      ],
+      "note": "",
+      "standard_tag": "rico:Record",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E7_Activity",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.93,
+          "note": "면담은 의도적으로 수행된 활동"
+        },
+        {
+          "curie": "schema:Event",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.78,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Place",
+      "label_ko": "장소",
+      "color": "#228B22",
+      "description": "구술 내용 및 면담과 관련된 지리적 장소",
+      "examples": [
+        "금능리",
+        "제주시 한림읍 금능리"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E53_Place",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E53_Place",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.97,
+          "note": "지리적 장소"
+        },
+        {
+          "curie": "schema:Place",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.92,
+          "note": ""
+        },
+        {
+          "curie": "dcterms:Location",
+          "ontology_id": "dcterms",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "TimePeriod",
+      "label_ko": "시간/시기",
+      "color": "#CD853F",
+      "description": "구술 내용과 관련된 특정 날짜, 시점 또는 역사적 시기",
+      "examples": [
+        "1948년 4월 3일",
+        "면담일 2026-02-10",
+        "매년 위령제 시기"
+      ],
+      "note": "",
+      "standard_tag": "cidoc:E4_Period",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E52_Time-Span",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.9,
+          "note": "시간 범위 및 기간"
+        },
+        {
+          "curie": "crm:E50_Date",
+          "ontology_id": "cidoc-crm",
+          "is_primary": false,
+          "confidence": 0.85,
+          "note": "특정 날짜 측면"
+        },
+        {
+          "curie": "dcterms:PeriodOfTime",
+          "ontology_id": "dcterms",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    },
+    {
+      "name": "Archive",
+      "label_ko": "아카이브/컬렉션",
+      "color": "#8B4513",
+      "description": "구술기록이 속하는 상위 아카이브 컬렉션 체계",
+      "examples": [
+        "제주 4.3 구술기록 아카이브"
+      ],
+      "note": "",
+      "standard_tag": "rico:RecordSet",
+      "merge_note": "",
+      "mappings": [
+        {
+          "curie": "crm:E78_Curated_Holding",
+          "ontology_id": "cidoc-crm",
+          "is_primary": true,
+          "confidence": 0.9,
+          "note": "관리·보존되는 컬렉션"
+        },
+        {
+          "curie": "schema:ArchiveComponent",
+          "ontology_id": "schema-org",
+          "is_primary": false,
+          "confidence": 0.8,
+          "note": ""
+        }
+      ],
+      "mapping_confirmed": false
+    }
+  ],
+  "predicates": [
+    {
+      "name": "구술하다",
+      "domain": [
+        "Narrator"
+      ],
+      "range_": [
+        "OralHistoryRecord"
+      ],
+      "description": "구술자가 자신의 경험과 기억을 구술기록으로 진술함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "면담하다",
+      "domain": [
+        "Interviewer"
+      ],
+      "range_": [
+        "Narrator"
+      ],
+      "description": "면담자가 구술자를 대상으로 면담을 수행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "진행하다",
+      "domain": [
+        "Interviewer"
+      ],
+      "range_": [
+        "InterviewSession"
+      ],
+      "description": "면담자가 면담 세션을 기획하고 진행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생하다",
+      "domain": [
+        "HistoricalEvent"
+      ],
+      "range_": [
+        "Place",
+        "TimePeriod"
+      ],
+      "description": "역사적 사건이 특정 장소와 시기에 발생함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "피해를 입다",
+      "domain": [
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "ViolenceAct"
+      ],
+      "description": "역사적 관련 인물이 폭력 행위의 피해를 입음",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "자행하다",
+      "domain": [
+        "ArmedForce"
+      ],
+      "range_": [
+        "ViolenceAct"
+      ],
+      "description": "무장 세력/토벌대가 폭력 행위를 자행함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "기억하다",
+      "domain": [
+        "Narrator"
+      ],
+      "range_": [
+        "PersonalMemory",
+        "HistoricalEvent",
+        "ViolenceAct"
+      ],
+      "description": "구술자가 사건 및 경험을 기억하고 증언함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "경험하다",
+      "domain": [
+        "Narrator",
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "ViolenceAct",
+        "SilenceCulture"
+      ],
+      "description": "인물이 사건이나 사회적 현상을 직·간접적으로 경험함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "참석하다",
+      "domain": [
+        "Narrator"
+      ],
+      "range_": [
+        "MemorialEvent"
+      ],
+      "description": "구술자가 위령제 등 추모 행사에 참석함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "형성하다",
+      "domain": [
+        "HistoricalEvent"
+      ],
+      "range_": [
+        "SilenceCulture"
+      ],
+      "description": "역사적 사건이 침묵·금기 문화를 형성하게 함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "포함하다",
+      "domain": [
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "PersonalMemory"
+      ],
+      "description": "구술기록이 개인 기억과 경험을 포함함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "수집되다",
+      "domain": [
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "InterviewSession"
+      ],
+      "description": "구술기록이 특정 면담 세션을 통해 수집됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "소장되다",
+      "domain": [
+        "OralHistoryRecord"
+      ],
+      "range_": [
+        "Archive"
+      ],
+      "description": "구술기록이 아카이브 컬렉션에 보존·소장됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "개최되다",
+      "domain": [
+        "MemorialEvent"
+      ],
+      "range_": [
+        "Place",
+        "TimePeriod"
+      ],
+      "description": "추모 행사가 특정 장소와 시기에 개최됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "거주하다",
+      "domain": [
+        "Narrator",
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "Place"
+      ],
+      "description": "인물이 특정 장소에 거주하거나 연고를 가짐",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "발생하다 (폭력 행위)",
+      "domain": [
+        "ViolenceAct"
+      ],
+      "range_": [
+        "Place",
+        "TimePeriod"
+      ],
+      "description": "폭력 행위가 특정 장소와 시기에 발생함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "진행되다",
+      "domain": [
+        "InterviewSession"
+      ],
+      "range_": [
+        "Place",
+        "TimePeriod"
+      ],
+      "description": "면담 세션이 특정 장소와 날짜에 진행됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "관련되다",
+      "domain": [
+        "HistoricalPerson"
+      ],
+      "range_": [
+        "Narrator"
+      ],
+      "description": "역사적 관련 인물이 구술자와 가족·이웃 등의 관계로 연결됨",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    },
+    {
+      "name": "상징하다",
+      "domain": [
+        "TimePeriod"
+      ],
+      "range_": [
+        "HistoricalEvent",
+        "MemorialEvent"
+      ],
+      "description": "특정 날짜(4월 3일)가 역사적 사건과 추모를 동시에 상징함",
+      "note": "",
+      "standard_tag": "cidoc:P1_is_identified_by",
+      "merge_note": "",
+      "mapping_confirmed": false
+    }
+  ],
+  "created_at": "2026-04-13T10:09:25.374439",
+  "confirmed_at": null,
+  "archived_at": null,
+  "description": "AI 자동 생성 (샘플 기반)",
+  "based_on": null
+}

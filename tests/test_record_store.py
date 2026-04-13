@@ -138,3 +138,65 @@ class TestGetUsage:
     def test_no_usage(self, store):
         r = store.create_text("제목", "내용")
         assert store.get_usage(r["id"]) == []
+
+
+# ── 신규 필드 (Phase 1) ───────────────────────────────────────────────────────
+
+class TestNewFields:
+    def test_create_text_source_default(self, store):
+        r = store.create_text("제목", "내용")
+        assert r["source"] == "manual"
+        assert r["file_path"] == ""
+        assert r["file_ext"] == ""
+
+    def test_create_text_source_custom(self, store):
+        r = store.create_text("제목", "내용", source="ontology")
+        assert r["source"] == "ontology"
+
+    def test_create_file_source_manual(self, store):
+        r = store.create_file("test.txt", "텍스트 내용")
+        assert r["source"] == "manual"
+        assert r["file_ext"] == "txt"
+        assert r["file_path"] == ""  # raw_bytes 없으므로 빈 문자열
+
+    def test_create_file_source_ontology(self, store):
+        r = store.create_file("interview.docx", "내용", source="ontology")
+        assert r["source"] == "ontology"
+        assert r["file_ext"] == "docx"
+
+    def test_create_file_with_raw_bytes(self, store, tmp_path):
+        """raw_bytes 전달 시 data/records/files/ 에 파일 저장."""
+        raw = b"Hello World"
+        r = store.create_file(
+            "sample.txt", "Hello World",
+            raw_bytes=raw, source="manual",
+        )
+        assert r["file_ext"] == "txt"
+        assert r["file_path"] != ""
+
+        import pathlib
+        saved = pathlib.Path(r["file_path"])
+        assert saved.exists()
+        assert saved.read_bytes() == raw
+        # 정리
+        saved.unlink(missing_ok=True)
+
+    def test_list_source_filter(self, store):
+        store.create_text("수동", "내용", source="manual")
+        store.create_file("ont.txt", "내용", source="ontology")
+        store.create_file("tri.txt", "내용", source="triple")
+
+        assert len(store.list(source="manual")) == 1
+        assert len(store.list(source="ontology")) == 1
+        assert len(store.list(source="triple")) == 1
+        assert len(store.list()) == 3
+
+    def test_list_returns_new_fields(self, store):
+        store.create_file("file.pdf", "내용", source="triple")
+        records = store.list()
+        assert len(records) == 1
+        r = records[0]
+        assert "file_ext" in r
+        assert "source" in r
+        assert r["file_ext"] == "pdf"
+        assert r["source"] == "triple"

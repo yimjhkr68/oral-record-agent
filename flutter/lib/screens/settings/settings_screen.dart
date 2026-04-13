@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../api/api_client.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/common/app_card.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -172,28 +175,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             if (!_apiKeyReady)
               const Center(child: CircularProgressIndicator())
             else
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 섹션 제목 + 유효성 배지
-                      Row(children: [
-                        const Icon(Icons.key, size: 18, color: Colors.orange),
-                        const SizedBox(width: 8),
-                        const Text('Anthropic API 키',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 15)),
-                        const SizedBox(width: 8),
-                        _ApiKeyBadge(valid: _isApiKeyValid),
-                      ]),
-                      const SizedBox(height: 4),
-                      Text(
-                        'AI 온톨로지 생성 · 트리플 추출에 사용됩니다.',
-                        style:
-                            TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                      ),
+              AppCard(
+                elevated: true,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      const Icon(Icons.key, size: 17,
+                          color: AppColors.primary),
+                      const SizedBox(width: 8),
+                      Text('Anthropic API 키',
+                          style: AppTypography.body.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary)),
+                      const SizedBox(width: 8),
+                      _ApiKeyBadge(valid: _isApiKeyValid),
+                    ]),
+                    const SizedBox(height: 4),
+                    Text(
+                      'AI 온톨로지 생성 · 트리플 추출에 사용됩니다.',
+                      style: AppTypography.caption,
+                    ),
                       const SizedBox(height: 12),
 
                       // API 키 입력창 + 저장 버튼
@@ -242,10 +245,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ],
                   ),
-                ),
               ),
 
             const SizedBox(height: 32),
+
             const Divider(),
             const SizedBox(height: 16),
 
@@ -271,14 +274,18 @@ class _ApiKeyBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      label: Text(
-        valid ? '설정됨' : '미설정',
-        style: const TextStyle(fontSize: 11, color: Colors.white),
+    final color = valid ? AppColors.confirmed : AppColors.warning;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
-      backgroundColor: valid ? Colors.green : Colors.orange,
-      padding: EdgeInsets.zero,
-      visualDensity: VisualDensity.compact,
+      child: Text(
+        valid ? '설정됨' : '미설정',
+        style: AppTypography.badge.copyWith(color: color),
+      ),
     );
   }
 }
@@ -291,11 +298,17 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text,
-        style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-            color: Theme.of(context).colorScheme.primary));
+    return Row(children: [
+      Container(
+        width: 3, height: 16,
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Text(text, style: AppTypography.heading2),
+    ]);
   }
 }
 
@@ -317,29 +330,21 @@ class _ConnectionStatus extends StatelessWidget {
       Icon(
         checking
             ? Icons.sync
-            : connected
-                ? Icons.check_circle
-                : Icons.error,
+            : connected ? Icons.check_circle : Icons.error,
         color: checking
-            ? Colors.grey
-            : connected
-                ? Colors.green
-                : Colors.red,
-        size: 18,
+            ? AppColors.textMuted
+            : connected ? AppColors.confirmed : AppColors.error,
+        size: 17,
       ),
       const SizedBox(width: 8),
       Text(
         checking
             ? '연결 확인 중...'
-            : connected
-                ? '$label 연결됨'
-                : '$label 연결 실패',
-        style: TextStyle(
+            : connected ? '$label 연결됨' : '$label 연결 실패',
+        style: AppTypography.body.copyWith(
             color: checking
-                ? Colors.grey
-                : connected
-                    ? Colors.green
-                    : Colors.red),
+                ? AppColors.textMuted
+                : connected ? AppColors.confirmed : AppColors.error),
       ),
       const SizedBox(width: 12),
       TextButton(onPressed: onRecheck, child: const Text('재확인')),
@@ -359,10 +364,10 @@ class _InfoRow extends StatelessWidget {
       child: Row(children: [
         SizedBox(
           width: 80,
-          child: Text(label,
-              style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          child: Text(label, style: AppTypography.caption),
         ),
-        Text(value, style: const TextStyle(fontSize: 13)),
+        Text(value, style: AppTypography.body.copyWith(
+            color: AppColors.textPrimary)),
       ]),
     );
   }

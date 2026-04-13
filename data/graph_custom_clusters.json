@@ -1,0 +1,16 @@
+{
+  "clusters": [
+    {
+      "id": "custom-0c6c456f",
+      "name": "구술아카이브",
+      "color": "#5C6385",
+      "created_at": "2026-04-12T06:49:38.912423Z",
+      "node_ids": [
+        "제주 4.3 구술기록 아카이브"
+      ]
+    }
+  ],
+  "node_overrides": {
+    "제주 4.3 구술기록 아카이브": "custom-0c6c456f"
+  }
+}

@@ -48,6 +48,7 @@ class LayoutNode {
   double opacity;
   bool highlighted;
   bool selected;
+  bool hidden; // true면 렌더링 skip (범주 숨김)
 
   LayoutNode({
     required this.id,
@@ -62,6 +63,7 @@ class LayoutNode {
     this.opacity = 1.0,
     this.highlighted = false,
     this.selected = false,
+    this.hidden = false,
   }) : radius = radius ?? radiusForNode(type, degree);
 
   double get baseRadius => radiusForNode(type, degree);
@@ -74,6 +76,7 @@ class LayoutEdge {
   final String predicate;
   double opacity;
   bool highlighted; // 술어 검색 매칭 강조
+  bool hidden;      // true면 렌더링 skip (범주 숨김)
 
   LayoutEdge({
     required this.sourceId,
@@ -81,5 +84,6 @@ class LayoutEdge {
     required this.predicate,
     this.opacity = 1.0,
     this.highlighted = false,
+    this.hidden = false,
   });
 }

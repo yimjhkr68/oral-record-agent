@@ -12,6 +12,10 @@ class Triple {
   final double confidence;
   final TripleStatus status;
   final String createdAt;
+  final String createdBy;
+  final String extractionMethod; // auto_extract | manual | edited
+  final String? updatedAt;
+  final String? updatedBy;
   final String note;
 
   const Triple({
@@ -26,6 +30,10 @@ class Triple {
     this.confidence = 1.0,
     this.status = TripleStatus.active,
     required this.createdAt,
+    this.createdBy = 'system',
+    this.extractionMethod = 'auto_extract',
+    this.updatedAt,
+    this.updatedBy,
     this.note = '',
   });
 
@@ -47,6 +55,10 @@ class Triple {
               ? TripleStatus.pending
               : TripleStatus.active,
       createdAt: json['created_at'] ?? '',
+      createdBy: json['created_by'] ?? 'system',
+      extractionMethod: json['extraction_method'] ?? 'auto_extract',
+      updatedAt: json['updated_at'] as String?,
+      updatedBy: json['updated_by'] as String?,
       note: json['note'] ?? '',
     );
   }

@@ -1,7 +1,8 @@
 """구술기록 API"""
 import io
-from fastapi import APIRouter, HTTPException, UploadFile, File, Query
-from fastapi.responses import JSONResponse
+from pathlib import Path
+from fastapi import APIRouter, Form, HTTPException, UploadFile, File, Query
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional
 from core.record_store import RecordStore
@@ -42,7 +43,8 @@ def create_text_record(body: TextInput):
 @router.post("/file", status_code=201)
 async def create_file_record(
     file: UploadFile = File(...),
-    note: str = Query(default=""),
+    note: str = Form(default=""),
+    source: str = Form(default="manual"),
 ):
     filename = file.filename or "unknown"
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -79,10 +81,15 @@ async def create_file_record(
     if not content:
         raise HTTPException(422, "파일에서 텍스트를 추출할 수 없습니다.")
 
+    if source not in ("manual", "ontology", "triple"):
+        source = "manual"
+
     record = store.create_file(
         file_name=filename,
         content=content,
         note=note,
+        source=source,
+        raw_bytes=raw,
     )
     return record
 
@@ -93,9 +100,11 @@ async def create_file_record(
 def list_records(
     q: str = Query(default=""),
     source_type: str = Query(default=""),
+    source: str = Query(default=""),
     limit: int = Query(default=100, ge=1, le=500),
 ):
-    records = store.list(query=q, source_type=source_type, limit=limit)
+    records = store.list(query=q, source_type=source_type,
+                         source=source, limit=limit)
     return {"records": records, "total": len(records)}
 
 
@@ -107,6 +116,26 @@ def get_record(record_id: str):
     if not record:
         raise HTTPException(404, f"레코드를 찾을 수 없습니다: {record_id}")
     return record
+
+
+# ── 파일 다운로드 ────────────────────────────────────────────────────────────────
+
+@router.get("/{record_id}/download")
+def download_record_file(record_id: str):
+    record = store.get(record_id)
+    if not record:
+        raise HTTPException(404, f"레코드를 찾을 수 없습니다: {record_id}")
+
+    file_path = record.get("file_path", "")
+    if not file_path or not Path(file_path).exists():
+        raise HTTPException(404, "저장된 원본 파일이 없습니다.")
+
+    original_name = record.get("file_name") or Path(file_path).name
+    return FileResponse(
+        path=file_path,
+        filename=original_name,
+        media_type="application/octet-stream",
+    )
 
 
 # ── 수정 ─────────────────────────────────────────────────────────────────────

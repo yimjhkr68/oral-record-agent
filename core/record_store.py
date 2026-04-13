@@ -1,8 +1,13 @@
 """구술기록 CRUD"""
 import uuid
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 from .database import get_connection
+
+# 원본 파일 저장 디렉토리
+FILES_DIR = Path(os.environ.get("RECORDS_FILES_DIR", "data/records/files"))
 
 
 def _now() -> str:
@@ -15,37 +20,61 @@ def _row_to_dict(row) -> dict:
 
 class RecordStore:
 
-    def create_text(self, title: str, content: str, note: str = "") -> dict:
+    def create_text(self, title: str, content: str, note: str = "",
+                    source: str = "manual") -> dict:
         """텍스트 직접 입력으로 기록 생성."""
         record_id = str(uuid.uuid4())
         now = _now()
         with get_connection() as conn:
             conn.execute(
                 """INSERT INTO oral_records
-                   (id, title, source_type, file_name, content, char_count,
-                    note, created_at, is_deleted)
-                   VALUES (?, ?, 'text', '', ?, ?, ?, ?, 0)""",
-                (record_id, title, content, len(content), note, now),
+                   (id, title, source_type, file_name, file_path, file_ext,
+                    source, content, char_count, note, created_at, is_deleted)
+                   VALUES (?, ?, 'text', '', '', '', ?, ?, ?, ?, ?, 0)""",
+                (record_id, title, source, content, len(content), note, now),
             )
         return self.get(record_id)
 
-    def create_file(self, file_name: str, content: str, note: str = "") -> dict:
-        """파일 업로드로 기록 생성. 제목은 파일명에서 자동 설정."""
+    def create_file(
+        self,
+        file_name: str,
+        content: str,
+        note: str = "",
+        source: str = "manual",
+        raw_bytes: bytes = b"",
+    ) -> dict:
+        """파일 업로드로 기록 생성. 제목은 파일명에서 자동 설정.
+
+        Args:
+            raw_bytes: 원본 파일 바이트. 전달하면 data/records/files/ 에 저장.
+            source:    "manual" | "ontology" | "triple"
+        """
         record_id = str(uuid.uuid4())
         title = file_name.rsplit(".", 1)[0] if "." in file_name else file_name
+        ext = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
         now = _now()
+
+        # 원본 파일 저장
+        file_path = ""
+        if raw_bytes:
+            FILES_DIR.mkdir(parents=True, exist_ok=True)
+            dest = FILES_DIR / f"{record_id}.{ext}" if ext else FILES_DIR / record_id
+            dest.write_bytes(raw_bytes)
+            file_path = str(dest)
+
         with get_connection() as conn:
             conn.execute(
                 """INSERT INTO oral_records
-                   (id, title, source_type, file_name, content, char_count,
-                    note, created_at, is_deleted)
-                   VALUES (?, ?, 'file', ?, ?, ?, ?, ?, 0)""",
-                (record_id, title, file_name, content, len(content), note, now),
+                   (id, title, source_type, file_name, file_path, file_ext,
+                    source, content, char_count, note, created_at, is_deleted)
+                   VALUES (?, ?, 'file', ?, ?, ?, ?, ?, ?, ?, ?, 0)""",
+                (record_id, title, file_name, file_path, ext,
+                 source, content, len(content), note, now),
             )
         return self.get(record_id)
 
     def list(self, query: str = "", source_type: str = "",
-             limit: int = 100) -> list[dict]:
+             source: str = "", limit: int = 100) -> list[dict]:
         """목록 조회. 최신순. 소프트 삭제 제외."""
         conn = get_connection()
         params = []
@@ -57,13 +86,16 @@ class RecordStore:
         if source_type:
             conditions.append("source_type = ?")
             params.append(source_type)
+        if source:
+            conditions.append("source = ?")
+            params.append(source)
 
         where = " AND ".join(conditions)
         params.append(limit)
 
         rows = conn.execute(
-            f"""SELECT id, title, source_type, file_name,
-                       SUBSTR(content, 1, 200) AS content_preview,
+            f"""SELECT id, title, source_type, file_name, file_path, file_ext,
+                       source, SUBSTR(content, 1, 200) AS content_preview,
                        char_count, note, created_at
                 FROM oral_records
                 WHERE {where}

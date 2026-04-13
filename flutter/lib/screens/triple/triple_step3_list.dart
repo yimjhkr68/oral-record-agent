@@ -11,6 +11,10 @@ import '../../providers/triple_provider.dart';
 import '../../api/api_client.dart';
 import '../../providers/graph_provider.dart';
 import '../../services/export_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/common/app_card.dart';
+import '../../widgets/common/empty_state.dart';
 
 // ── 추출 방법 레이블 ────────────────────────────────────────────────────────────
 String _methodLabel(String m) => switch (m) {
@@ -563,9 +567,8 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
           margin: const EdgeInsets.fromLTRB(12, 0, 12, 6),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.04),
-            border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)),
+            color: AppColors.primaryFaint,
+            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -573,10 +576,9 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
             children: [
               // 온톨로지 버전 필터
               Text('온톨로지 버전',
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600)),
+                  style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary)),
               const SizedBox(height: 6),
               InputDecorator(
                 decoration: const InputDecoration(
@@ -609,10 +611,9 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
 
               // 클래스 타입 칩 (카운트 배지 포함)
               Text('클래스 타입',
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600)),
+                  style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary)),
               const SizedBox(height: 6),
               ref.watch(categoryCountProvider).when(
                 loading: () => const SizedBox(
@@ -626,10 +627,9 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
 
               // 출처 ID 필터
               Text('출처 ID',
-                  style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600)),
+                  style: AppTypography.caption.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary)),
               const SizedBox(height: 6),
               TextField(
                 controller: _sourceFilterCtrl,
@@ -672,7 +672,7 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
             ..sort((a, b) => b.value.compareTo(a.value));
           return Container(
             height: 36,
-            color: Colors.grey.shade50,
+            color: AppColors.surfaceElevated,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -696,11 +696,9 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                     decoration: BoxDecoration(
                       color: sel
                           ? color.withValues(alpha: 0.15)
-                          : Colors.white,
+                          : AppColors.surface,
                       border: Border.all(
-                          color: sel
-                              ? color
-                              : color.withValues(alpha: 0.35),
+                          color: sel ? color : color.withValues(alpha: 0.35),
                           width: sel ? 1.5 : 1),
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -714,17 +712,19 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
                         ),
                         const SizedBox(width: 4),
                         Text(type,
-                            style: TextStyle(
+                            style: AppTypography.caption.copyWith(
                                 fontSize: 10,
                                 fontWeight: sel
                                     ? FontWeight.bold
                                     : FontWeight.normal,
-                                color: sel ? color : Colors.grey.shade700)),
+                                color: sel
+                                    ? color
+                                    : AppColors.textSecondary)),
                         const SizedBox(width: 3),
                         Text('$count',
-                            style: TextStyle(
+                            style: AppTypography.caption.copyWith(
                                 fontSize: 9,
-                                color: sel ? color : Colors.grey)),
+                                color: sel ? color : AppColors.textMuted)),
                       ],
                     ),
                   ),
@@ -856,13 +856,13 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
           final filtered = _applyFilters(tabTriples);
 
           if (tabTriples.isEmpty) {
-            return Center(
-              child: Text(
-                _tabCtrl.index == 0
-                    ? '활성 트리플이 없습니다.'
-                    : '아카이브된 트리플이 없습니다.',
-                style: const TextStyle(color: Colors.grey),
-              ),
+            return EmptyState(
+              icon: _tabCtrl.index == 0
+                  ? Icons.hub_outlined
+                  : Icons.archive_outlined,
+              title: _tabCtrl.index == 0
+                  ? '활성 트리플이 없습니다'
+                  : '아카이브된 트리플이 없습니다',
             );
           }
           return Column(children: [
@@ -870,14 +870,13 @@ class _TripleStep3ListState extends ConsumerState<TripleStep3List>
             Container(
               padding: const EdgeInsets.symmetric(
                   horizontal: 14, vertical: 5),
-              color: Colors.grey.shade50,
+              color: AppColors.surfaceElevated,
               child: Row(children: [
                 Text(
                   hasFilter
                       ? '총 ${tabTriples.length}개  →  ${filtered.length}개 표시'
                       : '총 ${tabTriples.length}개',
-                  style: TextStyle(
-                      fontSize: 11, color: Colors.grey.shade600),
+                  style: AppTypography.caption,
                 ),
                 if (_isSelecting && filtered.isNotEmpty) ...[
                   const SizedBox(width: 12),
@@ -1097,112 +1096,101 @@ class _TripleRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = triple;
     final highlight = checkMode ? checked : selected;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 6),
-      color: highlight
-          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
-          : null,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: highlight
-            ? BorderSide(
-                color: Theme.of(context).colorScheme.primary, width: 1.5)
-            : BorderSide.none,
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: AppCard(
+        selected: highlight,
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(children: [
-                // 체크박스 (선택 모드)
-                if (checkMode) ...[
-                  Checkbox(
-                    value: checked,
-                    onChanged: (_) => onTap(),
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  const SizedBox(width: 4),
-                ],
-                // 주어
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _TypeBadge(t.subjectType),
-                      const SizedBox(height: 2),
-                      RichText(
-                        overflow: TextOverflow.ellipsis,
-                        text: _highlightText(
-                          t.subject,
-                          searchQuery,
-                          baseStyle: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              // 체크박스 (선택 모드)
+              if (checkMode) ...[
+                Checkbox(
+                  value: checked,
+                  onChanged: (_) => onTap(),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                // 술어
-                Expanded(
-                  flex: 2,
-                  child: Center(
-                    child: RichText(
-                      textAlign: TextAlign.center,
+                const SizedBox(width: 4),
+              ],
+              // 주어
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TypeBadge(t.subjectType),
+                    const SizedBox(height: 2),
+                    RichText(
                       overflow: TextOverflow.ellipsis,
                       text: _highlightText(
-                        t.predicate,
+                        t.subject,
                         searchQuery,
-                        baseStyle: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600),
+                        baseStyle: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              // 술어
+              Expanded(
+                flex: 2,
+                child: Center(
+                  child: RichText(
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    text: _highlightText(
+                      t.predicate,
+                      searchQuery,
+                      baseStyle: AppTypography.body.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
-                // 목적어
-                Expanded(
-                  flex: 3,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _TypeBadge(t.objectType),
-                      const SizedBox(height: 2),
-                      RichText(
-                        overflow: TextOverflow.ellipsis,
-                        text: _highlightText(
-                          t.object,
-                          searchQuery,
-                          baseStyle: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
+              ),
+              // 목적어
+              Expanded(
+                flex: 3,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TypeBadge(t.objectType),
+                    const SizedBox(height: 2),
+                    RichText(
+                      overflow: TextOverflow.ellipsis,
+                      text: _highlightText(
+                        t.object,
+                        searchQuery,
+                        baseStyle: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                // 신뢰도
-                SizedBox(
-                  width: 36,
-                  child: Text(
-                    t.confidence.toStringAsFixed(1),
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    textAlign: TextAlign.right,
-                  ),
+              ),
+              // 신뢰도 배지
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.secondaryFaint,
+                  borderRadius: BorderRadius.circular(6),
                 ),
+                child: Text(
+                  '${(t.confidence * 100).toInt()}%',
+                  style: AppTypography.mono.copyWith(
+                      color: AppColors.secondary, fontSize: 10),
+                ),
+              ),
                 // 관리자 팝업 메뉴
                 if (isAdmin && !checkMode)
                   PopupMenuButton<String>(
@@ -1265,7 +1253,6 @@ class _TripleRow extends StatelessWidget {
             ],
           ),
         ),
-      ),
     );
   }
 }
