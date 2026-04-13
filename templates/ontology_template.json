@@ -1,0 +1,37 @@
+{
+  "export_type": "ontologies",
+  "description": "온톨로지 임포트 템플릿 — 이 형식에 맞게 작성하세요",
+  "items": [
+    {
+      "version_id": "my-ontology-v1",
+      "description": "온톨로지 설명을 입력하세요",
+      "classes": [
+        {
+          "name": "Person",
+          "label_ko": "인물",
+          "color": "#f59e0b",
+          "description": "클래스 설명",
+          "examples": ["예시1", "예시2"],
+          "standard_tag": "cidoc:E21_Person · foaf:Person"
+        },
+        {
+          "name": "Place",
+          "label_ko": "장소",
+          "color": "#10b981",
+          "description": "클래스 설명",
+          "examples": ["서귀포시"],
+          "standard_tag": "cidoc:E53_Place · schema:Place"
+        }
+      ],
+      "predicates": [
+        {
+          "name": "출생지",
+          "domain": ["Person"],
+          "range_": ["Place"],
+          "description": "인물이 태어난 장소",
+          "standard_tag": "cidoc:P98i_was_born · schema:birthPlace"
+        }
+      ]
+    }
+  ]
+}

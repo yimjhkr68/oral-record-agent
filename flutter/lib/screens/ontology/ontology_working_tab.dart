@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,31 +83,76 @@ class _WorkingListHeader extends ConsumerWidget {
               PopupMenuButton<String>(
                 icon: const Icon(Icons.upload_file_outlined,
                     size: 18, color: AppColors.textMuted),
-                tooltip: '온톨로지 임포트',
-                onSelected: (v) => _showImportDialog(context, ref, v),
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    value: 'json',
+                tooltip: '임포트 / 템플릿',
+                onSelected: (v) {
+                  if (v.startsWith('import_')) {
+                    _showImportDialog(
+                        context, ref, v.replaceFirst('import_', ''));
+                  } else if (v.startsWith('template_')) {
+                    _downloadTemplate(
+                        context, ref, v.replaceFirst('template_', ''));
+                  }
+                },
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'import_json',
                     child: Row(children: [
                       Icon(Icons.data_object, size: 16),
                       SizedBox(width: 8),
                       Text('JSON 임포트'),
                     ]),
                   ),
-                  PopupMenuItem(
-                    value: 'csv_classes',
+                  const PopupMenuItem(
+                    value: 'import_csv_classes',
                     child: Row(children: [
                       Icon(Icons.table_chart_outlined, size: 16),
                       SizedBox(width: 8),
                       Text('CSV 임포트 (클래스)'),
                     ]),
                   ),
-                  PopupMenuItem(
-                    value: 'csv_predicates',
+                  const PopupMenuItem(
+                    value: 'import_csv_predicates',
                     child: Row(children: [
                       Icon(Icons.table_chart_outlined, size: 16),
                       SizedBox(width: 8),
                       Text('CSV 임포트 (속성)'),
+                    ]),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'template_json',
+                    child: Row(children: [
+                      Icon(Icons.download_outlined,
+                          size: 16,
+                          color: AppColors.secondary),
+                      const SizedBox(width: 8),
+                      Text('JSON 템플릿 다운로드',
+                          style:
+                              TextStyle(color: AppColors.secondary)),
+                    ]),
+                  ),
+                  PopupMenuItem(
+                    value: 'template_csv_classes',
+                    child: Row(children: [
+                      Icon(Icons.download_outlined,
+                          size: 16,
+                          color: AppColors.secondary),
+                      const SizedBox(width: 8),
+                      Text('CSV 클래스 템플릿',
+                          style:
+                              TextStyle(color: AppColors.secondary)),
+                    ]),
+                  ),
+                  PopupMenuItem(
+                    value: 'template_csv_predicates',
+                    child: Row(children: [
+                      Icon(Icons.download_outlined,
+                          size: 16,
+                          color: AppColors.secondary),
+                      const SizedBox(width: 8),
+                      Text('CSV 속성 템플릿',
+                          style:
+                              TextStyle(color: AppColors.secondary)),
                     ]),
                   ),
                 ],
@@ -430,6 +476,35 @@ class _WorkingListHeader extends ConsumerWidget {
       ref.read(ontologyProvider.notifier).loadVersions();
     } catch (e) {
       if (context.mounted) _showError(context, '임포트 실패: $e');
+    }
+  }
+
+  Future<void> _downloadTemplate(
+      BuildContext context, WidgetRef ref, String templateType) async {
+    const filenames = {
+      'json':           'ontology_template.json',
+      'csv_classes':    'ontology_classes_template.csv',
+      'csv_predicates': 'ontology_predicates_template.csv',
+    };
+
+    final savePath = await FilePicker.platform.saveFile(
+      dialogTitle: '템플릿 저장',
+      fileName: filenames[templateType] ?? 'template',
+    );
+    if (savePath == null || !context.mounted) return;
+
+    try {
+      final res = await ref.read(apiClientProvider).get(
+        '/api/ontologies/templates/$templateType',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      await File(savePath).writeAsBytes(res.data as List<int>);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('템플릿 저장됨: $savePath')),
+      );
+    } catch (e) {
+      if (context.mounted) _showError(context, '다운로드 실패: $e');
     }
   }
 

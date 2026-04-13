@@ -1,0 +1,6 @@
+name,label_ko,color,description,examples,standard_tag
+Person,인물,#f59e0b,구술의 주체가 되는 사람,"구술자,면담자",cidoc:E21_Person · foaf:Person
+Place,장소,#10b981,구술에 등장하는 지명,"서귀포시,안동",cidoc:E53_Place · schema:Place
+Event,사건,#ef4444,역사적 사건,"6.25전쟁,제주4.3",cidoc:E5_Event · schema:Event
+Time,시간,#8b5cf6,시기 또는 연도,"1949년,1950년대",cidoc:E52_Time-Span
+Organization,기관,#3b82f6,단체 또는 조직,"군부대,마을청년단",cidoc:E74_Group · schema:Organization

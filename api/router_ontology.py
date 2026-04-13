@@ -7,7 +7,8 @@ import tempfile
 import os
 from typing import Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import JSONResponse
+from pathlib import Path
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from ontology.ontology_manager import (
@@ -445,10 +446,41 @@ def archive_version(version_id: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
+_TEMPLATES: dict[str, tuple[str, str]] = {
+    "json":           ("templates/ontology_template.json",           "ontology_template.json"),
+    "csv_classes":    ("templates/ontology_classes_template.csv",    "ontology_classes_template.csv"),
+    "csv_predicates": ("templates/ontology_predicates_template.csv", "ontology_predicates_template.csv"),
+}
+
+
+@router.get("/templates/{template_name}")
+def download_template(template_name: str):
+    """온톨로지 임포트 템플릿 파일 다운로드.
+    template_name: "json" | "csv_classes" | "csv_predicates"
+    """
+    if template_name not in _TEMPLATES:
+        raise HTTPException(status_code=404, detail="템플릿 없음")
+
+    rel_path, filename = _TEMPLATES[template_name]
+    path = Path(rel_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="템플릿 파일 없음")
+
+    return FileResponse(
+        path=str(path),
+        filename=filename,
+        media_type="application/octet-stream",
+    )
+
+
 @router.post("/extract-text")
-async def extract_text_from_file(file: UploadFile = File(...)):
+async def extract_text_from_file(
+    file: UploadFile = File(...),
+    source: str = "ontology",   # "ontology" | "triple" | "manual"
+    auto_register: bool = True,  # 기록 탭 자동 등록 여부
+):
     """파일(txt/pdf/docx) → 텍스트 추출 (8000자 제한).
-    반환: {"text": "추출된 텍스트", "filename": "파일명", "chars": N}
+    반환: {"text": "추출된 텍스트", "filename": "파일명", "chars": N, "record_id": "..."}
     """
     from utils.file_extractor import extract_text_from_file as _extract
 
@@ -470,7 +502,25 @@ async def extract_text_from_file(file: UploadFile = File(...)):
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
 
-    return {"text": text, "filename": filename, "chars": len(text)}
+    # 기록 탭 자동 등록
+    record_id = None
+    if auto_register and text and filename:
+        try:
+            from core.record_store import RecordStore as _RS
+            _rs = _RS()
+            rec = _rs.create_file(
+                file_name=filename,
+                content=text,
+                note=f"온톨로지 생성용 파일" if source == "ontology" else "트리플 추출용 파일",
+                source=source if source in ("ontology", "triple", "manual") else "ontology",
+                raw_bytes=content_bytes,
+            )
+            record_id = rec["id"]
+        except Exception:
+            pass  # 기록 등록 실패해도 텍스트 추출은 정상 반환
+
+    return {"text": text, "filename": filename, "chars": len(text),
+            "record_id": record_id}
 
 
 # ── 공표 클래스 매핑 CRUD ────────────────────────────────────────────────────────
