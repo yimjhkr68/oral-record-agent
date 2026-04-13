@@ -5,6 +5,10 @@ import '../../providers/ontology_provider.dart';
 import '../../providers/triple_provider.dart';
 import '../../api/api_client.dart';
 import '../../services/export_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/common/app_card.dart';
+import '../../widgets/common/empty_state.dart';
 import 'ontology_working_tab.dart'; // OntologyStatusBadge
 
 // ── [확정] 탭 — Confirmed(활성) + Archived 섹션 구분 ─────────────────────────────
@@ -38,7 +42,6 @@ class _OntologyConfirmedTabState extends ConsumerState<OntologyConfirmedTab> {
         .where((v) => v.status == OntologyStatus.archived)
         .toList();
 
-    // 목록에서 사라진 버전 선택 해제
     final validIds = {...confirmed, ...archived}.map((v) => v.versionId).toSet();
     _selected.removeWhere((id) => !validIds.contains(id));
 
@@ -103,7 +106,7 @@ class _ConfirmedListHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -113,8 +116,7 @@ class _ConfirmedListHeader extends ConsumerWidget {
             child: Row(
               children: [
                 Text('활성 $confirmedCount · 아카이브 $archivedCount',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15)),
+                    style: AppTypography.heading2),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh, size: 18),
@@ -130,20 +132,22 @@ class _ConfirmedListHeader extends ConsumerWidget {
           if (selected.isNotEmpty)
             Container(
               margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
+                color: AppColors.primaryFaint,
                 borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
                   Text('${selected.length}개 선택됨',
-                      style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w500)),
+                      style: AppTypography.caption.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary)),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.download_outlined, size: 18),
+                    icon: const Icon(Icons.download_outlined, size: 18,
+                        color: AppColors.primary),
                     tooltip: '내보내기',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -151,7 +155,8 @@ class _ConfirmedListHeader extends ConsumerWidget {
                   ),
                   const SizedBox(width: 4),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 16),
+                    icon: const Icon(Icons.close, size: 16,
+                        color: AppColors.textMuted),
                     tooltip: '선택 해제',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -173,26 +178,10 @@ class _EmptyConfirmedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle_outline,
-                size: 48, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
-            Text('확정된 버전이 없습니다.',
-                style: TextStyle(color: Colors.grey.shade600)),
-            const SizedBox(height: 6),
-            Text(
-              '[작업 중] 탭의 Draft를 확정하면\n여기에 표시됩니다.',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return const EmptyState(
+      icon: Icons.check_circle_outline,
+      title: '확정된 버전이 없습니다',
+      description: '[작업 중] 탭의 Draft를 확정하면\n여기에 표시됩니다.',
     );
   }
 }
@@ -221,7 +210,7 @@ class _ConfirmedVersionList extends ConsumerWidget {
         if (confirmed.isNotEmpty) ...[
           _SectionHeader(
             icon: Icons.circle,
-            iconColor: Colors.green.shade600,
+            iconColor: AppColors.confirmed,
             label: '활성 (${confirmed.length})',
           ),
           ...confirmed.map((v) => _VersionTile(
@@ -234,11 +223,11 @@ class _ConfirmedVersionList extends ConsumerWidget {
               )),
         ],
         if (confirmed.isNotEmpty && archived.isNotEmpty)
-          const Divider(height: 1),
+          const Divider(height: 1, color: AppColors.border),
         if (archived.isNotEmpty) ...[
           _SectionHeader(
             icon: Icons.circle_outlined,
-            iconColor: Colors.grey.shade500,
+            iconColor: AppColors.archived,
             label: '아카이브 (${archived.length})',
           ),
           ...archived.map((v) => _VersionTile(
@@ -273,10 +262,9 @@ class _SectionHeader extends StatelessWidget {
           Icon(icon, size: 10, color: iconColor),
           const SizedBox(width: 6),
           Text(label,
-              style: TextStyle(
-                  fontSize: 12,
+              style: AppTypography.caption.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700)),
+                  color: AppColors.textSecondary)),
         ],
       ),
     );
@@ -307,16 +295,16 @@ class _VersionTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: isDetailSelected
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+              ? AppColors.primary.withValues(alpha: 0.08)
               : null,
           border: Border(
             left: BorderSide(
               color: isDetailSelected
-                  ? Theme.of(context).colorScheme.primary
+                  ? AppColors.primary
                   : Colors.transparent,
               width: 3,
             ),
-            bottom: BorderSide(color: Colors.grey.shade100),
+            bottom: BorderSide(color: AppColors.border.withValues(alpha: 0.5)),
           ),
         ),
         child: Row(
@@ -336,13 +324,13 @@ class _VersionTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(version.versionId,
-                      style: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w500),
+                      style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary),
                       overflow: TextOverflow.ellipsis),
                   Text(
                       '클래스 ${version.classes.length}개 · 속성 ${version.predicates.length}개',
-                      style: TextStyle(
-                          fontSize: 11, color: Colors.grey.shade600)),
+                      style: AppTypography.caption),
                 ],
               ),
             ),
@@ -363,17 +351,10 @@ class _ConfirmedDetailPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(ontologyProvider).selectedVersion;
     if (selected == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check_circle_outline,
-                size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            const Text('좌측에서 버전을 선택하세요.',
-                style: TextStyle(color: Colors.grey)),
-          ],
-        ),
+      return const EmptyState(
+        icon: Icons.check_circle_outline,
+        title: '버전을 선택하세요',
+        description: '좌측에서 확정 버전을 선택하면\n상세 내용이 표시됩니다.',
       );
     }
     return _ConfirmedDetail(version: selected);
@@ -393,12 +374,8 @@ class _ConfirmedDetail extends ConsumerStatefulWidget {
 class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
-
-  // 이름 편집 (활성만)
   bool _isEditingName = false;
   late final TextEditingController _nameCtrl;
-
-  // 리포트 접기/펼치기
   bool _reportExpanded = false;
 
   @override
@@ -431,8 +408,6 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
   bool get isConfirmed => v.status == OntologyStatus.confirmed;
   bool get isArchived  => v.status == OntologyStatus.archived;
 
-  // ── 이름 저장 ─────────────────────────────────────────────────────────────
-
   Future<void> _saveName() async {
     final newId = _nameCtrl.text.trim();
     if (newId.isEmpty || newId == v.versionId) {
@@ -448,10 +423,7 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
     }
   }
 
-  // ── 삭제 (force) ─────────────────────────────────────────────────────────
-
   Future<void> _deleteVersion() async {
-    // 연결된 트리플 수 조회
     int tripleCount = 0;
     try {
       final triples = await ref
@@ -508,8 +480,6 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
     }
   }
 
-  // ── 아카이브 ──────────────────────────────────────────────────────────────
-
   Future<void> _archiveVersion() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -538,7 +508,7 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
   void _snack(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor: isError ? Colors.red : null,
+      backgroundColor: isError ? AppColors.error : null,
     ));
   }
 
@@ -557,13 +527,12 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+            border: Border(bottom: BorderSide(color: AppColors.border)),
           ),
           child: Row(
             children: [
               OntologyStatusBadge(status: v.status),
               const SizedBox(width: 10),
-              // 이름 표시 / 인라인 편집 (활성만 편집 가능)
               if (_isEditingName && isConfirmed)
                 SizedBox(
                   width: 200,
@@ -576,23 +545,24 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
                       contentPadding:
                           EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     ),
-                    style: const TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.bold),
+                    style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary),
                     onSubmitted: (_) => _saveName(),
                   ),
                 )
               else
                 Flexible(
                   child: Text(v.versionId,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 15),
+                      style: AppTypography.heading2,
                       overflow: TextOverflow.ellipsis),
                 ),
               if (isConfirmed) ...[
                 IconButton(
                   icon: Icon(
                       _isEditingName ? Icons.check : Icons.edit_outlined,
-                      size: 16),
+                      size: 16,
+                      color: AppColors.textSecondary),
                   tooltip: _isEditingName ? '저장' : '이름 변경',
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -609,8 +579,8 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
                 OutlinedButton(
                   onPressed: _archiveVersion,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey.shade700,
-                    side: BorderSide(color: Colors.grey.shade400),
+                    foregroundColor: AppColors.archived,
+                    side: BorderSide(color: AppColors.archived),
                   ),
                   child: const Text('아카이브'),
                 ),
@@ -619,18 +589,22 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
               OutlinedButton(
                 onPressed: _deleteVersion,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red,
-                  side: const BorderSide(color: Colors.red),
+                  foregroundColor: AppColors.error,
+                  side: const BorderSide(color: AppColors.error),
                 ),
                 child: const Text('삭제'),
               ),
               if (isArchived) ...[
                 const SizedBox(width: 8),
-                Chip(
-                  label: const Text('읽기 전용',
-                      style: TextStyle(fontSize: 11)),
-                  backgroundColor: Colors.grey.withValues(alpha: 0.15),
-                  side: BorderSide.none,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.archived.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.archived.withValues(alpha: 0.3)),
+                  ),
+                  child: Text('읽기 전용',
+                      style: AppTypography.badge.copyWith(color: AppColors.archived)),
                 ),
               ],
             ],
@@ -638,7 +612,8 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
         ),
 
         // ── 메타 정보 ──────────────────────────────────────────────────────
-        Padding(
+        Container(
+          color: AppColors.surfaceElevated,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Row(children: [
             _Meta('생성일', createdStr),
@@ -652,7 +627,7 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
             _Meta('속성', '${v.predicates.length}개'),
           ]),
         ),
-        const Divider(height: 1),
+        const Divider(height: 1, color: AppColors.border),
 
         // ── 탭 ────────────────────────────────────────────────────────────
         TabBar(
@@ -674,7 +649,7 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
 
         // ── 종합 원칙 리포트 ─────────────────────────────────────────────
         if (v.description.isNotEmpty) ...[
-          const Divider(height: 1),
+          const Divider(height: 1, color: AppColors.border),
           InkWell(
             onTap: () =>
                 setState(() => _reportExpanded = !_reportExpanded),
@@ -683,21 +658,19 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  Icon(Icons.summarize_outlined,
-                      size: 16, color: Colors.grey.shade600),
+                  const Icon(Icons.summarize_outlined,
+                      size: 16, color: AppColors.textSecondary),
                   const SizedBox(width: 8),
                   Text('종합 원칙 리포트',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey.shade700)),
+                      style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.w500)),
                   const Spacer(),
                   Icon(
                     _reportExpanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
                     size: 18,
-                    color: Colors.grey.shade500,
+                    color: AppColors.textMuted,
                   ),
                 ],
               ),
@@ -706,17 +679,16 @@ class _ConfirmedDetailState extends ConsumerState<_ConfirmedDetail>
           if (_reportExpanded)
             Container(
               width: double.infinity,
-              margin:
-                  const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                border: Border.all(color: Colors.grey.shade200),
+                color: AppColors.surfaceElevated,
+                border: Border.all(color: AppColors.border),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: SelectableText(
                 v.description,
-                style: const TextStyle(fontSize: 13, height: 1.6),
+                style: AppTypography.body,
               ),
             ),
         ],
@@ -734,18 +706,12 @@ class _Meta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        style: const TextStyle(fontSize: 12, color: Colors.grey),
-        children: [
-          TextSpan(text: '$label: '),
-          TextSpan(
-              text: value,
-              style: const TextStyle(
-                  color: Colors.black87, fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Text('$label: ', style: AppTypography.caption),
+      Text(value,
+          style: AppTypography.caption.copyWith(
+              color: AppColors.textPrimary, fontWeight: FontWeight.w500)),
+    ]);
   }
 }
 
@@ -758,8 +724,8 @@ class _ClassesReadOnly extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (version.classes.isEmpty) {
-      return const Center(
-          child: Text('클래스 없음', style: TextStyle(color: Colors.grey)));
+      return Center(
+          child: Text('클래스 없음', style: AppTypography.caption));
     }
     return ListView.separated(
       padding: const EdgeInsets.all(12),
@@ -767,12 +733,8 @@ class _ClassesReadOnly extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (_, i) {
         final cls = version.classes[i];
-        return Container(
+        return AppCard(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade200),
-            borderRadius: BorderRadius.circular(6),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -788,33 +750,36 @@ class _ClassesReadOnly extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(cls.name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 14)),
+                      style: AppTypography.body.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary)),
                   if (cls.labelKo.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     Text('(${cls.labelKo})',
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600)),
+                        style: AppTypography.caption),
                   ],
                   if (cls.standardTag.isNotEmpty) ...[
                     const Spacer(),
-                    Chip(
-                      label: Text(cls.standardTag,
-                          style: const TextStyle(
-                              fontSize: 11, fontFamily: 'monospace')),
-                      backgroundColor: Colors.blue.shade50,
-                      side: BorderSide(color: Colors.blue.shade200),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      padding: EdgeInsets.zero,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                            color: AppColors.secondary.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(cls.standardTag,
+                          style: AppTypography.badge.copyWith(
+                              color: AppColors.secondary,
+                              fontFamily: 'monospace')),
                     ),
                   ],
                 ],
               ),
               if (cls.description.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(cls.description,
-                    style: TextStyle(
-                        fontSize: 12, color: Colors.grey.shade700)),
+                Text(cls.description, style: AppTypography.caption),
               ],
             ],
           ),
@@ -828,7 +793,7 @@ class _ClassesReadOnly extends StatelessWidget {
       final h = hex.replaceAll('#', '');
       return Color(int.parse('FF$h', radix: 16));
     } catch (_) {
-      return Colors.grey;
+      return AppColors.textMuted;
     }
   }
 }
@@ -842,8 +807,8 @@ class _PredicatesReadOnly extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (version.predicates.isEmpty) {
-      return const Center(
-          child: Text('속성 없음', style: TextStyle(color: Colors.grey)));
+      return Center(
+          child: Text('속성 없음', style: AppTypography.caption));
     }
     return ListView.separated(
       padding: const EdgeInsets.all(12),
@@ -851,12 +816,8 @@ class _PredicatesReadOnly extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 6),
       itemBuilder: (_, i) {
         final p = version.predicates[i];
-        return Container(
+        return AppCard(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade200),
-            borderRadius: BorderRadius.circular(6),
-          ),
           child: Row(
             children: [
               Expanded(
@@ -864,26 +825,31 @@ class _PredicatesReadOnly extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(p.name,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w500, fontSize: 13)),
+                        style: AppTypography.body.copyWith(
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textPrimary)),
                     if (p.domain.isNotEmpty || p.range.isNotEmpty)
                       Text(
                         '${p.domain.join(', ')} → ${p.range.join(', ')}',
-                        style: TextStyle(
-                            fontSize: 11, color: Colors.grey.shade600),
+                        style: AppTypography.caption,
                       ),
                   ],
                 ),
               ),
               if (p.standardTag.isNotEmpty)
-                Chip(
-                  label: Text(p.standardTag,
-                      style: const TextStyle(
-                          fontSize: 11, fontFamily: 'monospace')),
-                  backgroundColor: Colors.purple.shade50,
-                  side: BorderSide(color: Colors.purple.shade200),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  padding: EdgeInsets.zero,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(p.standardTag,
+                      style: AppTypography.badge.copyWith(
+                          color: AppColors.primary,
+                          fontFamily: 'monospace')),
                 ),
             ],
           ),

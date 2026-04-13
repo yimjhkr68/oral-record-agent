@@ -5,6 +5,9 @@ import '../../providers/ontology_provider.dart';
 import '../../api/api_client.dart';
 import '../../api/ontology_api.dart';
 import '../../services/export_service.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/common/empty_state.dart';
 import 'ontology_working_tab.dart'; // OntologyStatusBadge
 import 'mapping_card.dart';
 
@@ -32,7 +35,6 @@ class _OntologyStandardTabState extends ConsumerState<OntologyStandardTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(ontologyProvider);
-    // 표준화 탭: Draft 버전 전체 표시 (매핑 작업 가능)
     final drafts = state.versions
         .where((v) => v.status == OntologyStatus.draft)
         .toList();
@@ -97,7 +99,7 @@ class _StandardListHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -106,9 +108,7 @@ class _StandardListHeader extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(12, 12, 8, 8),
             child: Row(
               children: [
-                Text('표준화 초안 ($count)',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15)),
+                Text('표준화 초안 ($count)', style: AppTypography.heading2),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.refresh, size: 18),
@@ -124,20 +124,23 @@ class _StandardListHeader extends ConsumerWidget {
           if (selected.isNotEmpty)
             Container(
               margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
+                color: AppColors.primaryFaint,
                 borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
                   Text('${selected.length}개 선택됨',
-                      style: const TextStyle(
-                          fontSize: 12, fontWeight: FontWeight.w500)),
+                      style: AppTypography.caption.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary)),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.download_outlined, size: 18),
+                    icon: const Icon(Icons.download_outlined, size: 18,
+                        color: AppColors.primary),
                     tooltip: '내보내기',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -145,7 +148,8 @@ class _StandardListHeader extends ConsumerWidget {
                   ),
                   const SizedBox(width: 4),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 16),
+                    icon: const Icon(Icons.close, size: 16,
+                        color: AppColors.textMuted),
                     tooltip: '선택 해제',
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
@@ -167,29 +171,10 @@ class _EmptyStandardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.schema_outlined,
-                size: 48, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
-            Text(
-              'Draft 온톨로지가 없습니다.',
-              style: TextStyle(color: Colors.grey.shade600),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '[작업 중] 탭에서 새 Draft를 생성하거나\nAI로 자동 생성하세요.',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return const EmptyState(
+      icon: Icons.schema_outlined,
+      title: 'Draft 온톨로지가 없습니다',
+      description: '[작업 중] 탭에서 새 Draft를 생성하거나\nAI로 자동 생성하세요.',
     );
   }
 }
@@ -221,23 +206,20 @@ class _StandardVersionList extends ConsumerWidget {
           onTap: () =>
               ref.read(ontologyProvider.notifier).selectVersion(v),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
               color: isDetailSelected
-                  ? Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1)
+                  ? AppColors.primary.withValues(alpha: 0.08)
                   : null,
               border: Border(
                 left: BorderSide(
                   color: isDetailSelected
-                      ? Theme.of(context).colorScheme.primary
+                      ? AppColors.primary
                       : Colors.transparent,
                   width: 3,
                 ),
-                bottom: BorderSide(color: Colors.grey.shade100),
+                bottom: BorderSide(
+                    color: AppColors.border.withValues(alpha: 0.5)),
               ),
             ),
             child: Row(
@@ -248,8 +230,7 @@ class _StandardVersionList extends ConsumerWidget {
                   child: Checkbox(
                     value: inExport,
                     onChanged: (_) => onToggle(v.versionId),
-                    materialTapTargetSize:
-                        MaterialTapTargetSize.shrinkWrap,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -258,14 +239,12 @@ class _StandardVersionList extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(v.versionId,
-                          style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500),
+                          style: AppTypography.body.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary),
                           overflow: TextOverflow.ellipsis),
                       Text('표준 태그 $taggedCount/${v.classes.length}개',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade600)),
+                          style: AppTypography.caption),
                     ],
                   ),
                 ),
@@ -288,17 +267,10 @@ class _MappingDetailPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(ontologyProvider);
     if (state.selectedVersion == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.schema_outlined,
-                size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            const Text('좌측에서 버전을 선택하세요.',
-                style: TextStyle(color: Colors.grey)),
-          ],
-        ),
+      return const EmptyState(
+        icon: Icons.schema_outlined,
+        title: '버전을 선택하세요',
+        description: '좌측에서 Draft 버전을 선택하면\n매핑 편집기가 표시됩니다.',
       );
     }
     return _MappingEditor(version: state.selectedVersion!);
@@ -317,16 +289,13 @@ class _MappingEditor extends ConsumerStatefulWidget {
 
 class _MappingEditorState extends ConsumerState<_MappingEditor>
     with SingleTickerProviderStateMixin {
-  // 이름 편집
   bool _isEditingName = false;
   late final TextEditingController _nameCtrl;
 
-  // 매핑 상태
   bool _loading = false;
   List<MappingItem> _classItems = [];
   List<MappingItem> _predItems = [];
 
-  // 내부 탭
   late final TabController _innerTab;
 
   @override
@@ -363,8 +332,6 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
 
   OntologyApi get _api => OntologyApi(ref.read(apiClientProvider));
 
-  // ── 매핑 로드 ─────────────────────────────────────────────────────────────
-
   Future<void> _loadMappings() async {
     setState(() => _loading = true);
     try {
@@ -380,8 +347,6 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
       if (mounted) setState(() => _loading = false);
     }
   }
-
-  // ── 단일 저장 ─────────────────────────────────────────────────────────────
 
   Future<void> _onSaveClass(String name, String tag, bool confirmed) async {
     setState(() {
@@ -400,7 +365,8 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('클래스 매핑 저장 실패: $e'),
+          SnackBar(
+              content: Text('클래스 매핑 저장 실패: $e'),
               backgroundColor: Colors.orange),
         );
       }
@@ -424,14 +390,13 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('속성 매핑 저장 실패: $e'),
+          SnackBar(
+              content: Text('속성 매핑 저장 실패: $e'),
               backgroundColor: Colors.orange),
         );
       }
     }
   }
-
-  // ── 전체 자동 적용 (클래스 탭 기준) ─────────────────────────────────────────
 
   Future<void> _applyAll() async {
     final updated = _classItems.map((item) {
@@ -462,8 +427,6 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
     }
   }
 
-  // ── 전체 확정 (클래스 탭 기준) ───────────────────────────────────────────────
-
   Future<void> _confirmAll() async {
     final updated = _classItems.map((item) {
       if (item.currentTag.isNotEmpty) return item.copyWith(isConfirmed: true);
@@ -490,8 +453,6 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
     }
   }
 
-  // ── 이름 저장 ─────────────────────────────────────────────────────────────
-
   Future<void> _saveName() async {
     final newId = _nameCtrl.text.trim();
     if (newId.isEmpty || newId == v.versionId) {
@@ -507,8 +468,6 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
     }
   }
 
-  // ── 버전 확정 ─────────────────────────────────────────────────────────────
-
   Future<void> _confirmVersion(BuildContext context) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -522,7 +481,7 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
               child: const Text('취소')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF388E3C),
+                backgroundColor: AppColors.confirmed,
                 foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('확정'),
@@ -543,8 +502,6 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
     }
   }
 
-  // ── 버전 삭제 ─────────────────────────────────────────────────────────────
-
   Future<void> _deleteVersion(BuildContext context) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -557,7 +514,7 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
               child: const Text('취소')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red, foregroundColor: Colors.white),
+                backgroundColor: AppColors.error, foregroundColor: Colors.white),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('삭제'),
           ),
@@ -571,64 +528,46 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
   void _snack(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor: isError ? Colors.red : null,
+      backgroundColor: isError ? AppColors.error : null,
       duration: const Duration(seconds: 2),
     ));
   }
-
-  // ── 통계 ─────────────────────────────────────────────────────────────────
 
   int get _confirmedClassCount =>
       _classItems.where((item) => item.isConfirmed).length;
   int get _confirmedPredCount =>
       _predItems.where((item) => item.isConfirmed).length;
 
-  // ── Build ─────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
-    ref.watch(ontologyProvider); // 버전 변경 시 rebuild 유지
+    ref.watch(ontologyProvider);
     return Column(
       children: [
-        // ── 헤더 ────────────────────────────────────────────────────────────
         _buildHeader(context),
-
-        // ── 액션 버튼 바 ─────────────────────────────────────────────────────
         _buildActionBar(),
-
-        // ── 내부 탭 바 ──────────────────────────────────────────────────────
         Material(
           color: Colors.transparent,
           child: TabBar(
             controller: _innerTab,
-            labelStyle:
-                const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            unselectedLabelStyle: const TextStyle(fontSize: 13),
+            labelStyle: AppTypography.body.copyWith(fontWeight: FontWeight.w500),
+            unselectedLabelStyle: AppTypography.body,
             tabs: [
-              Tab(
-                  text:
-                      '클래스 매핑  $_confirmedClassCount/${_classItems.length}'),
-              Tab(
-                  text:
-                      '속성 매핑  $_confirmedPredCount/${_predItems.length}'),
+              Tab(text: '클래스 매핑  $_confirmedClassCount/${_classItems.length}'),
+              Tab(text: '속성 매핑  $_confirmedPredCount/${_predItems.length}'),
             ],
           ),
         ),
-        const Divider(height: 1),
-
-        // ── 컨텐츠 ──────────────────────────────────────────────────────────
+        const Divider(height: 1, color: AppColors.border),
         Expanded(
           child: _loading
               ? const Center(child: CircularProgressIndicator())
               : TabBarView(
                   controller: _innerTab,
                   children: [
-                    _buildMappingList(
-                        _classItems,
+                    _buildMappingList(_classItems,
                         (name, tag, confirmed) =>
                             _onSaveClass(name, tag, confirmed)),
-                    _buildMappingList(
-                        _predItems,
+                    _buildMappingList(_predItems,
                         (name, tag, confirmed) =>
                             _onSavePred(name, tag, confirmed)),
                   ],
@@ -642,13 +581,12 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
           const OntologyStatusBadge(status: OntologyStatus.draft),
           const SizedBox(width: 10),
-          // 이름 인라인 편집
           if (_isEditingName)
             SizedBox(
               width: 200,
@@ -661,22 +599,23 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
                   contentPadding:
                       EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 ),
-                style: const TextStyle(
-                    fontSize: 15, fontWeight: FontWeight.bold),
+                style: AppTypography.body.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary),
                 onSubmitted: (_) => _saveName(),
               ),
             )
           else
             Flexible(
               child: Text(v.versionId,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 15),
+                  style: AppTypography.heading2,
                   overflow: TextOverflow.ellipsis),
             ),
           IconButton(
             icon: Icon(
                 _isEditingName ? Icons.check : Icons.edit_outlined,
-                size: 16),
+                size: 16,
+                color: AppColors.textSecondary),
             tooltip: _isEditingName ? '저장' : '이름 변경',
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -691,10 +630,9 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
           OutlinedButton(
             onPressed: () => _confirmVersion(context),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF388E3C),
-              side: const BorderSide(color: Color(0xFF388E3C)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              foregroundColor: AppColors.confirmed,
+              side: const BorderSide(color: AppColors.confirmed),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               minimumSize: Size.zero,
             ),
             child: const Text('확정하기', style: TextStyle(fontSize: 13)),
@@ -703,10 +641,9 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
           OutlinedButton(
             onPressed: () => _deleteVersion(context),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.red,
-              side: const BorderSide(color: Colors.red),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               minimumSize: Size.zero,
             ),
             child: const Text('삭제', style: TextStyle(fontSize: 13)),
@@ -720,14 +657,14 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        color: AppColors.surfaceElevated,
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
           Text(
             'CIDOC-CRM · FOAF · Dublin Core · Schema.org',
-            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+            style: AppTypography.caption,
           ),
           const Spacer(),
           OutlinedButton.icon(
@@ -735,8 +672,7 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
             label: const Text('전체 자동 적용', style: TextStyle(fontSize: 12)),
             onPressed: _loading ? null : _applyAll,
             style: OutlinedButton.styleFrom(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               minimumSize: Size.zero,
             ),
           ),
@@ -746,10 +682,9 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
             label: const Text('전체 확정', style: TextStyle(fontSize: 12)),
             onPressed: _loading ? null : _confirmAll,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.confirmed,
               foregroundColor: Colors.white,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               minimumSize: Size.zero,
             ),
           ),
@@ -772,8 +707,7 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
   ) {
     if (items.isEmpty) {
       return Center(
-        child: Text('항목이 없습니다.',
-            style: TextStyle(color: Colors.grey.shade500)),
+        child: Text('항목이 없습니다.', style: AppTypography.caption),
       );
     }
     return ListView.builder(

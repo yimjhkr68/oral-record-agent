@@ -6,7 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/api_client.dart';
 import '../../models/ontology.dart';
+import '../../models/published_ontology.dart';
 import '../../providers/ontology_provider.dart';
+import '../../providers/published_ontology_provider.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_typography.dart';
+import '../../widgets/common/app_card.dart';
+import '../../widgets/common/empty_state.dart';
 
 class OntologyDetailPanel extends ConsumerWidget {
   const OntologyDetailPanel({super.key});
@@ -20,17 +26,10 @@ class OntologyDetailPanel extends ConsumerWidget {
     }
 
     if (state.selectedVersion == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.account_tree_outlined,
-                size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            const Text('좌측에서 버전을 선택하세요.',
-                style: TextStyle(color: Colors.grey)),
-          ],
-        ),
+      return const EmptyState(
+        icon: Icons.account_tree_outlined,
+        title: '버전을 선택하세요',
+        description: '좌측 목록에서 온톨로지 버전을 선택하면\n상세 내용이 표시됩니다.',
       );
     }
 
@@ -52,19 +51,58 @@ class _VersionDetailState extends ConsumerState<_VersionDetail>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
 
+  // ── 이름 편집 상태 ───────────────────────────────────────────────────────────
+  bool _isEditingName = false;
+  late final TextEditingController _nameCtrl;
+
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
+    _nameCtrl = TextEditingController(text: widget.version.versionId);
+  }
+
+  @override
+  void didUpdateWidget(_VersionDetail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 외부에서 버전이 바뀌면 편집 중인 이름도 초기화
+    if (oldWidget.version.versionId != widget.version.versionId) {
+      _isEditingName = false;
+      _nameCtrl.text = widget.version.versionId;
+    }
   }
 
   @override
   void dispose() {
     _tabCtrl.dispose();
+    _nameCtrl.dispose();
     super.dispose();
   }
 
   OntologyVersion get v => ref.watch(ontologyProvider).selectedVersion ?? widget.version;
+
+  void _startEditName() {
+    setState(() {
+      _nameCtrl.text = v.versionId;
+      _isEditingName = true;
+    });
+  }
+
+  Future<void> _saveName() async {
+    final newId = _nameCtrl.text.trim();
+    if (newId.isEmpty || newId == v.versionId) {
+      setState(() => _isEditingName = false);
+      return;
+    }
+    setState(() => _isEditingName = false);
+    final result = await ref
+        .read(ontologyProvider.notifier)
+        .renameVersion(v.versionId, newId);
+    if (result == null && mounted) {
+      _snack(context, ref.read(ontologyProvider).error ?? '이름 변경 실패',
+          isError: true);
+    }
+  }
 
   Future<void> _downloadJson() async {
     final versionId = v.versionId;
@@ -108,9 +146,9 @@ class _VersionDetailState extends ConsumerState<_VersionDetail>
         // ── 헤더 ──────────────────────────────────────────────────────────
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            border:
-                Border(bottom: BorderSide(color: Colors.grey.shade200))),
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            border: Border(bottom: BorderSide(color: AppColors.border))),
           child: Row(
             children: [
               _StatusBadge(status: v.status),
@@ -119,9 +157,50 @@ class _VersionDetailState extends ConsumerState<_VersionDetail>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(v.versionId,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    // ── 이름 표시 / 인라인 편집 ──────────────────────────
+                    Row(
+                      children: [
+                        if (_isEditingName)
+                          SizedBox(
+                            width: 200,
+                            child: TextField(
+                              controller: _nameCtrl,
+                              autofocus: true,
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 6),
+                              ),
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold),
+                              onSubmitted: (_) => _saveName(),
+                            ),
+                          )
+                        else
+                          Flexible(
+                            child: Text(v.versionId,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15),
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                        IconButton(
+                          icon: Icon(
+                              _isEditingName
+                                  ? Icons.check
+                                  : Icons.edit_outlined,
+                              size: 16),
+                          tooltip: _isEditingName ? '저장' : '이름 변경',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: _isEditingName
+                              ? _saveName
+                              : _startEditName,
+                        ),
+                      ],
+                    ),
                     if (v.description.isNotEmpty)
                       Text(v.description,
                           style: const TextStyle(
@@ -365,46 +444,43 @@ class _ClassCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final color = _parseColor(cls.color);
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: color.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppCard(
+        elevated: true,
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
               Container(
-                width: 14,
-                height: 14,
+                width: 10,
+                height: 10,
                 decoration: BoxDecoration(
                     color: color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 8),
               Text(cls.name,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 14)),
+                  style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary)),
               const SizedBox(width: 6),
               Text('(${cls.labelKo})',
-                  style: const TextStyle(
-                      fontSize: 13, color: Colors.grey)),
+                  style: AppTypography.caption),
               const Spacer(),
               if (isDraft) ...[
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  icon: const Icon(Icons.edit_outlined, size: 15,
+                      color: AppColors.textMuted),
                   onPressed: () => _editDialog(context, ref),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   tooltip: '수정',
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 2),
                 IconButton(
                   icon: const Icon(Icons.delete_outline,
-                      size: 16, color: Colors.red),
+                      size: 15, color: AppColors.error),
                   onPressed: () => _delete(ref),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -414,8 +490,7 @@ class _ClassCard extends ConsumerWidget {
             ]),
             if (cls.description.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text(cls.description,
-                  style: const TextStyle(fontSize: 13)),
+              Text(cls.description, style: AppTypography.body),
             ],
             if (cls.examples.isNotEmpty) ...[
               const SizedBox(height: 6),
@@ -447,6 +522,37 @@ class _ClassCard extends ConsumerWidget {
                       padding: EdgeInsets.zero,
                       visualDensity: VisualDensity.compact,
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    )).toList(),
+              ),
+            ],
+            if (cls.mappings.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children: cls.mappings.map((m) => Tooltip(
+                      message:
+                          '${m.isPrimary ? "주" : "부"} 매핑 · 신뢰도 ${(m.confidence * 100).round()}%',
+                      child: Chip(
+                        label: Text(m.curie,
+                            style: const TextStyle(fontSize: 10)),
+                        backgroundColor: m.isPrimary
+                            ? Colors.indigo.withValues(alpha: 0.10)
+                            : Colors.purple.withValues(alpha: 0.08),
+                        avatar: m.isPrimary
+                            ? const Icon(Icons.star,
+                                size: 10, color: Colors.indigo)
+                            : null,
+                        side: BorderSide(
+                          color: m.isPrimary
+                              ? Colors.indigo.withValues(alpha: 0.3)
+                              : Colors.purple.withValues(alpha: 0.2),
+                        ),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                      ),
                     )).toList(),
               ),
             ],
@@ -541,46 +647,45 @@ class _PredicateCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: AppCard(
+        elevated: true,
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              const Icon(Icons.link, size: 16, color: Colors.grey),
+              const Icon(Icons.link, size: 15,
+                  color: AppColors.secondary),
               const SizedBox(width: 6),
               Text(pred.name,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 14)),
+                  style: AppTypography.body.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary)),
               const SizedBox(width: 8),
               if (pred.domain.isNotEmpty || pred.range.isNotEmpty)
                 Flexible(
                   child: Text(
                     '${pred.domain.join(', ')} → ${pred.range.join(', ')}',
-                    style: const TextStyle(
-                        fontSize: 12, color: Color(0xFF1565C0)),
+                    style: AppTypography.caption.copyWith(
+                        color: AppColors.secondary),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
               const Spacer(),
               if (isDraft) ...[
                 IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  icon: const Icon(Icons.edit_outlined, size: 15,
+                      color: AppColors.textMuted),
                   onPressed: () => _editDialog(context, ref),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 2),
                 IconButton(
                   icon: const Icon(Icons.delete_outline,
-                      size: 16, color: Colors.red),
+                      size: 15, color: AppColors.error),
                   onPressed: () => _delete(ref),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -589,8 +694,7 @@ class _PredicateCard extends ConsumerWidget {
             ]),
             if (pred.description.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text(pred.description,
-                  style: const TextStyle(fontSize: 13)),
+              Text(pred.description, style: AppTypography.body),
             ],
             if (pred.standardTag.isNotEmpty) ...[
               const SizedBox(height: 6),
@@ -645,21 +749,23 @@ class _PredicateCard extends ConsumerWidget {
 
 // ── 클래스 편집 다이얼로그 ────────────────────────────────────────────────────
 
-class _ClassEditDialog extends StatefulWidget {
+class _ClassEditDialog extends ConsumerStatefulWidget {
   final OntologyClass? initial;
   const _ClassEditDialog({this.initial});
 
   @override
-  State<_ClassEditDialog> createState() => _ClassEditDialogState();
+  ConsumerState<_ClassEditDialog> createState() => _ClassEditDialogState();
 }
 
-class _ClassEditDialogState extends State<_ClassEditDialog> {
+class _ClassEditDialogState extends ConsumerState<_ClassEditDialog> {
   final _nameCtrl = TextEditingController();
   final _labelCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _exCtrl = TextEditingController();
   String _color = '#4A90D9';
   List<String> _examples = [];
+  List<ClassMapping> _mappings = [];
+  String? _pendingMappingKey; // "ontologyId:::curie"
 
   static const _colorOptions = [
     '#4A90D9', '#E74C3C', '#2ECC71', '#F39C12', '#9B59B6',
@@ -676,6 +782,7 @@ class _ClassEditDialogState extends State<_ClassEditDialog> {
       _descCtrl.text = c.description;
       _color = c.color;
       _examples = List.from(c.examples);
+      _mappings = List.from(c.mappings);
     }
   }
 
@@ -808,6 +915,118 @@ class _ClassEditDialogState extends State<_ClassEditDialog> {
                       )).toList(),
                 ),
               ],
+              const SizedBox(height: 14),
+              // ── 공표 온톨로지 매핑 ────────────────────────────────────────
+              const Text('공표 온톨로지 매핑',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              ..._mappings.asMap().entries.map((e) {
+                final i = e.key;
+                final m = e.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(children: [
+                    Tooltip(
+                      message: m.isPrimary ? '주 매핑 (클릭하여 부로 전환)' : '부 매핑 (클릭하여 주로 전환)',
+                      child: IconButton(
+                        icon: Icon(
+                          m.isPrimary ? Icons.star : Icons.star_border,
+                          size: 16,
+                          color: m.isPrimary ? Colors.indigo : Colors.grey,
+                        ),
+                        onPressed: () => setState(
+                            () => _mappings[i] = m.copyWith(isPrimary: !m.isPrimary)),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        '${m.curie}  (${m.ontologyId})',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: m.isPrimary ? Colors.indigo : Colors.purple,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 14, color: Colors.red),
+                      onPressed: () => setState(() => _mappings.removeAt(i)),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ]),
+                );
+              }),
+              // 새 매핑 추가
+              Builder(builder: (ctx) {
+                final pubState = ref.watch(publishedOntologyProvider);
+                final allClasses = [
+                  for (final o in pubState.ontologies)
+                    for (final c in o.classes)
+                      (key: '${o.id}:::${c.curie}', curie: c.curie, label: c.label, ontologyId: o.id),
+                ];
+                final available = allClasses
+                    .where((item) => !_mappings.any((m) => m.curie == item.curie))
+                    .toList();
+                return Row(children: [
+                  Expanded(
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      ),
+                      child: DropdownButton<String>(
+                        value: _pendingMappingKey,
+                        hint: const Text('공표 클래스 선택',
+                            style: TextStyle(fontSize: 12)),
+                        items: available
+                            .map((item) => DropdownMenuItem<String>(
+                                  value: item.key,
+                                  child: Text(
+                                    '${item.curie}  ${item.label}',
+                                    style: const TextStyle(fontSize: 11),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ))
+                            .toList(),
+                        onChanged: (v) =>
+                            setState(() => _pendingMappingKey = v),
+                        isExpanded: true,
+                        underline: const SizedBox.shrink(),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: Icon(
+                      Icons.add_circle_outline,
+                      color: _pendingMappingKey != null
+                          ? Colors.indigo
+                          : Colors.grey,
+                    ),
+                    onPressed: _pendingMappingKey == null
+                        ? null
+                        : () {
+                            final parts = _pendingMappingKey!.split(':::');
+                            setState(() {
+                              _mappings.add(ClassMapping(
+                                curie: parts[1],
+                                ontologyId: parts[0],
+                                isPrimary: _mappings.isEmpty,
+                              ));
+                              _pendingMappingKey = null;
+                            });
+                          },
+                    tooltip: '매핑 추가',
+                  ),
+                ]);
+              }),
             ],
           ),
         ),
@@ -827,6 +1046,7 @@ class _ClassEditDialogState extends State<_ClassEditDialog> {
                 color: _color,
                 description: _descCtrl.text.trim(),
                 examples: _examples,
+                mappings: _mappings,
               ),
             );
           },
@@ -1001,22 +1221,19 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      OntologyStatus.draft => ('Draft', const Color(0xFFE65100)),
-      OntologyStatus.confirmed => ('Confirmed', const Color(0xFF388E3C)),
-      OntologyStatus.archived => ('Archived', const Color(0xFF757575)),
+      OntologyStatus.draft     => ('Draft',     AppColors.draft),
+      OntologyStatus.confirmed => ('Confirmed', AppColors.confirmed),
+      OntologyStatus.archived  => ('Archived',  AppColors.archived),
     };
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
-        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(label,
-          style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w600)),
+          style: AppTypography.badge.copyWith(color: color)),
     );
   }
 }
@@ -1029,11 +1246,11 @@ class _Meta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label,
-          style: const TextStyle(fontSize: 11, color: Colors.grey)),
+      Text(label, style: AppTypography.caption),
       Text(value,
-          style: const TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w500)),
+          style: AppTypography.body.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary)),
     ]);
   }
 }
