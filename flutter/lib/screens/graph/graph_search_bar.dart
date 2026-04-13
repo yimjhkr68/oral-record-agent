@@ -91,9 +91,14 @@ class _GraphSearchBarState extends State<GraphSearchBar> {
         final totalE   = widget.stats['triples']        ?? 0;
         final visibleE = widget.stats['visible_edges']  ?? totalE;
         final filtered = visible < total;
-        final label = filtered
+        final selectedOntology =
+            widget.stats['selected_ontology'] as String? ?? '';
+        final statsStr = filtered
             ? '노드 $visible / $total  ·  트리플 $visibleE / $totalE'
             : '노드 $total  ·  트리플 $totalE';
+        final label = selectedOntology.isNotEmpty
+            ? '$selectedOntology  |  $statsStr'
+            : statsStr;
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(

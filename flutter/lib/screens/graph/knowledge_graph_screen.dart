@@ -80,18 +80,16 @@ class _KnowledgeGraphScreenState
   Future<void> _loadOntologies() async {
     try {
       final res = await ref.read(apiClientProvider).get(
-        '/api/ontologies/',
-        params: {'status': 'confirmed'},
+        '/api/graph/ontology-versions',
       );
       if (!mounted) return;
-      final items = (res.data['items'] ?? res.data['versions'] ?? []) as List;
+      final items = (res.data['versions'] ?? []) as List;
       setState(() {
         _ontologies = [
           {'id': '', 'label': '전체 (모든 트리플)'},
           ...items.map((v) => {
                 'id': v['version_id'] as String,
-                'label':
-                    '${v['version_id']} (클래스 ${v['class_count'] ?? '?'}개)',
+                'label': '${v['version_id']} (${v['triple_count']}개)',
               }),
         ];
       });
@@ -917,6 +915,8 @@ class _KnowledgeGraphScreenState
                           ...gs.stats,
                           'visible_nodes': visibleNodeCount,
                           'visible_edges': visibleEdgeCount,
+                          if (_selectedOntology.isNotEmpty)
+                            'selected_ontology': _selectedOntology,
                         },
                         exportTooltip: gs.searchQuery.isNotEmpty
                             ? '현재 서브그래프 내보내기'

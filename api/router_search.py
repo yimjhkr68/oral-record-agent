@@ -28,6 +28,28 @@ def full_graph(ontology_version: str = Query("", description="온톨로지 버�
     return result
 
 
+@router.get("/ontology-versions")
+def get_ontology_versions():
+    """트리플에 실제 사용된 온톨로지 버전 목록 (버전별 트리플 수 포함)."""
+    from collections import Counter
+    all_triples = get_triple_manager().db.all_triples(include_archived=False)
+    counts: Counter = Counter()
+    for t in all_triples:
+        v = t.ontology_version or "미지정"
+        counts[v] += 1
+
+    # 지정 버전 정렬, 미지정은 마지막
+    named   = sorted(v for v in counts if v != "미지정")
+    ordered = named + (["미지정"] if "미지정" in counts else [])
+
+    return {
+        "versions": [
+            {"version_id": v, "triple_count": counts[v]}
+            for v in ordered
+        ]
+    }
+
+
 @router.get("/search")
 def search_graph(q: str = Query(..., description="검색어")):
     """검색어 기반 서브그래프 (매칭 노드 + 1홉 이웃)."""
