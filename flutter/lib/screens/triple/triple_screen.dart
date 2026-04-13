@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/triple_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
+import '../../services/rdf_api_service.dart';
 import 'triple_step1_extract.dart';
 import 'triple_step2_review.dart';
 import 'triple_step3_list.dart';
@@ -65,38 +66,46 @@ class _TripleScreenState extends ConsumerState<TripleScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TabBar(
-                  controller: _tabCtrl,
-                  onTap: (index) {
-                    if (!_programmaticChange) {
-                      ref.read(tripleWorkProvider.notifier).setStep(index);
-                    }
-                  },
-                  tabs: [
-                    const Tab(text: 'Step 1  추출 설정'),
-                    Tab(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Text('Step 2  검토'),
-                          if (pending > 0) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text('$pending',
-                                  style: AppTypography.badge.copyWith(
-                                      color: Colors.white)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TabBar(
+                        controller: _tabCtrl,
+                        onTap: (index) {
+                          if (!_programmaticChange) {
+                            ref.read(tripleWorkProvider.notifier).setStep(index);
+                          }
+                        },
+                        tabs: [
+                          const Tab(text: 'Step 1  추출 설정'),
+                          Tab(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('Step 2  검토'),
+                                if (pending > 0) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Text('$pending',
+                                        style: AppTypography.badge.copyWith(
+                                            color: Colors.white)),
+                                  ),
+                                ],
+                              ],
                             ),
-                          ],
+                          ),
+                          const Tab(text: 'Step 3  저장된 트리플'),
                         ],
                       ),
                     ),
-                    const Tab(text: 'Step 3  저장된 트리플'),
+                    _RdfExportButton(api: ref.read(rdfApiProvider)),
+                    const SizedBox(width: 8),
                   ],
                 ),
                 const Divider(height: 1, thickness: 1,
@@ -117,6 +126,52 @@ class _TripleScreenState extends ConsumerState<TripleScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RdfExportButton extends StatelessWidget {
+  final RdfApiService api;
+  const _RdfExportButton({required this.api});
+
+  static const _formats = [
+    ('turtle', 'Turtle (.ttl)'),
+    ('json-ld', 'JSON-LD (.jsonld)'),
+    ('xml', 'OWL/XML (.owl)'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return PopupMenuButton<String>(
+      tooltip: 'RDF 내보내기',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.download_outlined, size: 14,
+                color: AppColors.secondary),
+            const SizedBox(width: 4),
+            const Text('RDF ▼',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.secondary,
+                    fontWeight: FontWeight.w500)),
+          ],
+        ),
+      ),
+      itemBuilder: (_) => _formats
+          .map((f) => PopupMenuItem(
+                value: f.$1,
+                child: Text(f.$2, style: const TextStyle(fontSize: 12)),
+              ))
+          .toList(),
+      onSelected: (fmt) => api.exportAndSave(
+        context: context,
+        endpoint: '/rdf/export/triples',
+        format: fmt,
+        prefix: 'triples',
       ),
     );
   }

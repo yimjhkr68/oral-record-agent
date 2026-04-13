@@ -14,6 +14,14 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 
+# v5.0 RDF 런타임 데이터 (커밋 제외)
+data/backups/
+data/rdf/tmp/
+data/migration_state.json
+data/validation_results.json
+data/publish_history.json
+data/sparql_templates.json
+
 # Logs & temp
 server.log
 *.log

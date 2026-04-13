@@ -26,7 +26,11 @@
       "Bash(cmd //c \"taskkill /PID 35256 /F\")",
       "Bash(python -m uvicorn main:app --port 9000 --log-level warning)",
       "Bash(python -c \"import urllib.request; print\\(urllib.request.urlopen\\('http://localhost:9000/health'\\).read\\(\\).decode\\(\\)\\)\")",
-      "Bash(cmd //c \"taskkill /PID 35792 /F\")"
+      "Bash(cmd //c \"taskkill /PID 35792 /F\")",
+      "Bash(flutter run:*)",
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(python -m uvicorn main:app --host 127.0.0.1 --port 9000 --reload)",
+      "Bash(curl -s http://localhost:9000/health)"
     ]
   }
 }

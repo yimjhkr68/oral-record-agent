@@ -1,0 +1,1638 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF
+   xmlns:dcterms="http://purl.org/dc/terms/"
+   xmlns:ora="https://yimjhkr68.github.io/oral-history-ontology/core#"
+   xmlns:owl="http://www.w3.org/2002/07/owl#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#사회적_낙인을_경험함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">사회적 낙인을 경험함</rdfs:label>
+    <rdfs:comment xml:lang="ko">유가족이나 구술자가 사건 이후 사회적 낙인 피해를 경험함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SocialStigma"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#강제_피난을_유발함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">강제 피난을 유발함</rdfs:label>
+    <rdfs:comment xml:lang="ko">초토화 작전 또는 마을 소각이 주민의 강제 피난을 야기함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ScorchingOperation"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#VillageDestruction"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ForcedDisplacement"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#TraumaticExperience">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">TraumaticExperience</rdfs:label>
+    <rdfs:label xml:lang="ko">피해 경험</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 직접 겪은 피해·공포·상실의 경험으로 구술에 명시된 내용</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#피난_출발지임">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">피난 출발지임</rdfs:label>
+    <rdfs:comment xml:lang="ko">장소(가옥 또는 마을)가 피난 행위의 출발 지점인 관계</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Evacuation"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#TraditionalDwelling">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">TraditionalDwelling</rdfs:label>
+    <rdfs:label xml:lang="ko">전통 가옥 / 피해 주거지</rdfs:label>
+    <rdfs:comment xml:lang="ko">초토화 작전의 피해를 입은 전통적 구조의 가옥. 당시 제주의 짚 지붕 가옥 등 물리적 거주 공간.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E53_Place"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Place"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E27_Site"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#MilitaryForce">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">MilitaryForce</rdfs:label>
+    <rdfs:label xml:lang="ko">군인/군경</rdfs:label>
+    <rdfs:comment xml:lang="ko">제주 4.3 사건 당시 주민 학살·진압 작전·초토화 작전을 수행한 군사 세력 또는 군인 집단</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#4월_3일">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TimeSpan"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#언급함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">언급함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 기록이 특정 사건·장소·인물·시기·경험을 언급·서술하는 관계</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Evacuation"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#MilitaryForce"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Trauma"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P67_refers_to"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#마을_공동체_피해를_나타냄">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">마을 공동체 피해를 나타냄</rdfs:label>
+    <rdfs:comment xml:lang="ko">마을 공동체 희생자가 특정 마을(금능리 등)에 거주하며 해당 지역의 집단적 피해를 대표함.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommunityVictim"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#발생_시기임">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">발생 시기임</rdfs:label>
+    <rdfs:comment xml:lang="ko">사건·활동이 속하는 역사적 시기</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#DeathEvent"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeAct"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Village">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Village</rdfs:label>
+    <rdfs:label xml:lang="ko">마을</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 증언에서 언급된 피해 마을 또는 거주 공동체</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Place"/>
+    <rdfs:subClassOf rdf:resource="http://purl.org/dc/terms/Location"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E53_Place"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#MassacreEvent">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">MassacreEvent</rdfs:label>
+    <rdfs:label xml:lang="ko">학살 사건</rdfs:label>
+    <rdfs:comment xml:lang="ko">특정 일시·장소에서 군경에 의해 다수의 민간인이 집단 살해된 사건</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#ForcedDisplacement">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">ForcedDisplacement</rdfs:label>
+    <rdfs:label xml:lang="ko">강제 피난 / 소개</rdfs:label>
+    <rdfs:comment xml:lang="ko">초토화 작전·마을 소각으로 인해 주민들이 거주지를 떠나 피난하거나 강제로 이주된 사건.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E53_Place"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E9_Move"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#트라우마_기억을_보유함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">트라우마 기억을 보유함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자 또는 목격자가 사건으로 인한 트라우마 기억을 지니고 있음</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ChildWitness"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TraumaticMemory"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#ChildWitness">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">ChildWitness</rdfs:label>
+    <rdfs:label xml:lang="ko">아동 목격자</rdfs:label>
+    <rdfs:comment xml:lang="ko">역사적 사건을 어린 나이에 직접 목격하고 경험한 인물. 구술자가 사건 당시 아동이었던 경우에 해당.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Person"/>
+    <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#SocialStigma">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">SocialStigma</rdfs:label>
+    <rdfs:label xml:lang="ko">사회적 낙인 / 연좌제 피해</rdfs:label>
+    <rdfs:comment xml:lang="ko">4.3 유가족이 '빨갱이 가족'으로 낙인찍혀 받은 사회적 차별·억압·침묵 강요 등의 피해 상황.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E55_Type"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">OralHistoryRecord</rdfs:label>
+    <rdfs:label xml:lang="ko">구술 기록</rdfs:label>
+    <rdfs:comment xml:lang="ko">면담을 통해 수집된 구술 텍스트·음성·영상 등의 1차 기록물. 아카이브의 핵심 객체.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E33_Linguistic_Object"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/CreativeWork"/>
+    <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Document"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E31_Document"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#초래함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">초래함</rdfs:label>
+    <rdfs:comment xml:lang="ko">역사적 사건(방화·초토화 작전 등)이 피난 및 트라우마를 유발한 인과 관계</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Evacuation"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Trauma"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#남편을_잃은_스물셋_새댁_구술_기록">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <ora:면담_세션에서_수집됨 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#박양순_면담_세션__2026_02_03"/>
+    <dcterms:source>NAR-202603-0003_박양순_구술기록.docx</dcterms:source>
+    <ora:증언_대상_사건임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건__1947_1954"/>
+    <ora:아카이브에_소장됨 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_구술기록_아카이브"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#청각적_기억을_포함함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">청각적 기억을 포함함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 기록이 총소리 등 폭력 상황의 청각적 기억을 증언으로 포함함.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#GunfireSound"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#소장하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">소장하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">아카이브가 구술 기록을 수집·보존·관리함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Archive"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#소각_피해를_입음">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">소각 피해를 입음</rdfs:label>
+    <rdfs:comment xml:lang="ko">전통 가옥이 초토화 작전으로 인해 소각·파괴 피해를 입음</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TraditionalDwelling"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#VillageDestruction"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#ArmedSuppressionUnit">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">ArmedSuppressionUnit</rdfs:label>
+    <rdfs:label xml:lang="ko">토벌대</rdfs:label>
+    <rdfs:comment xml:lang="ko">4.3 사건 당시 마을 주민을 체포·학살한 토벌 부대. 기존 MilitaryUnit보다 구체적으로 '토벌대'로 명시된 행위 주체.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Organization"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E40_Legal_Body"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E74_Group"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_구술_기록__어린_시절_피난과_굶주림">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <ora:면담_세션에서_수집됨 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_면담_세션__2026_01_22"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+    <ora:증언_대상_사건임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건__1947_1954"/>
+    <ora:아카이브에_소장됨 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_구술기록_아카이브"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#동반함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">동반함</rdfs:label>
+    <rdfs:comment xml:lang="ko">가족 구성원이 피난 또는 경험 과정에서 다른 인물과 함께한 관계 (예: 어머니가 자녀를 이끌고 탈출)</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrative">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">OralHistoryNarrative</rdfs:label>
+    <rdfs:label xml:lang="ko">구술 서사</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 직접 경험한 역사적 사건에 대해 증언한 구술 기록 텍스트</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/CreativeWork"/>
+    <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Document"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E33_Linguistic_Object"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#마을을_소각함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">마을을 소각함</rdfs:label>
+    <rdfs:comment xml:lang="ko">초토화 작전의 결과로 마을 소각·파괴가 발생함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ScorchingOperation"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#VillageDestruction"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#발생_장소이다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">발생 장소이다</rdfs:label>
+    <rdfs:comment xml:lang="ko">사건·활동이 특정 장소에서 발생함. Village·Dwelling을 Place로 통합하여 범위 재설정</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewActivity"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeRitual"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Evacuation"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#수행함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">수행함</rdfs:label>
+    <rdfs:comment xml:lang="ko">군인/군경이 초토화 작전·방화 등 역사적 사건을 실행한 관계</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#MilitaryForce"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <ora:발생_시점이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#1949년_1월_17일"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+    <ora:발생_장소이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주시_조천면_북촌리"/>
+    <ora:초래함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#아버지_학살로_인한_심리적_트라우마"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#면담하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">면담하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">면담자가 구술자를 대상으로 채록 면담을 수행함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Interviewer"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">OralHistoryNarrator</rdfs:label>
+    <rdfs:label xml:lang="ko">구술자</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 증언을 직접 제공한 사람. 사건의 직접 경험자이거나 가족·공동체를 통해 역사적 사실을 전승한 당사자.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Person"/>
+    <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#초토화_작전을_자행함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">초토화 작전을 자행함</rdfs:label>
+    <rdfs:comment xml:lang="ko">군·경 부대가 마을에 대한 초토화 작전을 실행함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#MilitaryUnit"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ScorchingOperation"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#출생_사건을_가짐">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">출생 사건을 가짐</rdfs:label>
+    <rdfs:comment xml:lang="ko">인물이 특정 출생 사건과 연결됨. 특히 역사적 사건과 날짜가 일치하는 경우 의미 부여.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyVictim"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#BirthEvent"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#소장되다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">소장되다</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술기록이 아카이브 컬렉션에 보존·소장됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Archive"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#김진수">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Interviewer"/>
+    <ora:면담하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#면담_장소임">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">면담 장소임</rdfs:label>
+    <rdfs:comment xml:lang="ko">면담 세션이 진행된 장소</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Victim">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Victim</rdfs:label>
+    <rdfs:label xml:lang="ko">희생자</rdfs:label>
+    <rdfs:comment xml:lang="ko">제주 4.3 사건으로 인해 생명을 잃거나 직접적 피해를 당한 인물.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Person"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E69_Death"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_면담_활동">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewActivity"/>
+    <ora:면담을_수행하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#어린_시절_피난과_굶주림_구술_기록"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+    <ora:발생_장소이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#서귀포시_대정읍_상모리"/>
+    <ora:발생_시점이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#2026_01_22"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <ora:희생되다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지_처형"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+    <ora:공식_인정을_받다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#4_3_진상_규명_및_희생자_명예_회복_국가_인정"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#발생하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">발생하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">역사적 사건이 특정 장소와 시기에 발생함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TimePeriod"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">InterviewSession</rdfs:label>
+    <rdfs:label xml:lang="ko">면담 세션</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 기록이 수집된 구체적인 면담 행위. 일시·장소·참여자 정보를 포함.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#TraumaticMemory">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">TraumaticMemory</rdfs:label>
+    <rdfs:label xml:lang="ko">트라우마 기억</rdfs:label>
+    <rdfs:comment xml:lang="ko">사건 당시의 극한 공포·상실 경험이 구술자의 기억 속에 각인된 심리적 상태. 아동기 트라우마 포함.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E28_Conceptual_Object"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E55_Type"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석의_아버지">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <ora:사망_사건을_가짐 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지_처형_사건__한국전쟁_중"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#GunfireSound">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">GunfireSound</rdfs:label>
+    <rdfs:label xml:lang="ko">총소리 / 폭력의 청각적 기억</rdfs:label>
+    <rdfs:comment xml:lang="ko">4.3 사건 당시 또는 그 직후 주민들이 경험한 총소리 등 폭력 상황의 청각적 기억. 구술에서 역사적 사건의 생생한 증거로 기능하는 감각적 경험.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E33_Linguistic_Object"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#청각적_기억의_경험_주체임">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">청각적 기억의 경험 주체임</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자 또는 가족이 사건 당시 총소리 등의 청각적 폭력을 직접 경험한 주체임.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#GunfireSound"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#구술함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">구술함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 면담을 통해 구술 기록을 생성·제공하는 행위</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#ViolenceAct">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">ViolenceAct</rdfs:label>
+    <rdfs:label xml:lang="ko">폭력 행위/희생</rdfs:label>
+    <rdfs:comment xml:lang="ko">4.3 사건 과정에서 발생한 학살, 연행, 사망 등 구체적인 폭력 행위 및 그 결과</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E69_Death"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#가족_희생자로_보유함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">가족 희생자로 보유함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자 또는 유가족이 4.3 사건으로 희생된 가족 구성원을 가짐.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyVictim"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#발생하다__폭력_행위">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">발생하다 (폭력 행위)</rdfs:label>
+    <rdfs:comment xml:lang="ko">폭력 행위가 특정 장소와 시기에 발생함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ViolenceAct"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TimePeriod"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#StateRecognition">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">StateRecognition</rdfs:label>
+    <rdfs:label xml:lang="ko">국가 공인 / 명예 회복</rdfs:label>
+    <rdfs:comment xml:lang="ko">국가가 4.3 사건 희생자와 유가족의 피해를 공식 인정하고 명예를 회복시키는 행정·법적 행위.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E40_Legal_Body"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <ora:구술함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_구술_기록__어린_시절_피난과_굶주림"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+    <ora:가족_관계임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석의_아버지"/>
+    <ora:사회적_낙인을_경험함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_유가족_사회적_낙인_피해"/>
+    <ora:구술하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#어린_시절_피난과_굶주림_구술_기록"/>
+    <ora:증언하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건"/>
+    <ora:증언하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지_체포_및_처형"/>
+    <ora:경험함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_중턱_피난_생활"/>
+    <ora:경험함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_피난"/>
+    <ora:트라우마를_겪다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#피난_굶주림_아버지_상실로_인한_트라우마"/>
+    <ora:가족_관계이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지"/>
+    <ora:가족_관계이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_어머니"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#발생_장소임">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">발생 장소임</rdfs:label>
+    <rdfs:comment xml:lang="ko">사건·활동이 발생한 지리적 장소</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#DeathEvent"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeAct"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#ScorchingOperation">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">ScorchingOperation</rdfs:label>
+    <rdfs:label xml:lang="ko">초토화 작전</rdfs:label>
+    <rdfs:comment xml:lang="ko">제주 4.3 당시 군경이 마을을 소각하고 주민을 강제 이주시킨 군사 작전</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">SurvivorFamily</rdfs:label>
+    <rdfs:label xml:lang="ko">유가족 / 생존 가족</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자의 가족으로서 사건 이후 생존하며 트라우마와 사회적 낙인을 감내한 인물.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Person"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E74_Group"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Archive">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Archive</rdfs:label>
+    <rdfs:label xml:lang="ko">아카이브 / 컬렉션</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 기록을 수집·보존·활용하는 아카이브 기관 또는 컬렉션 단위.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E78_Curated_Holding"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/ArchiveComponent"/>
+    <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Organization"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Evacuation">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Evacuation</rdfs:label>
+    <rdfs:label xml:lang="ko">피난/대피</rdfs:label>
+    <rdfs:comment xml:lang="ko">방화 및 군사 작전으로 인해 주민이 집을 떠나 도피한 행위</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#구술하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">구술하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 자신의 경험과 기억을 언어로 진술하여 구술 기록을 생성함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#빨갱이_가족_낙인">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SocialStigma"/>
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Trauma"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#서귀포시_대정읍_상모리">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#면담을_수행하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">면담을 수행하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">면담 활동의 결과로 구술 기록이 생산됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewActivity"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#기억하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">기억하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 사건 및 경험을 기억하고 증언함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Narrator"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#PersonalMemory"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ViolenceAct"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Narrator">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Narrator</rdfs:label>
+    <rdfs:label xml:lang="ko">구술자</rdfs:label>
+    <rdfs:comment xml:lang="ko">역사적 사건을 직접 경험하고 구술 증언을 제공한 인물</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="https://www.ica.org/standards/RiC/ontology#Person"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Person"/>
+    <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#상징하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">상징하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">특정 날짜(4월 3일)가 역사적 사건과 추모를 동시에 상징함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TimePeriod"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#MemorialEvent"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Interviewer">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Interviewer</rdfs:label>
+    <rdfs:label xml:lang="ko">면담자</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 면담을 진행하고 기록을 수집한 연구자 또는 아카이비스트.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Person"/>
+    <rdfs:subClassOf rdf:resource="http://purl.org/dc/terms/Agent"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#희생되다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">희생되다</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자가 학살 사건으로 인해 사망함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Death"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <ora:구술하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살의_기억_구술_기록"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+    <ora:증언하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살"/>
+    <ora:증언하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건"/>
+    <ora:증언하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕_아버지_총살_사망"/>
+    <ora:가족_관계이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕의_아버지"/>
+    <ora:가족_관계이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕의_어머니"/>
+    <ora:경험함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살"/>
+    <ora:트라우마를_겪다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#아버지_학살_목격으로_인한_심리적_트라우마"/>
+    <ora:낙인을_받다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#빨갱이_가족_낙인"/>
+    <ora:거주함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주시_조천면_북촌리"/>
+    <ora:추모_의례를_수행하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_위령제"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#포함함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">포함함</rdfs:label>
+    <rdfs:comment xml:lang="ko">초토화 작전이 방화 및 피난을 구성 요소로 포함하는 관계</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ScorchingOperation"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#VillageBurning"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Evacuation"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#SuppressedMemory">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">SuppressedMemory</rdfs:label>
+    <rdfs:label xml:lang="ko">억압된 기억·침묵</rdfs:label>
+    <rdfs:comment xml:lang="ko">역사적 폭력 사건에서 비롯된 심리적 트라우마, 개인의 억압된 기억, 그리고 사회적으로 강요된 침묵·금기 문화를 포괄하는 개념. 구술을 통해 표면화됨</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#가족_관계이다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">가족 관계이다</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자·생존자·가족 구성원이 희생자 또는 다른 가족과 가족 관계에 있음</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Survivor"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Survivor"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕의_아버지">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <ora:희생되다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕_아버지_총살_사망"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+    <ora:공식_인정을_받다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건_국가_공식_인정"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#공식인정을받다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">공식인정을받다</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자 또는 역사적 사건이 국가로부터 공식적으로 인정됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#StateRecognition"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#TimePeriod">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">TimePeriod</rdfs:label>
+    <rdfs:label xml:lang="ko">시간/시기</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 내용과 관련된 특정 날짜, 시점 또는 역사적 시기</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E4_Period"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E50_Date"/>
+    <rdfs:subClassOf rdf:resource="http://purl.org/dc/terms/PeriodOfTime"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E52_Time-Span"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#역사적_사건과_날짜가_일치함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">역사적 사건과 날짜가 일치함</rdfs:label>
+    <rdfs:comment xml:lang="ko">출생 사건의 날짜가 역사적 집단 학살 사건 또는 시기의 날짜와 동일함. 구술자의 정체성 형성에 영향을 미치는 역사적 우연의 일치.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#BirthEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#아카이브에_소장됨">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">아카이브에 소장됨</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 기록이 특정 아카이브 컬렉션에 소장·보존됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Archive"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#침묵_강요의_공간임">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">침묵 강요의 공간임</rdfs:label>
+    <rdfs:comment xml:lang="ko">침묵 강요가 이루어진 특정 공간 (가정, 학교, 마을 등).</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SilenceCulture"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#군인_세력">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#MilitaryForce"/>
+    <ora:학살하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+    <ora:수행함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Ontology"/>
+    <rdfs:label xml:lang="ko">한국 구술기록 온톨로지</rdfs:label>
+    <owl:versionInfo>1.0.0</owl:versionInfo>
+    <dcterms:created rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2026-04-13</dcterms:created>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#수집되다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">수집되다</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술기록이 특정 면담 세션을 통해 수집됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#추모행사에참석하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">추모행사에참석하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자·생존자·관련 인물이 위령제 등 추모 행사에 참석하거나 추모 의례를 수행함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Survivor"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPerson"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeEvent"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#BirthEvent">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">BirthEvent</rdfs:label>
+    <rdfs:label xml:lang="ko">출생 사건</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자 또는 관련 인물의 출생 사실. 역사적 사건과 동일한 날짜에 발생하여 특별한 의미를 갖는 경우를 포함.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E67_Birth"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#증언하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">증언하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 자신의 경험이나 전해들은 내용을 토대로 역사적 사건·시기·사망에 대해 증언함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Death"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#개최되다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">개최되다</rdfs:label>
+    <rdfs:comment xml:lang="ko">추모 행사가 특정 장소와 시기에 개최됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#MemorialEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TimePeriod"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#역사적_시기에_속함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">역사적 시기에 속함</rdfs:label>
+    <rdfs:comment xml:lang="ko">개별 사건이 더 넓은 역사적 시기 내에 포함됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#DeathEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#1949년_1월_17일">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TimeSpan"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#거주하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">거주하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">인물이 특정 장소에 거주하거나 연고를 가짐</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Narrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPerson"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPerson">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">HistoricalPerson</rdfs:label>
+    <rdfs:label xml:lang="ko">역사적 관련 인물</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 내용에 등장하는 구술자 외 인물(가족, 이웃 등)로 사건과 직·간접적으로 연관된 자</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Person"/>
+    <rdfs:subClassOf rdf:resource="http://purl.org/dc/terms/Agent"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#피해를_입다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">피해를 입다</rdfs:label>
+    <rdfs:comment xml:lang="ko">역사적 관련 인물이 폭력 행위의 피해를 입음</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPerson"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ViolenceAct"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#면담_세션에서_수집됨">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">면담 세션에서 수집됨</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 기록이 특정 면담 세션을 통해 수집되었음을 나타냄</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#침묵_강요를_경험함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">침묵 강요를 경험함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자나 유가족이 4.3에 대한 발언을 금기시하는 침묵 강요 문화를 경험함.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SilenceCulture"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#정체성_전환을_경험함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">정체성 전환을 경험함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 4.3에 대한 수치나 회피에서 역사적 의미 부여와 자긍심으로의 인식 전환을 경험함.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#IdentityTransformation"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#VillageBurning">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">VillageBurning</rdfs:label>
+    <rdfs:label xml:lang="ko">마을 방화</rdfs:label>
+    <rdfs:comment xml:lang="ko">초토화 작전 중 군인들이 민가에 불을 지른 구체적 행위</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살의_기억_구술_기록">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주시_조천면_북촌리"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#군인_세력"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕의_어머니"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#빨갱이_가족_낙인"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#박양순">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <ora:구술함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#남편을_잃은_스물셋_새댁_구술_기록"/>
+    <dcterms:source>NAR-202603-0003_박양순_구술기록.docx</dcterms:source>
+    <ora:가족_관계임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#박양순의_남편"/>
+    <ora:가족_관계임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#박양순의_아들"/>
+    <ora:사회적_낙인을_경험함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#4_3_유가족_사회적_낙인_및_침묵_강요"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#PerpetratorGroup">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">PerpetratorGroup</rdfs:label>
+    <rdfs:label xml:lang="ko">가해 집단(군경·토벌대)</rdfs:label>
+    <rdfs:comment xml:lang="ko">역사적 폭력 사건 당시 학살·진압·토벌 활동을 수행한 군·경 조직 또는 무장 집단</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E74_Group"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#낙인을_받다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">낙인을 받다</rdfs:label>
+    <rdfs:comment xml:lang="ko">생존자·유족·가족 구성원이 이념적 낙인을 부과받아 사회적 억압을 경험함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Survivor"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SocialStigma"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#경험하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">경험하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">인물이 사건이나 사회적 현상을 직·간접적으로 경험함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Narrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPerson"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ViolenceAct"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SilenceCulture"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#생산하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">생산하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">면담 세션의 결과로 구술 기록이 생산됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+    <ora:포함하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살"/>
+    <ora:포함하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_중턱_피난_생활"/>
+    <ora:포함하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지_체포_및_처형"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+    <ora:공식_인정을_받다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건_국가_공식_인정"/>
+    <ora:공식_인정을_받다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#4_3_진상_규명_및_희생자_명예_회복_국가_인정"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#추모_의례를_수행하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">추모 의례를 수행하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">생존자·유족·가족 구성원이 희생자를 위한 제사·위령제 등 추모 의례를 행함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Survivor"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeRitual"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#VillageDestruction">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">VillageDestruction</rdfs:label>
+    <rdfs:label xml:lang="ko">마을 소각 / 파괴</rdfs:label>
+    <rdfs:comment xml:lang="ko">군·경에 의해 마을의 가옥·시설이 방화·파괴된 사건. 주민들의 삶의 기반이 물리적으로 소멸된 상태를 포함.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Death">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Death</rdfs:label>
+    <rdfs:label xml:lang="ko">사망·희생</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자가 총살 등 폭력 행위로 사망한 사건</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E69_Death"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#SilenceCulture">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">SilenceCulture</rdfs:label>
+    <rdfs:label xml:lang="ko">침묵/금기 문화</rdfs:label>
+    <rdfs:comment xml:lang="ko">4.3 사건에 대한 언급이 억압·금기시되어 공적·사적 담론에서 배제된 사회적 현상</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E55_Type"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E4_Period"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#공동체_피해를_증언함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">공동체 피해를 증언함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 기록이 마을 공동체 내 이웃의 희생을 증언하고 있음.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommunityVictim"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#증언_대상_사건임">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">증언 대상 사건임</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 기록이 증언하고 있는 역사적 사건 또는 시기</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">HistoricalEvent</rdfs:label>
+    <rdfs:label xml:lang="ko">역사적 사건</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 증언에서 언급된 역사적 사건. 특정 일시·장소에서 발생한 학살·진압·방화·군사작전 등을 포함하며, 제주 4.3 관련 구체적 사건들을 망라함</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#CommunityVictim">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">CommunityVictim</rdfs:label>
+    <rdfs:label xml:lang="ko">마을 공동체 희생자</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자의 가족은 아니나 같은 마을·공동체에 속해 4.3 사건으로 희생된 이웃 인물. 공동체 전체의 피해를 증언하는 맥락에서 등장.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E74_Group"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Person"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#정체성_전환의_계기가_됨">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">정체성 전환의 계기가 됨</rdfs:label>
+    <rdfs:comment xml:lang="ko">위령제 참가, 역사적 사건의 재인식, 출생일과 사건일의 일치 등이 구술자의 정체성 전환의 계기가 됨.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeAct"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#BirthEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#IdentityTransformation"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#트라우마_기억에서_비롯됨">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">트라우마 기억에서 비롯됨</rdfs:label>
+    <rdfs:comment xml:lang="ko">목격 증언이 구술자의 트라우마 기억에 근거하고 있음</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#EyewitnessTestimony"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TraumaticMemory"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#진행되다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">진행되다</rdfs:label>
+    <rdfs:comment xml:lang="ko">면담 세션이 특정 장소와 날짜에 진행됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TimePeriod"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#DeathEvent">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">DeathEvent</rdfs:label>
+    <rdfs:label xml:lang="ko">사망 / 희생</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자 개인의 사망 사실. 날짜·방식·장소 등의 정보를 담음.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E69_Death"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지_처형_사건__한국전쟁_중">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#DeathEvent"/>
+    <ora:역사적_시기에_속함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건__1947_1954"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#형성하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">형성하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">역사적 사건이 침묵·금기 문화를 형성하게 함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SilenceCulture"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">HistoricalPeriod</rdfs:label>
+    <rdfs:label xml:lang="ko">역사적 시기</rdfs:label>
+    <rdfs:comment xml:lang="ko">제주 4.3 사건이 발생한 역사적·정치적 시기. 1947~1954년 제주 4.3 전반의 맥락을 포함.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E4_Period"/>
+    <rdfs:subClassOf rdf:resource="http://purl.org/dc/terms/PeriodOfTime"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Dwelling">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Dwelling</rdfs:label>
+    <rdfs:label xml:lang="ko">가옥/주거지</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 증언에 등장하는 주민의 거주 건물, 특히 짚 지붕 전통 가옥</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E53_Place"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Place"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E27_Site"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#피난함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">피난함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자·유가족이 마을 소각으로 인해 강제로 피난길에 오름</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ChildWitness"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ForcedDisplacement"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#김진수_연구원">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Interviewer"/>
+    <ora:면담_진행함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_면담_세션__2026_01_22"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Place">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Place</rdfs:label>
+    <rdfs:label xml:lang="ko">장소</rdfs:label>
+    <rdfs:comment xml:lang="ko">사건·면담·활동이 발생하거나 연관된 지리적 장소.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E53_Place"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Place"/>
+    <rdfs:subClassOf rdf:resource="http://purl.org/dc/terms/Location"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E53_Place"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#국가_공인을_받음">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">국가 공인을 받음</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자 또는 유가족이 국가로부터 공식 인정·명예 회복을 받음</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#StateRecognition"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#TimeSpan">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">TimeSpan</rdfs:label>
+    <rdfs:label xml:lang="ko">시간 범위·날짜</rdfs:label>
+    <rdfs:comment xml:lang="ko">사건 또는 면담과 관련된 특정 날짜·기간</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E52_Time-Span"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕_면담_활동">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewActivity"/>
+    <ora:면담을_수행하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살의_기억_구술_기록"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+    <ora:발생_장소이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주시_조천면_북촌리"/>
+    <ora:발생_시점이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#2026_01_15"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#포함하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">포함하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">제주 4.3 역사적 시기가 개별 역사적 사건을 포함함. 초토화 작전의 구성 요소 포함 관계도 포괄</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_중턱_피난처">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <ora:발생_장소임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지_처형_사건__한국전쟁_중"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#사망_사건을_가짐">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">사망 사건을 가짐</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자 개인에게 귀속되는 사망 사건</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#DeathEvent"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#아동기_경험_사건임">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">아동기 경험 사건임</rdfs:label>
+    <rdfs:comment xml:lang="ko">해당 사건이 구술자가 아동이었던 시기에 직접 경험한 사건임</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ChildWitness"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ScorchingOperation"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#VillageDestruction"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ForcedDisplacement"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#학살하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">학살하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">군경이 학살·진압 사건을 자행함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#MilitaryForce"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#발생_시점이다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">발생 시점이다</rdfs:label>
+    <rdfs:comment xml:lang="ko">사건·활동이 특정 날짜·기간에 발생함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Death"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewActivity"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeRitual"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TimeSpan"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_중턱">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <ora:피난_출발지임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_피난"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#관련되다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">관련되다</rdfs:label>
+    <rdfs:comment xml:lang="ko">역사적 관련 인물이 구술자와 가족·이웃 등의 관계로 연결됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPerson"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Narrator"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Survivor">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Survivor</rdfs:label>
+    <rdfs:label xml:lang="ko">생존자·유족</rdfs:label>
+    <rdfs:comment xml:lang="ko">학살·탄압에서 살아남거나 희생자의 가족으로서 사건의 영향을 직접 받은 인물</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_구술기록_아카이브">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Archive"/>
+    <ora:소장하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_대학살의_기억_구술_기록"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#토벌을_자행함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">토벌을 자행함</rdfs:label>
+    <rdfs:comment xml:lang="ko">토벌대가 특정 마을에서 집단 학살 행위를 자행함.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ArmedSuppressionUnit"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#면담_진행함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">면담 진행함</rdfs:label>
+    <rdfs:comment xml:lang="ko">면담자가 구술 면담 세션을 기획하고 진행함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Interviewer"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#공식_인정을_받다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">공식 인정을 받다</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자 또는 역사적 사건·시기가 국가로부터 공식적으로 인정됨</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#StateRecognition"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#목격함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">목격함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자 또는 아동 목격자가 특정 사건을 현장에서 직접 목격함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ChildWitness"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ScorchingOperation"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#VillageDestruction"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#경험함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">경험함</rdfs:label>
+    <rdfs:comment xml:lang="ko">인물이 특정 역사적 사건·피난·트라우마를 직접 겪은 관계</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Evacuation"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Trauma"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P12i_was_present_at"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#박양순의_남편">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <ora:사망_사건을_가짐 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#박양순_남편_사망_사건__육지_형무소"/>
+    <dcterms:source>NAR-202603-0003_박양순_구술기록.docx</dcterms:source>
+    <ora:국가_공인을_받음 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#4_3_특별법에_의한_희생자_명단_등재"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#MemorialEvent">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">MemorialEvent</rdfs:label>
+    <rdfs:label xml:lang="ko">추모 행사/위령제</rdfs:label>
+    <rdfs:comment xml:lang="ko">4.3 희생자를 기리기 위해 정기적으로 거행되는 추모·위령 행사</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">FamilyMember</rdfs:label>
+    <rdfs:label xml:lang="ko">가족 구성원</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 증언에 등장하는 구술자의 가족. 피난·경험 과정에서 함께한 인물로 서사 내 중요 역할을 담당</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="https://www.ica.org/standards/RiC/ontology#Family"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#자행함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">자행함</rdfs:label>
+    <rdfs:comment xml:lang="ko">군·경 부대가 집단 학살 사건을 자행함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#MilitaryUnit"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#토벌대에_의해_연행_희생됨">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">토벌대에 의해 연행·희생됨</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자가 토벌대에 의해 강제 연행되어 살해되었음.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyVictim"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommunityVictim"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ArmedSuppressionUnit"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#MilitaryUnit">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">MilitaryUnit</rdfs:label>
+    <rdfs:label xml:lang="ko">군·경 부대 / 무장 세력</rdfs:label>
+    <rdfs:comment xml:lang="ko">제주 4.3 사건 당시 마을에 진입하여 학살을 자행한 군인 또는 경찰 조직.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E74_Group"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Organization"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E40_Legal_Body"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#억압된기억을겪다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">억압된기억을겪다</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자·생존자·관련 인물이 학살 경험으로 인한 트라우마, 개인 기억, 침묵·금기 문화를 겪음</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Survivor"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPerson"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SuppressedMemory"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">HistoricalMassacreEvent</rdfs:label>
+    <rdfs:label xml:lang="ko">집단 학살 사건</rdfs:label>
+    <rdfs:comment xml:lang="ko">특정 날짜·장소에서 군·경에 의해 다수의 민간인이 집단으로 살해된 역사적 사건.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E4_Period"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#속함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">속함</rdfs:label>
+    <rdfs:comment xml:lang="ko">사건 및 행위가 제주 4.3 역사적 시기에 속하는 관계</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ScorchingOperation"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#VillageBurning"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Evacuation"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#목격_증언을_포함함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">목격 증언을 포함함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술 기록이 특정 사건에 대한 목격 증언을 포함하고 있음</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#EyewitnessTestimony"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_중턱_피난_생활">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#자행하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">자행하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">무장 세력/토벌대가 폭력 행위를 자행함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ArmedForce"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#ViolenceAct"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#PersonalMemory">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">PersonalMemory</rdfs:label>
+    <rdfs:label xml:lang="ko">개인 기억/경험</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 직접 경험하거나 가족을 통해 전해들은 4.3 관련 기억과 감정</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/CreativeWork"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E33_Linguistic_Object"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#record_f4ae0213_d68f_4c3c_85bd_cda3a24944f0">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralRecord"/>
+    <rdfs:label xml:lang="ko">NAR-202603-0005_강옥희_구술기록</rdfs:label>
+    <dcterms:created>2026-04-13T04:02:45.169345Z</dcterms:created>
+    <dcterms:description xml:lang="ko">제주 4.3 구술기록 아카이브
+Jeju April 3rd Oral History Archive
+여덟 살에 겪은 초토화 작전
+
+
+구술 내용
+[1] 우리 마을이 불탄 게 1948년 11월이었어요. 여덟 살이었는데, 군인들이 와서 집에 불을 질렀어. 짚으로 된 지붕이라 금방 타올랐어요.
+[2] 어머니가 우리 손을 잡고 뛰어나왔어. 아무것도 못 챙겼어. 그냥 살기 위해서 도망쳤어요. 뒤를 돌아보니까 집이 시뻘겋게 타고 있었어.
+[3] 마을 사람들이 다 들판으로 나왔어. 어떤 집은 식구가 다 나왔는데 어떤 집은 어른 남자가 없었어. 잡혀간 거야. 죽임을 당한 거야.
+[4] 한겨울에 갈 곳이 없었어. 친척집을 전전하다가 결국 서귀포 읍내 천막촌에서 살았어. 먹을 게 없어서 구호품으로 연명했어요.
+[5] 그때 입은 상처가 평생 갔어요. 나는 다행히 가족이 다 살아남았지만, 친구들 중에는 아버지나 오빠를 잃은 애들이 많았어요. 그 눈빛이 아직도 기억나.
+
+면담 소견
+본 구술 기록은 강옥희 구술자와</dcterms:description>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#가족_관계임">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">가족 관계임</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자·유가족과 희생자 간의 가족 관계 (예: 자녀-부모, 형제자매)</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#어린_시절_피난과_굶주림_구술_기록">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryRecord"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_피난"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_중턱"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_어머니"/>
+    <ora:언급함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#피난_굶주림_아버지_상실로_인한_트라우마"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalIncident">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">HistoricalIncident</rdfs:label>
+    <rdfs:label xml:lang="ko">역사적 사건(제주 4.3)</rdfs:label>
+    <rdfs:comment xml:lang="ko">1948~1954년에 걸쳐 제주도에서 발생한 무장봉기 및 군경의 대규모 탄압·학살 사건 전체를 지칭하는 역사적 시기</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <rdfs:subClassOf rdf:resource="http://purl.org/dc/terms/PeriodOfTime"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E4_Period"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#record_469a7ee6_11cc_4ec4_a022_2124c0166e73">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralRecord"/>
+    <rdfs:label xml:lang="ko">NAR-202603-0002_이판석_구술기록</rdfs:label>
+    <dcterms:created>2026-04-13T06:05:01.739674Z</dcterms:created>
+    <dcterms:description xml:lang="ko">제주 4.3 구술기록 아카이브
+Jeju April 3rd Oral History Archive
+어린 시절 피난과 굶주림
+구술 내용
+[1] 열 살이었어요, 그때. 어른들이 무서운 표정으로 뭔가를 얘기하는 건 알겠는데 뭔지는 몰랐어. 갑자기 어머니가 짐을 쌌고 우리는 밤에 산 쪽으로 올라갔어요.
+[2] 한라산 중턱에서 몇 달을 지냈어요. 동굴이나 바위 그늘 아래서. 먹을 게 없어서 풀뿌리도 캐 먹고, 고사리도 삶아 먹었어. 겨울엔 정말 추웠어요.
+[3] 아버지는 마을에 남아있다가 결국 잡혀갔어요. 나중에 들으니까 형무소에 갇혔다고 했는데, 한국전쟁 때 처형됐다고 해요. 연락도 없이, 그냥 그렇게.
+[4] 산에서 내려오라는 명령이 떨어졌어. 내려오면 살려준다고 했어. 어머니는 믿지 않았는데 더는 버틸 수가 없었어. 내려오니까 심문도 받고 힘든 일도 많았지만 살아남았어.
+[5] 그 시절 얘기를 하면 지금도 가슴이 두근거려요. 무섭다기보다는... 억울해. 우리가 뭘 잘못했는지. 그냥 제주도에</dcterms:description>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#진행하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">진행하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">면담자가 면담 세션을 기획하고 진행함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Interviewer"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#Trauma">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">Trauma</rdfs:label>
+    <rdfs:label xml:lang="ko">트라우마·피해 경험</rdfs:label>
+    <rdfs:comment xml:lang="ko">학살·탄압 경험에서 비롯된 심리적 상처와 억압된 기억, 그리고 구술자가 직접 겪은 피해·공포·상실의 경험을 포괄</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E28_Conceptual_Object"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#고미영">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Interviewer"/>
+    <ora:면담하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕_아버지_총살_사망">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Death"/>
+    <ora:발생_시점이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#1949년_1월_17일"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+    <ora:발생_장소이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주시_조천면_북촌리"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#ArmedForce">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">ArmedForce</rdfs:label>
+    <rdfs:label xml:lang="ko">무장 세력/토벌대</rdfs:label>
+    <rdfs:comment xml:lang="ko">4.3 사건 당시 진압·토벌 활동을 수행한 군·경 조직 또는 무장 집단</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Organization"/>
+    <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Organization"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E74_Group"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#ViolentAct">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">ViolentAct</rdfs:label>
+    <rdfs:label xml:lang="ko">폭력 행위·희생</rdfs:label>
+    <rdfs:comment xml:lang="ko">역사적 사건 과정에서 발생한 학살·연행·총살·사망 등 구체적인 폭력 행위 및 그 결과. 개인 단위의 희생(사망 포함)을 표현</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#거주함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">거주함</rdfs:label>
+    <rdfs:comment xml:lang="ko">인물이 특정 장소(마을·가옥)에 거주하였던 관계</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_아카이브">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Archive"/>
+    <ora:소장하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#어린_시절_피난과_굶주림_구술_기록"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕의_어머니">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <ora:낙인을_받다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#빨갱이_가족_낙인"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+    <ora:트라우마를_겪다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#아버지_학살로_인한_심리적_트라우마"/>
+    <ora:추모_의례를_수행하다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕_아버지_비밀_제사"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewActivity">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">InterviewActivity</rdfs:label>
+    <rdfs:label xml:lang="ko">면담 활동</rdfs:label>
+    <rdfs:comment xml:lang="ko">면담자가 구술자를 대상으로 수행한 채록 면담 행위</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#참석하다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">참석하다</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 위령제 등 추모 행사에 참석함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Narrator"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#MemorialEvent"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#4_3_유가족_사회적_낙인_및_침묵_강요">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SocialStigma"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#IdentityTransformation">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">IdentityTransformation</rdfs:label>
+    <rdfs:label xml:lang="ko">정체성 변화 / 역사 인식 전환</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 4.3에 대한 수치·은폐에서 역사적 의미 부여와 자긍심으로 인식을 전환하는 내면적 과정. 생일과 역사적 사건의 날짜 일치를 부끄럼에서 특별함으로 재해석하는 경험 포함.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E1_CRM_Entity"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#record_ee1f9376_a441_4415_a1f0_fd138109345d">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralRecord"/>
+    <rdfs:label xml:lang="ko">NAR-202603-0001_김순덕_구술기록</rdfs:label>
+    <dcterms:created>2026-04-13T06:05:01.693418Z</dcterms:created>
+    <dcterms:description xml:lang="ko">제주 4.3 구술기록 아카이브
+Jeju April 3rd Oral History Archive
+북촌리 대학살의 기억
+구술 내용
+[1] 우리 아버지는 그때 마흔두 살이었어. 1949년 1월 17일, 그날을 어떻게 잊겠어. 북촌리에서 300명 넘게 죽었다고 하는데, 우리 아버지도 그날 총에 맞아 돌아가셨어.
+[2] 군인들이 마을로 들어오면서 집집마다 남자들을 다 끌어냈어. 아버지는 아무것도 모른다고, 우리는 아무 잘못도 없다고 했지만 소용없었어. 총소리가 나고, 우린 숨어서 울기만 했어.
+[3] 어머니는 그때부터 평생 혼자 우리 4남매를 키웠어. 아버지 얘기는 절대 못 하게 했어. 빨갱이 가족이라고 하면 우리도 살아남을 수가 없으니까.
+[4] 제사도 몰래 지냈어. 4월 3일이 되면 어머니는 방문을 걸어 잠그고 혼자 울었어. 우리는 그게 왜인지 알면서도 모른 척해야 했어.
+[5] 지금은 위령제도 하고, 국가에서 인정도 해줬다고 하는데, 그게 뭔 소용이야. 아버지는 돌아오지 않는데. 그래도</dcterms:description>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_면담_세션__2026_01_22">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession"/>
+    <ora:면담_장소임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#서귀포시_대정읍_상모리"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+    <ora:발생_시기임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건__1947_1954"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#김영수">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Person"/>
+    <ora:졸업 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#서울대학교"/>
+    <dcterms:source>rec_001</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#희생됨">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">희생됨</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자가 특정 집단 학살 사건에서 희생되었음</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalMassacreEvent"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#박양순의_아들">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <ora:가족_관계임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#박양순의_남편"/>
+    <dcterms:source>NAR-202603-0003_박양순_구술기록.docx</dcterms:source>
+    <ora:사회적_낙인을_경험함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#4_3_유가족_사회적_낙인_및_침묵_강요"/>
+    <ora:국가_공인을_받음 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#4_3_특별법에_의한_희생자_명단_등재"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#위령제에_참여함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">위령제에 참여함</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자 또는 유가족이 해마다 4.3 위령제에 참여함. 생일과 위령제 날짜의 일치로 특별한 의미를 지님.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeAct"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_피난">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Evacuation"/>
+    <ora:발생_시기임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+    <ora:발생_장소이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_중턱"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#사회적_낙인과_연관됨">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">사회적 낙인과 연관됨</rdfs:label>
+    <rdfs:comment xml:lang="ko">침묵 강요 문화가 '빨갱이 가족' 등의 사회적 낙인과 긴밀히 연관되어 작동함.</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SilenceCulture"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SocialStigma"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지_체포_및_처형">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalEvent"/>
+    <ora:발생_장소이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지가_남은_마을"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+    <ora:초래함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#피난_굶주림_아버지_상실로_인한_트라우마"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#북촌리_위령제">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeRitual"/>
+    <ora:발생_장소이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주시_조천면_북촌리"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지_처형">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Death"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#박양순_면담_세션__2026_02_03">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#InterviewSession"/>
+    <ora:면담_장소임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주시_애월읍_하귀리"/>
+    <dcterms:source>NAR-202603-0003_박양순_구술기록.docx</dcterms:source>
+    <ora:발생_시기임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건__1947_1954"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeRitual">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">CommemorativeRitual</rdfs:label>
+    <rdfs:label xml:lang="ko">추모 의례</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자를 기리기 위해 수행되는 제례·위령제 등의 의례 행위</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#김순덕_아버지_비밀_제사">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeRitual"/>
+    <ora:발생_시점이다 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#4월_3일"/>
+    <dcterms:source>NAR-202603-0001_김순덕_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#EyewitnessTestimony">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">EyewitnessTestimony</rdfs:label>
+    <rdfs:label xml:lang="ko">목격 증언</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자가 사건을 직접 목격한 경험을 바탕으로 서술한 구술 내용의 단위. 감각적·현장적 기억을 담은 1인칭 증언.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/CreativeWork"/>
+    <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Document"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E33_Linguistic_Object"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_어머니">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <ora:동반함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#이판석"/>
+    <dcterms:source>NAR-202603-0002_이판석_구술기록.docx</dcterms:source>
+    <ora:경험함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#한라산_피난"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건_국가_공식_인정">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#StateRecognition"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeAct">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">CommemorativeAct</rdfs:label>
+    <rdfs:label xml:lang="ko">추모 / 제례 행위</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자를 기억하고 애도하기 위해 수행된 의례적·공식적 행위. 비밀 제사부터 국가 공인 위령제까지 포함.</rdfs:comment>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E7_Activity"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Event"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#박양순_남편_사망_사건__육지_형무소">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#DeathEvent"/>
+    <ora:발생_장소임 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#육지_형무소"/>
+    <dcterms:source>NAR-202603-0003_박양순_구술기록.docx</dcterms:source>
+    <ora:역사적_시기에_속함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건__1947_1954"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#추모_행위를_수행함">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">추모 행위를 수행함</rdfs:label>
+    <rdfs:comment xml:lang="ko">유가족 또는 구술자가 희생자를 위한 추모·제례 행위를 수행함</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SurvivorFamily"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeAct"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyVictim">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">FamilyVictim</rdfs:label>
+    <rdfs:label xml:lang="ko">가족 희생자</rdfs:label>
+    <rdfs:comment xml:lang="ko">구술자의 직계 가족 또는 친척 중 4.3 사건으로 인해 희생된 인물. 기존 Victim 클래스의 하위 개념으로, 가족 관계가 명확히 서술된 경우.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+    <rdfs:subClassOf rdf:resource="https://schema.org/Person"/>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E69_Death"/>
+    <owl:equivalentClass rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E21_Person"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#아버지_학살로_인한_심리적_트라우마">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Trauma"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#오선희">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Interviewer"/>
+    <ora:면담_진행함 rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#박양순_면담_세션__2026_02_03"/>
+    <dcterms:source>NAR-202603-0003_박양순_구술기록.docx</dcterms:source>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeEvent">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">CommemorativeEvent</rdfs:label>
+    <rdfs:label xml:lang="ko">추모 행사·의례</rdfs:label>
+    <rdfs:comment xml:lang="ko">희생자를 기리기 위해 수행되거나 정기적으로 개최되는 추모·위령 의례 및 행사</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://www.cidoc-crm.org/cidoc-crm/E5_Event"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#OralRecord">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+    <rdfs:label xml:lang="ko">구술기록</rdfs:label>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#피난_굶주림_아버지_상실로_인한_트라우마">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Trauma"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#트라우마를_겪다">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">트라우마를 겪다</rdfs:label>
+    <rdfs:comment xml:lang="ko">생존자·구술자·가족 구성원이 학살·피난 경험으로 인한 심리적 트라우마와 피해 경험을 지속적으로 겪음</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Survivor"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#OralHistoryNarrator"/>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#FamilyMember"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Trauma"/>
+    <owl:equivalentProperty rdf:resource="http://www.cidoc-crm.org/cidoc-crm/P1_is_identified_by"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#2026_01_22">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TimeSpan"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#서울대학교">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Organization"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#4_3_특별법에_의한_희생자_명단_등재">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#StateRecognition"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#육지_형무소">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#제주시_조천면_북촌리">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#추모_대상임">
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#ObjectProperty"/>
+    <rdfs:label xml:lang="ko">추모 대상임</rdfs:label>
+    <rdfs:comment xml:lang="ko">추모 행위의 대상이 되는 희생자</rdfs:comment>
+    <rdfs:domain rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#CommemorativeAct"/>
+    <rdfs:range rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Victim"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#이판석_아버지가_남은_마을">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#4_3_진상_규명_및_희생자_명예_회복_국가_인정">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#StateRecognition"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#2026_01_15">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#TimeSpan"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#제주시_애월읍_하귀리">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Place"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_유가족_사회적_낙인_피해">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#SocialStigma"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#제주_4_3_사건__1947_1954">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#HistoricalPeriod"/>
+  </rdf:Description>
+  <rdf:Description rdf:about="https://yimjhkr68.github.io/oral-history-ontology/core#아버지_학살_목격으로_인한_심리적_트라우마">
+    <rdf:type rdf:resource="https://yimjhkr68.github.io/oral-history-ontology/core#Trauma"/>
+  </rdf:Description>
+</rdf:RDF>

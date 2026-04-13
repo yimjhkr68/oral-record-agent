@@ -1,4 +1,4 @@
-"""main.py — Oral Record Agent v4.0 API 서버"""
+"""main.py — Oral Record Agent v5.0 API 서버"""
 
 from pathlib import Path
 
@@ -21,13 +21,19 @@ from api.router_published_ontology import router as published_ontology_router
 from api.router_settings           import router as settings_router
 from api.router_graph_layout       import router as graph_layout_router
 from api.router_cluster            import router as cluster_router
+from api.router_rdf_migration      import router as rdf_migration_router
+from api.router_rdf_ontology       import router as rdf_ontology_router
+from api.router_rdf_validate       import router as rdf_validate_router
+from api.router_semantic_search    import router as semantic_search_router
+from api.router_rdf_publish        import router as rdf_publish_router
+from api.router_rdf_export         import router as rdf_export_router
 
 STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(
-    title="Oral Record Agent v4.0",
-    description="구술기록 지식그래프 API",
-    version="4.0.0",
+    title="Oral Record Agent v5.0",
+    description="구술기록 지식그래프 + RDF 온톨로지 공표 API",
+    version="5.0.0",
 )
 
 app.add_middleware(
@@ -50,10 +56,18 @@ app.include_router(settings_router)
 app.include_router(graph_layout_router)
 app.include_router(cluster_router)
 
+# v5.0 RDF 관련 라우터
+app.include_router(rdf_migration_router)
+app.include_router(rdf_ontology_router)
+app.include_router(rdf_validate_router)
+app.include_router(semantic_search_router)
+app.include_router(rdf_publish_router)
+app.include_router(rdf_export_router)
+
 
 @app.get("/health", tags=["서버"])
 def health():
-    return {"status": "ok", "version": "4.0.0"}
+    return {"status": "ok", "version": "5.0.0"}
 
 
 @app.get("/", include_in_schema=False)

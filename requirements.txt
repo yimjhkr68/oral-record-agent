@@ -1,9 +1,21 @@
+# ── 코어 ────────────────────────────────────────────────
 fastapi
 uvicorn[standard]
-anthropic
+python-multipart
 python-dotenv
 aiofiles
-networkx
+
+# ── AI / LLM ─────────────────────────────────────────────
+anthropic
+
+# ── 문서 처리 ────────────────────────────────────────────
 pypdf
 python-docx
-python-multipart
+
+# ── 그래프 / 분석 ─────────────────────────────────────────
+networkx
+
+# ── v5.0: RDF / OWL / SPARQL ─────────────────────────────
+rdflib>=7.0.0          # 7.6.0 검증됨
+owlready2>=0.46        # 0.50  검증됨
+SPARQLWrapper>=2.0.0   # 2.0.0 검증됨

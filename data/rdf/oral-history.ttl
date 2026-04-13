@@ -1,0 +1,1432 @@
+@prefix crm: <http://www.cidoc-crm.org/cidoc-crm/> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix ora: <https://yimjhkr68.github.io/oral-history-ontology/core#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rico: <https://www.ica.org/standards/RiC/ontology#> .
+@prefix schema: <https://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<https://yimjhkr68.github.io/oral-history-ontology/core> a owl:Ontology ;
+    rdfs:label "한국 구술기록 온톨로지"@ko ;
+    dcterms:created "2026-04-13"^^xsd:date ;
+    owl:versionInfo "1.0.0" .
+
+ora:Dwelling a owl:Class ;
+    rdfs:label "Dwelling"@ko,
+        "가옥/주거지"@ko ;
+    rdfs:comment "구술 증언에 등장하는 주민의 거주 건물, 특히 짚 지붕 전통 가옥"@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        crm:E53_Place,
+        schema:Place ;
+    owl:equivalentClass crm:E27_Site .
+
+ora:HistoricalIncident a owl:Class ;
+    rdfs:label "HistoricalIncident"@ko,
+        "역사적 사건(제주 4.3)"@ko ;
+    rdfs:comment "1948~1954년에 걸쳐 제주도에서 발생한 무장봉기 및 군경의 대규모 탄압·학살 사건 전체를 지칭하는 역사적 시기"@ko ;
+    rdfs:subClassOf dcterms:PeriodOfTime,
+        crm:E5_Event,
+        schema:Event ;
+    owl:equivalentClass crm:E4_Period .
+
+ora:MassacreEvent a owl:Class ;
+    rdfs:label "MassacreEvent"@ko,
+        "학살 사건"@ko ;
+    rdfs:comment "특정 일시·장소에서 군경에 의해 다수의 민간인이 집단 살해된 사건"@ko ;
+    rdfs:subClassOf crm:E5_Event,
+        schema:Event ;
+    owl:equivalentClass crm:E5_Event .
+
+ora:OralHistoryNarrative a owl:Class ;
+    rdfs:label "OralHistoryNarrative"@ko,
+        "구술 서사"@ko ;
+    rdfs:comment "구술자가 직접 경험한 역사적 사건에 대해 증언한 구술 기록 텍스트"@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        foaf:Document,
+        schema:CreativeWork ;
+    owl:equivalentClass crm:E33_Linguistic_Object .
+
+ora:PerpetratorGroup a owl:Class ;
+    rdfs:label "PerpetratorGroup"@ko,
+        "가해 집단(군경·토벌대)"@ko ;
+    rdfs:comment "역사적 폭력 사건 당시 학살·진압·토벌 활동을 수행한 군·경 조직 또는 무장 집단"@ko ;
+    rdfs:subClassOf crm:E74_Group .
+
+ora:TraumaticExperience a owl:Class ;
+    rdfs:label "TraumaticExperience"@ko,
+        "피해 경험"@ko ;
+    rdfs:comment "구술자가 직접 겪은 피해·공포·상실의 경험으로 구술에 명시된 내용"@ko ;
+    rdfs:subClassOf crm:E5_Event,
+        crm:E7_Activity ;
+    owl:equivalentClass crm:E5_Event .
+
+ora:Village a owl:Class ;
+    rdfs:label "Village"@ko,
+        "마을"@ko ;
+    rdfs:comment "구술 증언에서 언급된 피해 마을 또는 거주 공동체"@ko ;
+    rdfs:subClassOf dcterms:Location,
+        crm:E1_CRM_Entity,
+        schema:Place ;
+    owl:equivalentClass crm:E53_Place .
+
+ora:ViolentAct a owl:Class ;
+    rdfs:label "ViolentAct"@ko,
+        "폭력 행위·희생"@ko ;
+    rdfs:comment "역사적 사건 과정에서 발생한 학살·연행·총살·사망 등 구체적인 폭력 행위 및 그 결과. 개인 단위의 희생(사망 포함)을 표현"@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity .
+
+ora:record_469a7ee6_11cc_4ec4_a022_2124c0166e73 a ora:OralRecord ;
+    rdfs:label "NAR-202603-0002_이판석_구술기록"@ko ;
+    dcterms:created "2026-04-13T06:05:01.739674Z" ;
+    dcterms:description """제주 4.3 구술기록 아카이브
+Jeju April 3rd Oral History Archive
+어린 시절 피난과 굶주림
+구술 내용
+[1] 열 살이었어요, 그때. 어른들이 무서운 표정으로 뭔가를 얘기하는 건 알겠는데 뭔지는 몰랐어. 갑자기 어머니가 짐을 쌌고 우리는 밤에 산 쪽으로 올라갔어요.
+[2] 한라산 중턱에서 몇 달을 지냈어요. 동굴이나 바위 그늘 아래서. 먹을 게 없어서 풀뿌리도 캐 먹고, 고사리도 삶아 먹었어. 겨울엔 정말 추웠어요.
+[3] 아버지는 마을에 남아있다가 결국 잡혀갔어요. 나중에 들으니까 형무소에 갇혔다고 했는데, 한국전쟁 때 처형됐다고 해요. 연락도 없이, 그냥 그렇게.
+[4] 산에서 내려오라는 명령이 떨어졌어. 내려오면 살려준다고 했어. 어머니는 믿지 않았는데 더는 버틸 수가 없었어. 내려오니까 심문도 받고 힘든 일도 많았지만 살아남았어.
+[5] 그 시절 얘기를 하면 지금도 가슴이 두근거려요. 무섭다기보다는... 억울해. 우리가 뭘 잘못했는지. 그냥 제주도에"""@ko .
+
+ora:record_ee1f9376_a441_4415_a1f0_fd138109345d a ora:OralRecord ;
+    rdfs:label "NAR-202603-0001_김순덕_구술기록"@ko ;
+    dcterms:created "2026-04-13T06:05:01.693418Z" ;
+    dcterms:description """제주 4.3 구술기록 아카이브
+Jeju April 3rd Oral History Archive
+북촌리 대학살의 기억
+구술 내용
+[1] 우리 아버지는 그때 마흔두 살이었어. 1949년 1월 17일, 그날을 어떻게 잊겠어. 북촌리에서 300명 넘게 죽었다고 하는데, 우리 아버지도 그날 총에 맞아 돌아가셨어.
+[2] 군인들이 마을로 들어오면서 집집마다 남자들을 다 끌어냈어. 아버지는 아무것도 모른다고, 우리는 아무 잘못도 없다고 했지만 소용없었어. 총소리가 나고, 우린 숨어서 울기만 했어.
+[3] 어머니는 그때부터 평생 혼자 우리 4남매를 키웠어. 아버지 얘기는 절대 못 하게 했어. 빨갱이 가족이라고 하면 우리도 살아남을 수가 없으니까.
+[4] 제사도 몰래 지냈어. 4월 3일이 되면 어머니는 방문을 걸어 잠그고 혼자 울었어. 우리는 그게 왜인지 알면서도 모른 척해야 했어.
+[5] 지금은 위령제도 하고, 국가에서 인정도 해줬다고 하는데, 그게 뭔 소용이야. 아버지는 돌아오지 않는데. 그래도"""@ko .
+
+ora:record_f4ae0213_d68f_4c3c_85bd_cda3a24944f0 a ora:OralRecord ;
+    rdfs:label "NAR-202603-0005_강옥희_구술기록"@ko ;
+    dcterms:created "2026-04-13T04:02:45.169345Z" ;
+    dcterms:description """제주 4.3 구술기록 아카이브
+Jeju April 3rd Oral History Archive
+여덟 살에 겪은 초토화 작전
+
+
+구술 내용
+[1] 우리 마을이 불탄 게 1948년 11월이었어요. 여덟 살이었는데, 군인들이 와서 집에 불을 질렀어. 짚으로 된 지붕이라 금방 타올랐어요.
+[2] 어머니가 우리 손을 잡고 뛰어나왔어. 아무것도 못 챙겼어. 그냥 살기 위해서 도망쳤어요. 뒤를 돌아보니까 집이 시뻘겋게 타고 있었어.
+[3] 마을 사람들이 다 들판으로 나왔어. 어떤 집은 식구가 다 나왔는데 어떤 집은 어른 남자가 없었어. 잡혀간 거야. 죽임을 당한 거야.
+[4] 한겨울에 갈 곳이 없었어. 친척집을 전전하다가 결국 서귀포 읍내 천막촌에서 살았어. 먹을 게 없어서 구호품으로 연명했어요.
+[5] 그때 입은 상처가 평생 갔어요. 나는 다행히 가족이 다 살아남았지만, 친구들 중에는 아버지나 오빠를 잃은 애들이 많았어요. 그 눈빛이 아직도 기억나.
+
+면담 소견
+본 구술 기록은 강옥희 구술자와"""@ko .
+
+ora:가족_관계이다 a owl:ObjectProperty ;
+    rdfs:label "가족 관계이다"@ko ;
+    rdfs:comment "구술자·생존자·가족 구성원이 희생자 또는 다른 가족과 가족 관계에 있음"@ko ;
+    rdfs:domain ora:FamilyMember,
+        ora:OralHistoryNarrator,
+        ora:Survivor ;
+    rdfs:range ora:FamilyMember,
+        ora:Survivor,
+        ora:Victim ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:가족_관계임 a owl:ObjectProperty ;
+    rdfs:label "가족 관계임"@ko ;
+    rdfs:comment "구술자·유가족과 희생자 간의 가족 관계 (예: 자녀-부모, 형제자매)"@ko ;
+    rdfs:domain ora:OralHistoryNarrator,
+        ora:SurvivorFamily ;
+    rdfs:range ora:OralHistoryNarrator,
+        ora:SurvivorFamily,
+        ora:Victim .
+
+ora:가족_희생자로_보유함 a owl:ObjectProperty ;
+    rdfs:label "가족 희생자로 보유함"@ko ;
+    rdfs:comment "구술자 또는 유가족이 4.3 사건으로 희생된 가족 구성원을 가짐."@ko ;
+    rdfs:domain ora:OralHistoryNarrator,
+        ora:SurvivorFamily ;
+    rdfs:range ora:FamilyVictim ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:강제_피난을_유발함 a owl:ObjectProperty ;
+    rdfs:label "강제 피난을 유발함"@ko ;
+    rdfs:comment "초토화 작전 또는 마을 소각이 주민의 강제 피난을 야기함"@ko ;
+    rdfs:domain ora:ScorchingOperation,
+        ora:VillageDestruction ;
+    rdfs:range ora:ForcedDisplacement ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:개최되다 a owl:ObjectProperty ;
+    rdfs:label "개최되다"@ko ;
+    rdfs:comment "추모 행사가 특정 장소와 시기에 개최됨"@ko ;
+    rdfs:domain ora:MemorialEvent ;
+    rdfs:range ora:Place,
+        ora:TimePeriod ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:거주하다 a owl:ObjectProperty ;
+    rdfs:label "거주하다"@ko ;
+    rdfs:comment "인물이 특정 장소에 거주하거나 연고를 가짐"@ko ;
+    rdfs:domain ora:HistoricalPerson,
+        ora:Narrator ;
+    rdfs:range ora:Place ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:거주함 a owl:ObjectProperty ;
+    rdfs:label "거주함"@ko ;
+    rdfs:comment "인물이 특정 장소(마을·가옥)에 거주하였던 관계"@ko ;
+    rdfs:domain ora:FamilyMember,
+        ora:OralHistoryNarrator ;
+    rdfs:range ora:Place ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:경험하다 a owl:ObjectProperty ;
+    rdfs:label "경험하다"@ko ;
+    rdfs:comment "인물이 사건이나 사회적 현상을 직·간접적으로 경험함"@ko ;
+    rdfs:domain ora:HistoricalPerson,
+        ora:Narrator ;
+    rdfs:range ora:HistoricalEvent,
+        ora:SilenceCulture,
+        ora:ViolenceAct ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:경험함 a owl:ObjectProperty ;
+    rdfs:label "경험함"@ko ;
+    rdfs:comment "인물이 특정 역사적 사건·피난·트라우마를 직접 겪은 관계"@ko ;
+    rdfs:domain ora:FamilyMember,
+        ora:OralHistoryNarrator ;
+    rdfs:range ora:Evacuation,
+        ora:HistoricalEvent,
+        ora:Trauma ;
+    owl:equivalentProperty crm:P12i_was_present_at .
+
+ora:고미영 a ora:Interviewer ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:면담하다 ora:김순덕 .
+
+ora:공동체_피해를_증언함 a owl:ObjectProperty ;
+    rdfs:label "공동체 피해를 증언함"@ko ;
+    rdfs:comment "구술 기록이 마을 공동체 내 이웃의 희생을 증언하고 있음."@ko ;
+    rdfs:domain ora:OralHistoryRecord ;
+    rdfs:range ora:CommunityVictim ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:공식_인정을_받다 a owl:ObjectProperty ;
+    rdfs:label "공식 인정을 받다"@ko ;
+    rdfs:comment "희생자 또는 역사적 사건·시기가 국가로부터 공식적으로 인정됨"@ko ;
+    rdfs:domain ora:HistoricalPeriod,
+        ora:Victim ;
+    rdfs:range ora:StateRecognition ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:공식인정을받다 a owl:ObjectProperty ;
+    rdfs:label "공식인정을받다"@ko ;
+    rdfs:comment "희생자 또는 역사적 사건이 국가로부터 공식적으로 인정됨"@ko ;
+    rdfs:domain ora:HistoricalEvent,
+        ora:Victim ;
+    rdfs:range ora:StateRecognition ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:관련되다 a owl:ObjectProperty ;
+    rdfs:label "관련되다"@ko ;
+    rdfs:comment "역사적 관련 인물이 구술자와 가족·이웃 등의 관계로 연결됨"@ko ;
+    rdfs:domain ora:HistoricalPerson ;
+    rdfs:range ora:Narrator ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:구술하다 a owl:ObjectProperty ;
+    rdfs:label "구술하다"@ko ;
+    rdfs:comment "구술자가 자신의 경험과 기억을 언어로 진술하여 구술 기록을 생성함"@ko ;
+    rdfs:domain ora:OralHistoryNarrator ;
+    rdfs:range ora:OralHistoryRecord ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:구술함 a owl:ObjectProperty ;
+    rdfs:label "구술함"@ko ;
+    rdfs:comment "구술자가 면담을 통해 구술 기록을 생성·제공하는 행위"@ko ;
+    rdfs:domain ora:OralHistoryNarrator ;
+    rdfs:range ora:OralHistoryRecord .
+
+ora:국가_공인을_받음 a owl:ObjectProperty ;
+    rdfs:label "국가 공인을 받음"@ko ;
+    rdfs:comment "희생자 또는 유가족이 국가로부터 공식 인정·명예 회복을 받음"@ko ;
+    rdfs:domain ora:SurvivorFamily,
+        ora:Victim ;
+    rdfs:range ora:StateRecognition .
+
+ora:기억하다 a owl:ObjectProperty ;
+    rdfs:label "기억하다"@ko ;
+    rdfs:comment "구술자가 사건 및 경험을 기억하고 증언함"@ko ;
+    rdfs:domain ora:Narrator ;
+    rdfs:range ora:HistoricalEvent,
+        ora:PersonalMemory,
+        ora:ViolenceAct ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:김순덕_면담_활동 a ora:InterviewActivity ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:면담을_수행하다 ora:북촌리_대학살의_기억_구술_기록 ;
+    ora:발생_시점이다 ora:2026_01_15 ;
+    ora:발생_장소이다 ora:제주시_조천면_북촌리 .
+
+ora:김영수 a ora:Person ;
+    dcterms:source "rec_001" ;
+    ora:졸업 ora:서울대학교 .
+
+ora:김진수 a ora:Interviewer ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:면담하다 ora:이판석 .
+
+ora:김진수_연구원 a ora:Interviewer ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:면담_진행함 ora:이판석_면담_세션__2026_01_22 .
+
+ora:낙인을_받다 a owl:ObjectProperty ;
+    rdfs:label "낙인을 받다"@ko ;
+    rdfs:comment "생존자·유족·가족 구성원이 이념적 낙인을 부과받아 사회적 억압을 경험함"@ko ;
+    rdfs:domain ora:FamilyMember,
+        ora:Survivor ;
+    rdfs:range ora:SocialStigma ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:동반함 a owl:ObjectProperty ;
+    rdfs:label "동반함"@ko ;
+    rdfs:comment "가족 구성원이 피난 또는 경험 과정에서 다른 인물과 함께한 관계 (예: 어머니가 자녀를 이끌고 탈출)"@ko ;
+    rdfs:domain ora:FamilyMember ;
+    rdfs:range ora:FamilyMember,
+        ora:OralHistoryNarrator ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:마을_공동체_피해를_나타냄 a owl:ObjectProperty ;
+    rdfs:label "마을 공동체 피해를 나타냄"@ko ;
+    rdfs:comment "마을 공동체 희생자가 특정 마을(금능리 등)에 거주하며 해당 지역의 집단적 피해를 대표함."@ko ;
+    rdfs:domain ora:CommunityVictim ;
+    rdfs:range ora:Place ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:마을을_소각함 a owl:ObjectProperty ;
+    rdfs:label "마을을 소각함"@ko ;
+    rdfs:comment "초토화 작전의 결과로 마을 소각·파괴가 발생함"@ko ;
+    rdfs:domain ora:ScorchingOperation ;
+    rdfs:range ora:VillageDestruction ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:면담_세션에서_수집됨 a owl:ObjectProperty ;
+    rdfs:label "면담 세션에서 수집됨"@ko ;
+    rdfs:comment "구술 기록이 특정 면담 세션을 통해 수집되었음을 나타냄"@ko ;
+    rdfs:domain ora:OralHistoryRecord ;
+    rdfs:range ora:InterviewSession .
+
+ora:면담_장소임 a owl:ObjectProperty ;
+    rdfs:label "면담 장소임"@ko ;
+    rdfs:comment "면담 세션이 진행된 장소"@ko ;
+    rdfs:domain ora:InterviewSession ;
+    rdfs:range ora:Place .
+
+ora:면담_진행함 a owl:ObjectProperty ;
+    rdfs:label "면담 진행함"@ko ;
+    rdfs:comment "면담자가 구술 면담 세션을 기획하고 진행함"@ko ;
+    rdfs:domain ora:Interviewer ;
+    rdfs:range ora:InterviewSession .
+
+ora:면담을_수행하다 a owl:ObjectProperty ;
+    rdfs:label "면담을 수행하다"@ko ;
+    rdfs:comment "면담 활동의 결과로 구술 기록이 생산됨"@ko ;
+    rdfs:domain ora:InterviewActivity ;
+    rdfs:range ora:OralHistoryRecord ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:면담하다 a owl:ObjectProperty ;
+    rdfs:label "면담하다"@ko ;
+    rdfs:comment "면담자가 구술자를 대상으로 채록 면담을 수행함"@ko ;
+    rdfs:domain ora:Interviewer ;
+    rdfs:range ora:OralHistoryNarrator ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:목격_증언을_포함함 a owl:ObjectProperty ;
+    rdfs:label "목격 증언을 포함함"@ko ;
+    rdfs:comment "구술 기록이 특정 사건에 대한 목격 증언을 포함하고 있음"@ko ;
+    rdfs:domain ora:OralHistoryRecord ;
+    rdfs:range ora:EyewitnessTestimony ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:목격함 a owl:ObjectProperty ;
+    rdfs:label "목격함"@ko ;
+    rdfs:comment "구술자 또는 아동 목격자가 특정 사건을 현장에서 직접 목격함"@ko ;
+    rdfs:domain ora:ChildWitness,
+        ora:OralHistoryNarrator,
+        ora:SurvivorFamily ;
+    rdfs:range ora:HistoricalMassacreEvent,
+        ora:ScorchingOperation,
+        ora:VillageDestruction ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:박양순 a ora:OralHistoryNarrator ;
+    dcterms:source "NAR-202603-0003_박양순_구술기록.docx" ;
+    ora:가족_관계임 ora:박양순의_남편,
+        ora:박양순의_아들 ;
+    ora:구술함 ora:남편을_잃은_스물셋_새댁_구술_기록 ;
+    ora:사회적_낙인을_경험함 ora:4_3_유가족_사회적_낙인_및_침묵_강요 .
+
+ora:발생_시기임 a owl:ObjectProperty ;
+    rdfs:label "발생 시기임"@ko ;
+    rdfs:comment "사건·활동이 속하는 역사적 시기"@ko ;
+    rdfs:domain ora:CommemorativeAct,
+        ora:DeathEvent,
+        ora:HistoricalMassacreEvent,
+        ora:InterviewSession ;
+    rdfs:range ora:HistoricalPeriod .
+
+ora:발생_시점이다 a owl:ObjectProperty ;
+    rdfs:label "발생 시점이다"@ko ;
+    rdfs:comment "사건·활동이 특정 날짜·기간에 발생함"@ko ;
+    rdfs:domain ora:CommemorativeRitual,
+        ora:Death,
+        ora:HistoricalEvent,
+        ora:InterviewActivity ;
+    rdfs:range ora:TimeSpan ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:발생_장소이다 a owl:ObjectProperty ;
+    rdfs:label "발생 장소이다"@ko ;
+    rdfs:comment "사건·활동이 특정 장소에서 발생함. Village·Dwelling을 Place로 통합하여 범위 재설정"@ko ;
+    rdfs:domain ora:CommemorativeRitual,
+        ora:Evacuation,
+        ora:HistoricalEvent,
+        ora:InterviewActivity ;
+    rdfs:range ora:Place ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:발생_장소임 a owl:ObjectProperty ;
+    rdfs:label "발생 장소임"@ko ;
+    rdfs:comment "사건·활동이 발생한 지리적 장소"@ko ;
+    rdfs:domain ora:CommemorativeAct,
+        ora:DeathEvent,
+        ora:HistoricalMassacreEvent ;
+    rdfs:range ora:Place .
+
+ora:발생하다 a owl:ObjectProperty ;
+    rdfs:label "발생하다"@ko ;
+    rdfs:comment "역사적 사건이 특정 장소와 시기에 발생함"@ko ;
+    rdfs:domain ora:HistoricalEvent ;
+    rdfs:range ora:Place,
+        ora:TimePeriod ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:발생하다__폭력_행위 a owl:ObjectProperty ;
+    rdfs:label "발생하다 (폭력 행위)"@ko ;
+    rdfs:comment "폭력 행위가 특정 장소와 시기에 발생함"@ko ;
+    rdfs:domain ora:ViolenceAct ;
+    rdfs:range ora:Place,
+        ora:TimePeriod ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:사망_사건을_가짐 a owl:ObjectProperty ;
+    rdfs:label "사망 사건을 가짐"@ko ;
+    rdfs:comment "희생자 개인에게 귀속되는 사망 사건"@ko ;
+    rdfs:domain ora:Victim ;
+    rdfs:range ora:DeathEvent .
+
+ora:사회적_낙인과_연관됨 a owl:ObjectProperty ;
+    rdfs:label "사회적 낙인과 연관됨"@ko ;
+    rdfs:comment "침묵 강요 문화가 '빨갱이 가족' 등의 사회적 낙인과 긴밀히 연관되어 작동함."@ko ;
+    rdfs:domain ora:SilenceCulture ;
+    rdfs:range ora:SocialStigma ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:사회적_낙인을_경험함 a owl:ObjectProperty ;
+    rdfs:label "사회적 낙인을 경험함"@ko ;
+    rdfs:comment "유가족이나 구술자가 사건 이후 사회적 낙인 피해를 경험함"@ko ;
+    rdfs:domain ora:OralHistoryNarrator,
+        ora:SurvivorFamily ;
+    rdfs:range ora:SocialStigma .
+
+ora:상징하다 a owl:ObjectProperty ;
+    rdfs:label "상징하다"@ko ;
+    rdfs:comment "특정 날짜(4월 3일)가 역사적 사건과 추모를 동시에 상징함"@ko ;
+    rdfs:domain ora:TimePeriod ;
+    rdfs:range ora:HistoricalEvent,
+        ora:MemorialEvent ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:생산하다 a owl:ObjectProperty ;
+    rdfs:label "생산하다"@ko ;
+    rdfs:comment "면담 세션의 결과로 구술 기록이 생산됨"@ko ;
+    rdfs:domain ora:InterviewSession ;
+    rdfs:range ora:OralHistoryRecord ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:소각_피해를_입음 a owl:ObjectProperty ;
+    rdfs:label "소각 피해를 입음"@ko ;
+    rdfs:comment "전통 가옥이 초토화 작전으로 인해 소각·파괴 피해를 입음"@ko ;
+    rdfs:domain ora:TraditionalDwelling ;
+    rdfs:range ora:VillageDestruction ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:소장되다 a owl:ObjectProperty ;
+    rdfs:label "소장되다"@ko ;
+    rdfs:comment "구술기록이 아카이브 컬렉션에 보존·소장됨"@ko ;
+    rdfs:domain ora:OralHistoryRecord ;
+    rdfs:range ora:Archive ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:소장하다 a owl:ObjectProperty ;
+    rdfs:label "소장하다"@ko ;
+    rdfs:comment "아카이브가 구술 기록을 수집·보존·관리함"@ko ;
+    rdfs:domain ora:Archive ;
+    rdfs:range ora:OralHistoryRecord ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:속함 a owl:ObjectProperty ;
+    rdfs:label "속함"@ko ;
+    rdfs:comment "사건 및 행위가 제주 4.3 역사적 시기에 속하는 관계"@ko ;
+    rdfs:domain ora:Evacuation,
+        ora:ScorchingOperation,
+        ora:VillageBurning ;
+    rdfs:range ora:HistoricalPeriod ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:수집되다 a owl:ObjectProperty ;
+    rdfs:label "수집되다"@ko ;
+    rdfs:comment "구술기록이 특정 면담 세션을 통해 수집됨"@ko ;
+    rdfs:domain ora:OralHistoryRecord ;
+    rdfs:range ora:InterviewSession ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:수행함 a owl:ObjectProperty ;
+    rdfs:label "수행함"@ko ;
+    rdfs:comment "군인/군경이 초토화 작전·방화 등 역사적 사건을 실행한 관계"@ko ;
+    rdfs:domain ora:MilitaryForce ;
+    rdfs:range ora:HistoricalEvent ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:아동기_경험_사건임 a owl:ObjectProperty ;
+    rdfs:label "아동기 경험 사건임"@ko ;
+    rdfs:comment "해당 사건이 구술자가 아동이었던 시기에 직접 경험한 사건임"@ko ;
+    rdfs:domain ora:ChildWitness ;
+    rdfs:range ora:ForcedDisplacement,
+        ora:ScorchingOperation,
+        ora:VillageDestruction ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:아카이브에_소장됨 a owl:ObjectProperty ;
+    rdfs:label "아카이브에 소장됨"@ko ;
+    rdfs:comment "구술 기록이 특정 아카이브 컬렉션에 소장·보존됨"@ko ;
+    rdfs:domain ora:OralHistoryRecord ;
+    rdfs:range ora:Archive .
+
+ora:억압된기억을겪다 a owl:ObjectProperty ;
+    rdfs:label "억압된기억을겪다"@ko ;
+    rdfs:comment "구술자·생존자·관련 인물이 학살 경험으로 인한 트라우마, 개인 기억, 침묵·금기 문화를 겪음"@ko ;
+    rdfs:domain ora:HistoricalPerson,
+        ora:OralHistoryNarrator,
+        ora:Survivor ;
+    rdfs:range ora:SuppressedMemory ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:언급함 a owl:ObjectProperty ;
+    rdfs:label "언급함"@ko ;
+    rdfs:comment "구술 기록이 특정 사건·장소·인물·시기·경험을 언급·서술하는 관계"@ko ;
+    rdfs:domain ora:OralHistoryRecord ;
+    rdfs:range ora:Evacuation,
+        ora:FamilyMember,
+        ora:HistoricalEvent,
+        ora:HistoricalPeriod,
+        ora:MilitaryForce,
+        ora:Place,
+        ora:Trauma ;
+    owl:equivalentProperty crm:P67_refers_to .
+
+ora:역사적_사건과_날짜가_일치함 a owl:ObjectProperty ;
+    rdfs:label "역사적 사건과 날짜가 일치함"@ko ;
+    rdfs:comment "출생 사건의 날짜가 역사적 집단 학살 사건 또는 시기의 날짜와 동일함. 구술자의 정체성 형성에 영향을 미치는 역사적 우연의 일치."@ko ;
+    rdfs:domain ora:BirthEvent ;
+    rdfs:range ora:HistoricalMassacreEvent,
+        ora:HistoricalPeriod ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:역사적_시기에_속함 a owl:ObjectProperty ;
+    rdfs:label "역사적 시기에 속함"@ko ;
+    rdfs:comment "개별 사건이 더 넓은 역사적 시기 내에 포함됨"@ko ;
+    rdfs:domain ora:DeathEvent,
+        ora:HistoricalMassacreEvent ;
+    rdfs:range ora:HistoricalPeriod .
+
+ora:오선희 a ora:Interviewer ;
+    dcterms:source "NAR-202603-0003_박양순_구술기록.docx" ;
+    ora:면담_진행함 ora:박양순_면담_세션__2026_02_03 .
+
+ora:위령제에_참여함 a owl:ObjectProperty ;
+    rdfs:label "위령제에 참여함"@ko ;
+    rdfs:comment "구술자 또는 유가족이 해마다 4.3 위령제에 참여함. 생일과 위령제 날짜의 일치로 특별한 의미를 지님."@ko ;
+    rdfs:domain ora:OralHistoryNarrator,
+        ora:SurvivorFamily ;
+    rdfs:range ora:CommemorativeAct ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:이판석_면담_활동 a ora:InterviewActivity ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:면담을_수행하다 ora:어린_시절_피난과_굶주림_구술_기록 ;
+    ora:발생_시점이다 ora:2026_01_22 ;
+    ora:발생_장소이다 ora:서귀포시_대정읍_상모리 .
+
+ora:자행하다 a owl:ObjectProperty ;
+    rdfs:label "자행하다"@ko ;
+    rdfs:comment "무장 세력/토벌대가 폭력 행위를 자행함"@ko ;
+    rdfs:domain ora:ArmedForce ;
+    rdfs:range ora:ViolenceAct ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:자행함 a owl:ObjectProperty ;
+    rdfs:label "자행함"@ko ;
+    rdfs:comment "군·경 부대가 집단 학살 사건을 자행함"@ko ;
+    rdfs:domain ora:MilitaryUnit ;
+    rdfs:range ora:HistoricalMassacreEvent .
+
+ora:정체성_전환을_경험함 a owl:ObjectProperty ;
+    rdfs:label "정체성 전환을 경험함"@ko ;
+    rdfs:comment "구술자가 4.3에 대한 수치나 회피에서 역사적 의미 부여와 자긍심으로의 인식 전환을 경험함."@ko ;
+    rdfs:domain ora:OralHistoryNarrator ;
+    rdfs:range ora:IdentityTransformation ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:정체성_전환의_계기가_됨 a owl:ObjectProperty ;
+    rdfs:label "정체성 전환의 계기가 됨"@ko ;
+    rdfs:comment "위령제 참가, 역사적 사건의 재인식, 출생일과 사건일의 일치 등이 구술자의 정체성 전환의 계기가 됨."@ko ;
+    rdfs:domain ora:BirthEvent,
+        ora:CommemorativeAct,
+        ora:HistoricalMassacreEvent ;
+    rdfs:range ora:IdentityTransformation ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:제주_4_3_아카이브 a ora:Archive ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:소장하다 ora:어린_시절_피난과_굶주림_구술_기록 .
+
+ora:증언_대상_사건임 a owl:ObjectProperty ;
+    rdfs:label "증언 대상 사건임"@ko ;
+    rdfs:comment "구술 기록이 증언하고 있는 역사적 사건 또는 시기"@ko ;
+    rdfs:domain ora:OralHistoryRecord ;
+    rdfs:range ora:HistoricalMassacreEvent,
+        ora:HistoricalPeriod .
+
+ora:증언하다 a owl:ObjectProperty ;
+    rdfs:label "증언하다"@ko ;
+    rdfs:comment "구술자가 자신의 경험이나 전해들은 내용을 토대로 역사적 사건·시기·사망에 대해 증언함"@ko ;
+    rdfs:domain ora:OralHistoryNarrator ;
+    rdfs:range ora:Death,
+        ora:HistoricalEvent,
+        ora:HistoricalPeriod ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:진행되다 a owl:ObjectProperty ;
+    rdfs:label "진행되다"@ko ;
+    rdfs:comment "면담 세션이 특정 장소와 날짜에 진행됨"@ko ;
+    rdfs:domain ora:InterviewSession ;
+    rdfs:range ora:Place,
+        ora:TimePeriod ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:진행하다 a owl:ObjectProperty ;
+    rdfs:label "진행하다"@ko ;
+    rdfs:comment "면담자가 면담 세션을 기획하고 진행함"@ko ;
+    rdfs:domain ora:Interviewer ;
+    rdfs:range ora:InterviewSession ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:참석하다 a owl:ObjectProperty ;
+    rdfs:label "참석하다"@ko ;
+    rdfs:comment "구술자가 위령제 등 추모 행사에 참석함"@ko ;
+    rdfs:domain ora:Narrator ;
+    rdfs:range ora:MemorialEvent ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:청각적_기억을_포함함 a owl:ObjectProperty ;
+    rdfs:label "청각적 기억을 포함함"@ko ;
+    rdfs:comment "구술 기록이 총소리 등 폭력 상황의 청각적 기억을 증언으로 포함함."@ko ;
+    rdfs:domain ora:OralHistoryRecord ;
+    rdfs:range ora:GunfireSound ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:청각적_기억의_경험_주체임 a owl:ObjectProperty ;
+    rdfs:label "청각적 기억의 경험 주체임"@ko ;
+    rdfs:comment "구술자 또는 가족이 사건 당시 총소리 등의 청각적 폭력을 직접 경험한 주체임."@ko ;
+    rdfs:domain ora:OralHistoryNarrator,
+        ora:SurvivorFamily ;
+    rdfs:range ora:GunfireSound ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:초래함 a owl:ObjectProperty ;
+    rdfs:label "초래함"@ko ;
+    rdfs:comment "역사적 사건(방화·초토화 작전 등)이 피난 및 트라우마를 유발한 인과 관계"@ko ;
+    rdfs:domain ora:HistoricalEvent ;
+    rdfs:range ora:Evacuation,
+        ora:Trauma ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:초토화_작전을_자행함 a owl:ObjectProperty ;
+    rdfs:label "초토화 작전을 자행함"@ko ;
+    rdfs:comment "군·경 부대가 마을에 대한 초토화 작전을 실행함"@ko ;
+    rdfs:domain ora:MilitaryUnit ;
+    rdfs:range ora:ScorchingOperation ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:추모_대상임 a owl:ObjectProperty ;
+    rdfs:label "추모 대상임"@ko ;
+    rdfs:comment "추모 행위의 대상이 되는 희생자"@ko ;
+    rdfs:domain ora:CommemorativeAct ;
+    rdfs:range ora:Victim .
+
+ora:추모_의례를_수행하다 a owl:ObjectProperty ;
+    rdfs:label "추모 의례를 수행하다"@ko ;
+    rdfs:comment "생존자·유족·가족 구성원이 희생자를 위한 제사·위령제 등 추모 의례를 행함"@ko ;
+    rdfs:domain ora:FamilyMember,
+        ora:OralHistoryNarrator,
+        ora:Survivor ;
+    rdfs:range ora:CommemorativeRitual ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:추모_행위를_수행함 a owl:ObjectProperty ;
+    rdfs:label "추모 행위를 수행함"@ko ;
+    rdfs:comment "유가족 또는 구술자가 희생자를 위한 추모·제례 행위를 수행함"@ko ;
+    rdfs:domain ora:OralHistoryNarrator,
+        ora:SurvivorFamily ;
+    rdfs:range ora:CommemorativeAct .
+
+ora:추모행사에참석하다 a owl:ObjectProperty ;
+    rdfs:label "추모행사에참석하다"@ko ;
+    rdfs:comment "구술자·생존자·관련 인물이 위령제 등 추모 행사에 참석하거나 추모 의례를 수행함"@ko ;
+    rdfs:domain ora:HistoricalPerson,
+        ora:OralHistoryNarrator,
+        ora:Survivor ;
+    rdfs:range ora:CommemorativeEvent ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:출생_사건을_가짐 a owl:ObjectProperty ;
+    rdfs:label "출생 사건을 가짐"@ko ;
+    rdfs:comment "인물이 특정 출생 사건과 연결됨. 특히 역사적 사건과 날짜가 일치하는 경우 의미 부여."@ko ;
+    rdfs:domain ora:FamilyVictim,
+        ora:OralHistoryNarrator,
+        ora:Victim ;
+    rdfs:range ora:BirthEvent ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:침묵_강요를_경험함 a owl:ObjectProperty ;
+    rdfs:label "침묵 강요를 경험함"@ko ;
+    rdfs:comment "구술자나 유가족이 4.3에 대한 발언을 금기시하는 침묵 강요 문화를 경험함."@ko ;
+    rdfs:domain ora:OralHistoryNarrator,
+        ora:SurvivorFamily ;
+    rdfs:range ora:SilenceCulture ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:침묵_강요의_공간임 a owl:ObjectProperty ;
+    rdfs:label "침묵 강요의 공간임"@ko ;
+    rdfs:comment "침묵 강요가 이루어진 특정 공간 (가정, 학교, 마을 등)."@ko ;
+    rdfs:domain ora:SilenceCulture ;
+    rdfs:range ora:Place ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:토벌대에_의해_연행_희생됨 a owl:ObjectProperty ;
+    rdfs:label "토벌대에 의해 연행·희생됨"@ko ;
+    rdfs:comment "희생자가 토벌대에 의해 강제 연행되어 살해되었음."@ko ;
+    rdfs:domain ora:CommunityVictim,
+        ora:FamilyVictim,
+        ora:Victim ;
+    rdfs:range ora:ArmedSuppressionUnit ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:토벌을_자행함 a owl:ObjectProperty ;
+    rdfs:label "토벌을 자행함"@ko ;
+    rdfs:comment "토벌대가 특정 마을에서 집단 학살 행위를 자행함."@ko ;
+    rdfs:domain ora:ArmedSuppressionUnit ;
+    rdfs:range ora:HistoricalMassacreEvent ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:트라우마_기억에서_비롯됨 a owl:ObjectProperty ;
+    rdfs:label "트라우마 기억에서 비롯됨"@ko ;
+    rdfs:comment "목격 증언이 구술자의 트라우마 기억에 근거하고 있음"@ko ;
+    rdfs:domain ora:EyewitnessTestimony ;
+    rdfs:range ora:TraumaticMemory ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:트라우마_기억을_보유함 a owl:ObjectProperty ;
+    rdfs:label "트라우마 기억을 보유함"@ko ;
+    rdfs:comment "구술자 또는 목격자가 사건으로 인한 트라우마 기억을 지니고 있음"@ko ;
+    rdfs:domain ora:ChildWitness,
+        ora:OralHistoryNarrator,
+        ora:SurvivorFamily ;
+    rdfs:range ora:TraumaticMemory ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:트라우마를_겪다 a owl:ObjectProperty ;
+    rdfs:label "트라우마를 겪다"@ko ;
+    rdfs:comment "생존자·구술자·가족 구성원이 학살·피난 경험으로 인한 심리적 트라우마와 피해 경험을 지속적으로 겪음"@ko ;
+    rdfs:domain ora:FamilyMember,
+        ora:OralHistoryNarrator,
+        ora:Survivor ;
+    rdfs:range ora:Trauma ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:포함하다 a owl:ObjectProperty ;
+    rdfs:label "포함하다"@ko ;
+    rdfs:comment "제주 4.3 역사적 시기가 개별 역사적 사건을 포함함. 초토화 작전의 구성 요소 포함 관계도 포괄"@ko ;
+    rdfs:domain ora:HistoricalPeriod ;
+    rdfs:range ora:HistoricalEvent ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:포함함 a owl:ObjectProperty ;
+    rdfs:label "포함함"@ko ;
+    rdfs:comment "초토화 작전이 방화 및 피난을 구성 요소로 포함하는 관계"@ko ;
+    rdfs:domain ora:ScorchingOperation ;
+    rdfs:range ora:Evacuation,
+        ora:VillageBurning ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:피난_출발지임 a owl:ObjectProperty ;
+    rdfs:label "피난 출발지임"@ko ;
+    rdfs:comment "장소(가옥 또는 마을)가 피난 행위의 출발 지점인 관계"@ko ;
+    rdfs:domain ora:Place ;
+    rdfs:range ora:Evacuation ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:피난함 a owl:ObjectProperty ;
+    rdfs:label "피난함"@ko ;
+    rdfs:comment "구술자·유가족이 마을 소각으로 인해 강제로 피난길에 오름"@ko ;
+    rdfs:domain ora:ChildWitness,
+        ora:OralHistoryNarrator,
+        ora:SurvivorFamily ;
+    rdfs:range ora:ForcedDisplacement ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:피해를_입다 a owl:ObjectProperty ;
+    rdfs:label "피해를 입다"@ko ;
+    rdfs:comment "역사적 관련 인물이 폭력 행위의 피해를 입음"@ko ;
+    rdfs:domain ora:HistoricalPerson ;
+    rdfs:range ora:ViolenceAct ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:학살하다 a owl:ObjectProperty ;
+    rdfs:label "학살하다"@ko ;
+    rdfs:comment "군경이 학살·진압 사건을 자행함"@ko ;
+    rdfs:domain ora:MilitaryForce ;
+    rdfs:range ora:HistoricalEvent ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:한라산_중턱_피난처 a ora:Place ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:발생_장소임 ora:이판석_아버지_처형_사건__한국전쟁_중 .
+
+ora:형성하다 a owl:ObjectProperty ;
+    rdfs:label "형성하다"@ko ;
+    rdfs:comment "역사적 사건이 침묵·금기 문화를 형성하게 함"@ko ;
+    rdfs:domain ora:HistoricalEvent ;
+    rdfs:range ora:SilenceCulture ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:희생되다 a owl:ObjectProperty ;
+    rdfs:label "희생되다"@ko ;
+    rdfs:comment "희생자가 학살 사건으로 인해 사망함"@ko ;
+    rdfs:domain ora:Victim ;
+    rdfs:range ora:Death ;
+    owl:equivalentProperty crm:P1_is_identified_by .
+
+ora:희생됨 a owl:ObjectProperty ;
+    rdfs:label "희생됨"@ko ;
+    rdfs:comment "희생자가 특정 집단 학살 사건에서 희생되었음"@ko ;
+    rdfs:domain ora:Victim ;
+    rdfs:range ora:HistoricalMassacreEvent .
+
+ora:2026_01_15 a ora:TimeSpan .
+
+ora:2026_01_22 a ora:TimeSpan .
+
+ora:4월_3일 a ora:TimeSpan .
+
+ora:ArmedForce a owl:Class ;
+    rdfs:label "ArmedForce"@ko,
+        "무장 세력/토벌대"@ko ;
+    rdfs:comment "4.3 사건 당시 진압·토벌 활동을 수행한 군·경 조직 또는 무장 집단"@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        foaf:Organization,
+        schema:Organization ;
+    owl:equivalentClass crm:E74_Group .
+
+ora:CommemorativeEvent a owl:Class ;
+    rdfs:label "CommemorativeEvent"@ko,
+        "추모 행사·의례"@ko ;
+    rdfs:comment "희생자를 기리기 위해 수행되거나 정기적으로 개최되는 추모·위령 의례 및 행사"@ko ;
+    rdfs:subClassOf crm:E5_Event .
+
+ora:PersonalMemory a owl:Class ;
+    rdfs:label "PersonalMemory"@ko,
+        "개인 기억/경험"@ko ;
+    rdfs:comment "구술자가 직접 경험하거나 가족을 통해 전해들은 4.3 관련 기억과 감정"@ko ;
+    rdfs:subClassOf crm:E21_Person,
+        schema:CreativeWork ;
+    owl:equivalentClass crm:E33_Linguistic_Object .
+
+ora:SuppressedMemory a owl:Class ;
+    rdfs:label "SuppressedMemory"@ko,
+        "억압된 기억·침묵"@ko ;
+    rdfs:comment "역사적 폭력 사건에서 비롯된 심리적 트라우마, 개인의 억압된 기억, 그리고 사회적으로 강요된 침묵·금기 문화를 포괄하는 개념. 구술을 통해 표면화됨"@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity .
+
+ora:TraditionalDwelling a owl:Class ;
+    rdfs:label "TraditionalDwelling"@ko,
+        "전통 가옥 / 피해 주거지"@ko ;
+    rdfs:comment "초토화 작전의 피해를 입은 전통적 구조의 가옥. 당시 제주의 짚 지붕 가옥 등 물리적 거주 공간."@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        crm:E53_Place,
+        schema:Place ;
+    owl:equivalentClass crm:E27_Site .
+
+ora:군인_세력 a ora:MilitaryForce ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:수행함 ora:북촌리_대학살 ;
+    ora:학살하다 ora:북촌리_대학살 .
+
+ora:김순덕 a ora:OralHistoryNarrator ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:가족_관계이다 ora:김순덕의_아버지,
+        ora:김순덕의_어머니 ;
+    ora:거주함 ora:제주시_조천면_북촌리 ;
+    ora:경험함 ora:북촌리_대학살 ;
+    ora:구술하다 ora:북촌리_대학살의_기억_구술_기록 ;
+    ora:낙인을_받다 ora:빨갱이_가족_낙인 ;
+    ora:증언하다 ora:김순덕_아버지_총살_사망,
+        ora:북촌리_대학살,
+        ora:제주_4_3_사건 ;
+    ora:추모_의례를_수행하다 ora:북촌리_위령제 ;
+    ora:트라우마를_겪다 ora:아버지_학살_목격으로_인한_심리적_트라우마 .
+
+ora:김순덕_아버지_비밀_제사 a ora:CommemorativeRitual ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:발생_시점이다 ora:4월_3일 .
+
+ora:김순덕의_아버지 a ora:Victim ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:공식_인정을_받다 ora:제주_4_3_사건_국가_공식_인정 ;
+    ora:희생되다 ora:김순덕_아버지_총살_사망 .
+
+ora:남편을_잃은_스물셋_새댁_구술_기록 a ora:OralHistoryRecord ;
+    dcterms:source "NAR-202603-0003_박양순_구술기록.docx" ;
+    ora:면담_세션에서_수집됨 ora:박양순_면담_세션__2026_02_03 ;
+    ora:아카이브에_소장됨 ora:제주_4_3_구술기록_아카이브 ;
+    ora:증언_대상_사건임 ora:제주_4_3_사건__1947_1954 .
+
+ora:박양순_남편_사망_사건__육지_형무소 a ora:DeathEvent ;
+    dcterms:source "NAR-202603-0003_박양순_구술기록.docx" ;
+    ora:발생_장소임 ora:육지_형무소 ;
+    ora:역사적_시기에_속함 ora:제주_4_3_사건__1947_1954 .
+
+ora:박양순의_아들 a ora:SurvivorFamily ;
+    dcterms:source "NAR-202603-0003_박양순_구술기록.docx" ;
+    ora:가족_관계임 ora:박양순의_남편 ;
+    ora:국가_공인을_받음 ora:4_3_특별법에_의한_희생자_명단_등재 ;
+    ora:사회적_낙인을_경험함 ora:4_3_유가족_사회적_낙인_및_침묵_강요 .
+
+ora:북촌리_위령제 a ora:CommemorativeRitual ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:발생_장소이다 ora:제주시_조천면_북촌리 .
+
+ora:서울대학교 a ora:Organization .
+
+ora:아버지_학살_목격으로_인한_심리적_트라우마 a ora:Trauma .
+
+ora:육지_형무소 a ora:Place .
+
+ora:이판석_구술_기록__어린_시절_피난과_굶주림 a ora:OralHistoryRecord ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:면담_세션에서_수집됨 ora:이판석_면담_세션__2026_01_22 ;
+    ora:아카이브에_소장됨 ora:제주_4_3_구술기록_아카이브 ;
+    ora:증언_대상_사건임 ora:제주_4_3_사건__1947_1954 .
+
+ora:이판석_아버지 a ora:Victim ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:공식_인정을_받다 ora:4_3_진상_규명_및_희생자_명예_회복_국가_인정 ;
+    ora:희생되다 ora:이판석_아버지_처형 .
+
+ora:이판석_아버지_처형 a ora:Death .
+
+ora:이판석_아버지가_남은_마을 a ora:Place .
+
+ora:이판석의_아버지 a ora:Victim ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:사망_사건을_가짐 ora:이판석_아버지_처형_사건__한국전쟁_중 .
+
+ora:제주_4_3_유가족_사회적_낙인_피해 a ora:SocialStigma .
+
+ora:제주시_애월읍_하귀리 a ora:Place .
+
+ora:1949년_1월_17일 a ora:TimeSpan .
+
+ora:4_3_유가족_사회적_낙인_및_침묵_강요 a ora:SocialStigma .
+
+ora:4_3_진상_규명_및_희생자_명예_회복_국가_인정 a ora:StateRecognition .
+
+ora:4_3_특별법에_의한_희생자_명단_등재 a ora:StateRecognition .
+
+ora:ArmedSuppressionUnit a owl:Class ;
+    rdfs:label "ArmedSuppressionUnit"@ko,
+        "토벌대"@ko ;
+    rdfs:comment "4.3 사건 당시 마을 주민을 체포·학살한 토벌 부대. 기존 MilitaryUnit보다 구체적으로 '토벌대'로 명시된 행위 주체."@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        crm:E40_Legal_Body,
+        schema:Organization ;
+    owl:equivalentClass crm:E74_Group .
+
+ora:EyewitnessTestimony a owl:Class ;
+    rdfs:label "EyewitnessTestimony"@ko,
+        "목격 증언"@ko ;
+    rdfs:comment "구술자가 사건을 직접 목격한 경험을 바탕으로 서술한 구술 내용의 단위. 감각적·현장적 기억을 담은 1인칭 증언."@ko ;
+    rdfs:subClassOf crm:E21_Person,
+        foaf:Document,
+        schema:CreativeWork ;
+    owl:equivalentClass crm:E33_Linguistic_Object .
+
+ora:GunfireSound a owl:Class ;
+    rdfs:label "GunfireSound"@ko,
+        "총소리 / 폭력의 청각적 기억"@ko ;
+    rdfs:comment "4.3 사건 당시 또는 그 직후 주민들이 경험한 총소리 등 폭력 상황의 청각적 기억. 구술에서 역사적 사건의 생생한 증거로 기능하는 감각적 경험."@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        crm:E33_Linguistic_Object ;
+    owl:equivalentClass crm:E5_Event .
+
+ora:IdentityTransformation a owl:Class ;
+    rdfs:label "IdentityTransformation"@ko,
+        "정체성 변화 / 역사 인식 전환"@ko ;
+    rdfs:comment "구술자가 4.3에 대한 수치·은폐에서 역사적 의미 부여와 자긍심으로 인식을 전환하는 내면적 과정. 생일과 역사적 사건의 날짜 일치를 부끄럼에서 특별함으로 재해석하는 경험 포함."@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        crm:E5_Event ;
+    owl:equivalentClass crm:E7_Activity .
+
+ora:MilitaryUnit a owl:Class ;
+    rdfs:label "MilitaryUnit"@ko,
+        "군·경 부대 / 무장 세력"@ko ;
+    rdfs:comment "제주 4.3 사건 당시 마을에 진입하여 학살을 자행한 군인 또는 경찰 조직."@ko ;
+    rdfs:subClassOf crm:E40_Legal_Body,
+        schema:Organization ;
+    owl:equivalentClass crm:E74_Group .
+
+ora:TraumaticMemory a owl:Class ;
+    rdfs:label "TraumaticMemory"@ko,
+        "트라우마 기억"@ko ;
+    rdfs:comment "사건 당시의 극한 공포·상실 경험이 구술자의 기억 속에 각인된 심리적 상태. 아동기 트라우마 포함."@ko ;
+    rdfs:subClassOf crm:E28_Conceptual_Object,
+        crm:E5_Event ;
+    owl:equivalentClass crm:E55_Type .
+
+ora:VillageBurning a owl:Class ;
+    rdfs:label "VillageBurning"@ko,
+        "마을 방화"@ko ;
+    rdfs:comment "초토화 작전 중 군인들이 민가에 불을 지른 구체적 행위"@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        crm:E5_Event ;
+    owl:equivalentClass crm:E7_Activity .
+
+ora:김순덕_아버지_총살_사망 a ora:Death ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:발생_시점이다 ora:1949년_1월_17일 ;
+    ora:발생_장소이다 ora:제주시_조천면_북촌리 .
+
+ora:김순덕의_어머니 a ora:FamilyMember ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:낙인을_받다 ora:빨갱이_가족_낙인 ;
+    ora:추모_의례를_수행하다 ora:김순덕_아버지_비밀_제사 ;
+    ora:트라우마를_겪다 ora:아버지_학살로_인한_심리적_트라우마 .
+
+ora:박양순_면담_세션__2026_02_03 a ora:InterviewSession ;
+    dcterms:source "NAR-202603-0003_박양순_구술기록.docx" ;
+    ora:면담_장소임 ora:제주시_애월읍_하귀리 ;
+    ora:발생_시기임 ora:제주_4_3_사건__1947_1954 .
+
+ora:박양순의_남편 a ora:Victim ;
+    dcterms:source "NAR-202603-0003_박양순_구술기록.docx" ;
+    ora:국가_공인을_받음 ora:4_3_특별법에_의한_희생자_명단_등재 ;
+    ora:사망_사건을_가짐 ora:박양순_남편_사망_사건__육지_형무소 .
+
+ora:서귀포시_대정읍_상모리 a ora:Place .
+
+ora:아버지_학살로_인한_심리적_트라우마 a ora:Trauma .
+
+ora:이판석 a ora:OralHistoryNarrator ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:가족_관계이다 ora:이판석_아버지,
+        ora:이판석_어머니 ;
+    ora:가족_관계임 ora:이판석의_아버지 ;
+    ora:경험함 ora:한라산_중턱_피난_생활,
+        ora:한라산_피난 ;
+    ora:구술하다 ora:어린_시절_피난과_굶주림_구술_기록 ;
+    ora:구술함 ora:이판석_구술_기록__어린_시절_피난과_굶주림 ;
+    ora:사회적_낙인을_경험함 ora:제주_4_3_유가족_사회적_낙인_피해 ;
+    ora:증언하다 ora:이판석_아버지_체포_및_처형,
+        ora:제주_4_3_사건 ;
+    ora:트라우마를_겪다 ora:피난_굶주림_아버지_상실로_인한_트라우마 .
+
+ora:이판석_면담_세션__2026_01_22 a ora:InterviewSession ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:면담_장소임 ora:서귀포시_대정읍_상모리 ;
+    ora:발생_시기임 ora:제주_4_3_사건__1947_1954 .
+
+ora:이판석_아버지_처형_사건__한국전쟁_중 a ora:DeathEvent ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:역사적_시기에_속함 ora:제주_4_3_사건__1947_1954 .
+
+ora:이판석_아버지_체포_및_처형 a ora:HistoricalEvent ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:발생_장소이다 ora:이판석_아버지가_남은_마을 ;
+    ora:초래함 ora:피난_굶주림_아버지_상실로_인한_트라우마 .
+
+ora:이판석_어머니 a ora:FamilyMember ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:경험함 ora:한라산_피난 ;
+    ora:동반함 ora:이판석 .
+
+ora:제주_4_3_구술기록_아카이브 a ora:Archive ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:소장하다 ora:북촌리_대학살의_기억_구술_기록 .
+
+ora:제주_4_3_사건_국가_공식_인정 a ora:StateRecognition .
+
+ora:한라산_중턱 a ora:Place ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:피난_출발지임 ora:한라산_피난 .
+
+ora:한라산_중턱_피난_생활 a ora:HistoricalEvent .
+
+ora:BirthEvent a owl:Class ;
+    rdfs:label "BirthEvent"@ko,
+        "출생 사건"@ko ;
+    rdfs:comment "구술자 또는 관련 인물의 출생 사실. 역사적 사건과 동일한 날짜에 발생하여 특별한 의미를 갖는 경우를 포함."@ko ;
+    rdfs:subClassOf crm:E5_Event,
+        schema:Event ;
+    owl:equivalentClass crm:E67_Birth .
+
+ora:CommunityVictim a owl:Class ;
+    rdfs:label "CommunityVictim"@ko,
+        "마을 공동체 희생자"@ko ;
+    rdfs:comment "구술자의 가족은 아니나 같은 마을·공동체에 속해 4.3 사건으로 희생된 이웃 인물. 공동체 전체의 피해를 증언하는 맥락에서 등장."@ko ;
+    rdfs:subClassOf crm:E74_Group,
+        schema:Person ;
+    owl:equivalentClass crm:E21_Person .
+
+ora:FamilyVictim a owl:Class ;
+    rdfs:label "FamilyVictim"@ko,
+        "가족 희생자"@ko ;
+    rdfs:comment "구술자의 직계 가족 또는 친척 중 4.3 사건으로 인해 희생된 인물. 기존 Victim 클래스의 하위 개념으로, 가족 관계가 명확히 서술된 경우."@ko ;
+    rdfs:subClassOf crm:E21_Person,
+        crm:E69_Death,
+        schema:Person ;
+    owl:equivalentClass crm:E21_Person .
+
+ora:ForcedDisplacement a owl:Class ;
+    rdfs:label "ForcedDisplacement"@ko,
+        "강제 피난 / 소개"@ko ;
+    rdfs:comment "초토화 작전·마을 소각으로 인해 주민들이 거주지를 떠나 피난하거나 강제로 이주된 사건."@ko ;
+    rdfs:subClassOf crm:E53_Place,
+        crm:E5_Event,
+        schema:Event ;
+    owl:equivalentClass crm:E9_Move .
+
+ora:MemorialEvent a owl:Class ;
+    rdfs:label "MemorialEvent"@ko,
+        "추모 행사/위령제"@ko ;
+    rdfs:comment "4.3 희생자를 기리기 위해 정기적으로 거행되는 추모·위령 행사"@ko ;
+    rdfs:subClassOf crm:E5_Event,
+        schema:Event ;
+    owl:equivalentClass crm:E7_Activity .
+
+ora:OralRecord a owl:Class ;
+    rdfs:label "구술기록"@ko .
+
+ora:북촌리_대학살의_기억_구술_기록 a ora:OralHistoryRecord ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:언급함 ora:군인_세력,
+        ora:김순덕의_어머니,
+        ora:북촌리_대학살,
+        ora:빨갱이_가족_낙인,
+        ora:제주_4_3_사건,
+        ora:제주시_조천면_북촌리 .
+
+ora:빨갱이_가족_낙인 a ora:SocialStigma,
+        ora:Trauma .
+
+ora:어린_시절_피난과_굶주림_구술_기록 a ora:OralHistoryRecord ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:언급함 ora:이판석_어머니,
+        ora:제주_4_3_사건,
+        ora:피난_굶주림_아버지_상실로_인한_트라우마,
+        ora:한라산_중턱,
+        ora:한라산_피난 .
+
+ora:피난_굶주림_아버지_상실로_인한_트라우마 a ora:Trauma .
+
+ora:ChildWitness a owl:Class ;
+    rdfs:label "ChildWitness"@ko,
+        "아동 목격자"@ko ;
+    rdfs:comment "역사적 사건을 어린 나이에 직접 목격하고 경험한 인물. 구술자가 사건 당시 아동이었던 경우에 해당."@ko ;
+    rdfs:subClassOf crm:E21_Person,
+        foaf:Person,
+        schema:Person ;
+    owl:equivalentClass crm:E21_Person .
+
+ora:MilitaryForce a owl:Class ;
+    rdfs:label "MilitaryForce"@ko,
+        "군인/군경"@ko ;
+    rdfs:comment "제주 4.3 사건 당시 주민 학살·진압 작전·초토화 작전을 수행한 군사 세력 또는 군인 집단"@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity .
+
+ora:한라산_피난 a ora:Evacuation ;
+    dcterms:source "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:발생_시기임 ora:제주_4_3_사건 ;
+    ora:발생_장소이다 ora:한라산_중턱 .
+
+ora:Archive a owl:Class ;
+    rdfs:label "Archive"@ko,
+        "아카이브 / 컬렉션"@ko ;
+    rdfs:comment "구술 기록을 수집·보존·활용하는 아카이브 기관 또는 컬렉션 단위."@ko ;
+    rdfs:subClassOf foaf:Organization,
+        schema:ArchiveComponent ;
+    owl:equivalentClass crm:E78_Curated_Holding .
+
+ora:CommemorativeRitual a owl:Class ;
+    rdfs:label "CommemorativeRitual"@ko,
+        "추모 의례"@ko ;
+    rdfs:comment "희생자를 기리기 위해 수행되는 제례·위령제 등의 의례 행위"@ko ;
+    rdfs:subClassOf crm:E7_Activity .
+
+ora:Death a owl:Class ;
+    rdfs:label "Death"@ko,
+        "사망·희생"@ko ;
+    rdfs:comment "희생자가 총살 등 폭력 행위로 사망한 사건"@ko ;
+    rdfs:subClassOf crm:E69_Death .
+
+ora:InterviewActivity a owl:Class ;
+    rdfs:label "InterviewActivity"@ko,
+        "면담 활동"@ko ;
+    rdfs:comment "면담자가 구술자를 대상으로 수행한 채록 면담 행위"@ko ;
+    rdfs:subClassOf crm:E7_Activity .
+
+ora:Narrator a owl:Class ;
+    rdfs:label "Narrator"@ko,
+        "구술자"@ko ;
+    rdfs:comment "역사적 사건을 직접 경험하고 구술 증언을 제공한 인물"@ko ;
+    rdfs:subClassOf foaf:Person,
+        schema:Person,
+        rico:Person ;
+    owl:equivalentClass crm:E21_Person .
+
+ora:SilenceCulture a owl:Class ;
+    rdfs:label "SilenceCulture"@ko,
+        "침묵/금기 문화"@ko ;
+    rdfs:comment "4.3 사건에 대한 언급이 억압·금기시되어 공적·사적 담론에서 배제된 사회적 현상"@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        crm:E55_Type ;
+    owl:equivalentClass crm:E4_Period .
+
+ora:TimePeriod a owl:Class ;
+    rdfs:label "TimePeriod"@ko,
+        "시간/시기"@ko ;
+    rdfs:comment "구술 내용과 관련된 특정 날짜, 시점 또는 역사적 시기"@ko ;
+    rdfs:subClassOf dcterms:PeriodOfTime,
+        crm:E4_Period,
+        crm:E50_Date ;
+    owl:equivalentClass crm:E52_Time-Span .
+
+ora:TimeSpan a owl:Class ;
+    rdfs:label "TimeSpan"@ko,
+        "시간 범위·날짜"@ko ;
+    rdfs:comment "사건 또는 면담과 관련된 특정 날짜·기간"@ko ;
+    rdfs:subClassOf crm:E52_Time-Span .
+
+ora:VillageDestruction a owl:Class ;
+    rdfs:label "VillageDestruction"@ko,
+        "마을 소각 / 파괴"@ko ;
+    rdfs:comment "군·경에 의해 마을의 가옥·시설이 방화·파괴된 사건. 주민들의 삶의 기반이 물리적으로 소멸된 상태를 포함."@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        schema:Event ;
+    owl:equivalentClass crm:E5_Event .
+
+ora:ViolenceAct a owl:Class ;
+    rdfs:label "ViolenceAct"@ko,
+        "폭력 행위/희생"@ko ;
+    rdfs:comment "4.3 사건 과정에서 발생한 학살, 연행, 사망 등 구체적인 폭력 행위 및 그 결과"@ko ;
+    rdfs:subClassOf crm:E5_Event,
+        crm:E7_Activity,
+        schema:Event ;
+    owl:equivalentClass crm:E69_Death .
+
+ora:제주_4_3_사건 a ora:HistoricalPeriod ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx",
+        "NAR-202603-0002_이판석_구술기록.docx" ;
+    ora:공식_인정을_받다 ora:4_3_진상_규명_및_희생자_명예_회복_국가_인정,
+        ora:제주_4_3_사건_국가_공식_인정 ;
+    ora:포함하다 ora:북촌리_대학살,
+        ora:이판석_아버지_체포_및_처형,
+        ora:한라산_중턱_피난_생활 .
+
+ora:CommemorativeAct a owl:Class ;
+    rdfs:label "CommemorativeAct"@ko,
+        "추모 / 제례 행위"@ko ;
+    rdfs:comment "희생자를 기억하고 애도하기 위해 수행된 의례적·공식적 행위. 비밀 제사부터 국가 공인 위령제까지 포함."@ko ;
+    rdfs:subClassOf crm:E5_Event,
+        schema:Event ;
+    owl:equivalentClass crm:E7_Activity .
+
+ora:DeathEvent a owl:Class ;
+    rdfs:label "DeathEvent"@ko,
+        "사망 / 희생"@ko ;
+    rdfs:comment "희생자 개인의 사망 사실. 날짜·방식·장소 등의 정보를 담음."@ko ;
+    rdfs:subClassOf schema:Event ;
+    owl:equivalentClass crm:E69_Death .
+
+ora:HistoricalPerson a owl:Class ;
+    rdfs:label "HistoricalPerson"@ko,
+        "역사적 관련 인물"@ko ;
+    rdfs:comment "구술 내용에 등장하는 구술자 외 인물(가족, 이웃 등)로 사건과 직·간접적으로 연관된 자"@ko ;
+    rdfs:subClassOf dcterms:Agent,
+        crm:E21_Person,
+        schema:Person ;
+    owl:equivalentClass crm:E21_Person .
+
+ora:SocialStigma a owl:Class ;
+    rdfs:label "SocialStigma"@ko,
+        "사회적 낙인 / 연좌제 피해"@ko ;
+    rdfs:comment "4.3 유가족이 '빨갱이 가족'으로 낙인찍혀 받은 사회적 차별·억압·침묵 강요 등의 피해 상황."@ko ;
+    rdfs:subClassOf crm:E55_Type ;
+    owl:equivalentClass crm:E5_Event .
+
+ora:StateRecognition a owl:Class ;
+    rdfs:label "StateRecognition"@ko,
+        "국가 공인 / 명예 회복"@ko ;
+    rdfs:comment "국가가 4.3 사건 희생자와 유가족의 피해를 공식 인정하고 명예를 회복시키는 행정·법적 행위."@ko ;
+    rdfs:subClassOf crm:E40_Legal_Body,
+        schema:Event ;
+    owl:equivalentClass crm:E7_Activity .
+
+ora:북촌리_대학살 a ora:HistoricalEvent ;
+    dcterms:source "NAR-202603-0001_김순덕_구술기록.docx" ;
+    ora:발생_시점이다 ora:1949년_1월_17일 ;
+    ora:발생_장소이다 ora:제주시_조천면_북촌리 ;
+    ora:초래함 ora:아버지_학살로_인한_심리적_트라우마 .
+
+ora:제주_4_3_사건__1947_1954 a ora:HistoricalPeriod .
+
+ora:제주시_조천면_북촌리 a ora:Place .
+
+ora:Interviewer a owl:Class ;
+    rdfs:label "Interviewer"@ko,
+        "면담자"@ko ;
+    rdfs:comment "구술 면담을 진행하고 기록을 수집한 연구자 또는 아카이비스트."@ko ;
+    rdfs:subClassOf dcterms:Agent,
+        crm:E21_Person,
+        schema:Person ;
+    owl:equivalentClass crm:E21_Person .
+
+ora:ScorchingOperation a owl:Class ;
+    rdfs:label "ScorchingOperation"@ko,
+        "초토화 작전"@ko ;
+    rdfs:comment "제주 4.3 당시 군경이 마을을 소각하고 주민을 강제 이주시킨 군사 작전"@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity,
+        crm:E5_Event,
+        schema:Event ;
+    owl:equivalentClass crm:E7_Activity .
+
+ora:Survivor a owl:Class ;
+    rdfs:label "Survivor"@ko,
+        "생존자·유족"@ko ;
+    rdfs:comment "학살·탄압에서 살아남거나 희생자의 가족으로서 사건의 영향을 직접 받은 인물"@ko ;
+    rdfs:subClassOf crm:E21_Person .
+
+ora:Evacuation a owl:Class ;
+    rdfs:label "Evacuation"@ko,
+        "피난/대피"@ko ;
+    rdfs:comment "방화 및 군사 작전으로 인해 주민이 집을 떠나 도피한 행위"@ko ;
+    rdfs:subClassOf crm:E1_CRM_Entity .
+
+ora:Trauma a owl:Class ;
+    rdfs:label "Trauma"@ko,
+        "트라우마·피해 경험"@ko ;
+    rdfs:comment "학살·탄압 경험에서 비롯된 심리적 상처와 억압된 기억, 그리고 구술자가 직접 겪은 피해·공포·상실의 경험을 포괄"@ko ;
+    rdfs:subClassOf crm:E28_Conceptual_Object .
+
+ora:HistoricalMassacreEvent a owl:Class ;
+    rdfs:label "HistoricalMassacreEvent"@ko,
+        "집단 학살 사건"@ko ;
+    rdfs:comment "특정 날짜·장소에서 군·경에 의해 다수의 민간인이 집단으로 살해된 역사적 사건."@ko ;
+    rdfs:subClassOf crm:E4_Period,
+        schema:Event ;
+    owl:equivalentClass crm:E5_Event .
+
+ora:InterviewSession a owl:Class ;
+    rdfs:label "InterviewSession"@ko,
+        "면담 세션"@ko ;
+    rdfs:comment "구술 기록이 수집된 구체적인 면담 행위. 일시·장소·참여자 정보를 포함."@ko ;
+    rdfs:subClassOf crm:E5_Event,
+        schema:Event ;
+    owl:equivalentClass crm:E7_Activity .
+
+ora:HistoricalPeriod a owl:Class ;
+    rdfs:label "HistoricalPeriod"@ko,
+        "역사적 시기"@ko ;
+    rdfs:comment "제주 4.3 사건이 발생한 역사적·정치적 시기. 1947~1954년 제주 4.3 전반의 맥락을 포함."@ko ;
+    rdfs:subClassOf dcterms:PeriodOfTime,
+        schema:Event ;
+    owl:equivalentClass crm:E4_Period .
+
+ora:FamilyMember a owl:Class ;
+    rdfs:label "FamilyMember"@ko,
+        "가족 구성원"@ko ;
+    rdfs:comment "구술 증언에 등장하는 구술자의 가족. 피난·경험 과정에서 함께한 인물로 서사 내 중요 역할을 담당"@ko ;
+    rdfs:subClassOf rico:Family .
+
+ora:SurvivorFamily a owl:Class ;
+    rdfs:label "SurvivorFamily"@ko,
+        "유가족 / 생존 가족"@ko ;
+    rdfs:comment "희생자의 가족으로서 사건 이후 생존하며 트라우마와 사회적 낙인을 감내한 인물."@ko ;
+    rdfs:subClassOf crm:E74_Group,
+        schema:Person ;
+    owl:equivalentClass crm:E21_Person .
+
+ora:Victim a owl:Class ;
+    rdfs:label "Victim"@ko,
+        "희생자"@ko ;
+    rdfs:comment "제주 4.3 사건으로 인해 생명을 잃거나 직접적 피해를 당한 인물."@ko ;
+    rdfs:subClassOf crm:E21_Person,
+        crm:E69_Death,
+        schema:Person ;
+    owl:equivalentClass crm:E21_Person .
+
+ora:HistoricalEvent a owl:Class ;
+    rdfs:label "HistoricalEvent"@ko,
+        "역사적 사건"@ko ;
+    rdfs:comment "구술 증언에서 언급된 역사적 사건. 특정 일시·장소에서 발생한 학살·진압·방화·군사작전 등을 포함하며, 제주 4.3 관련 구체적 사건들을 망라함"@ko ;
+    rdfs:subClassOf crm:E5_Event .
+
+ora:OralHistoryRecord a owl:Class ;
+    rdfs:label "OralHistoryRecord"@ko,
+        "구술 기록"@ko ;
+    rdfs:comment "면담을 통해 수집된 구술 텍스트·음성·영상 등의 1차 기록물. 아카이브의 핵심 객체."@ko ;
+    rdfs:subClassOf crm:E31_Document,
+        foaf:Document,
+        schema:CreativeWork ;
+    owl:equivalentClass crm:E33_Linguistic_Object .
+
+ora:Place a owl:Class ;
+    rdfs:label "Place"@ko,
+        "장소"@ko ;
+    rdfs:comment "사건·면담·활동이 발생하거나 연관된 지리적 장소."@ko ;
+    rdfs:subClassOf dcterms:Location,
+        crm:E53_Place,
+        schema:Place ;
+    owl:equivalentClass crm:E53_Place .
+
+ora:OralHistoryNarrator a owl:Class ;
+    rdfs:label "OralHistoryNarrator"@ko,
+        "구술자"@ko ;
+    rdfs:comment "구술 증언을 직접 제공한 사람. 사건의 직접 경험자이거나 가족·공동체를 통해 역사적 사실을 전승한 당사자."@ko ;
+    rdfs:subClassOf foaf:Person,
+        schema:Person ;
+    owl:equivalentClass crm:E21_Person .
+

@@ -10,6 +10,7 @@ import 'screens/triple/triple_screen.dart';
 import 'screens/graph/knowledge_graph_screen.dart';
 import 'screens/records/record_list_screen.dart';
 import 'screens/history/history_screen.dart';
+import 'screens/rdf_management/rdf_management_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -36,6 +37,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
               path: '/settings',
               builder: (c, s) => const SettingsScreen()),
+          GoRoute(
+              path: '/rdf',
+              builder: (c, s) => const RdfManagementScreen()),
         ],
       ),
     ],
@@ -49,7 +53,7 @@ class OralRecordApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'Oral Record Agent v4.0 — Ontology Knowledge Graph',
+      title: 'Oral Record Agent v5.0 — Ontology Knowledge Graph',
       theme: buildLightTheme(),
       themeMode: ThemeMode.light,
       routerConfig: router,
@@ -79,6 +83,8 @@ const _navItems = [
       '이력', '/history'),
   _NavItemData(Icons.settings_outlined, Icons.settings,
       '설정', '/settings'),
+  _NavItemData(Icons.account_tree_outlined, Icons.account_tree,
+      'RDF 관리', '/rdf'),
 ];
 
 // ── AppShell ──────────────────────────────────────────
@@ -156,7 +162,7 @@ class AppShell extends ConsumerWidget {
                 // 하단 버전 표시
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Text('v4', style: AppTypography.caption),
+                  child: Text('v5', style: AppTypography.caption),
                 ),
               ],
             ),
@@ -176,6 +182,7 @@ class AppShell extends ConsumerWidget {
     if (location.startsWith('/records'))  return 3;
     if (location.startsWith('/history'))  return 4;
     if (location.startsWith('/settings')) return 5;
+    if (location.startsWith('/rdf'))      return 6;
     return 0;
   }
 }
