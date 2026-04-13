@@ -375,7 +375,10 @@ class _TripleStep1ExtractState extends ConsumerState<TripleStep1Extract>
 
 // ── 텍스트 입력 탭 ─────────────────────────────────────────────────────────────
 
-class _TextTab extends StatelessWidget {
+const int _kMaxChars  = 8000;
+const int _kWarnChars = 6000;
+
+class _TextTab extends StatefulWidget {
   final TextEditingController textCtrl;
   final TextEditingController sourceCtrl;
   final VoidCallback onAdd;
@@ -386,14 +389,48 @@ class _TextTab extends StatelessWidget {
   });
 
   @override
+  State<_TextTab> createState() => _TextTabState();
+}
+
+class _TextTabState extends State<_TextTab> {
+  int _charCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _charCount = widget.textCtrl.text.length;
+    widget.textCtrl.addListener(_onTextChanged);
+  }
+
+  void _onTextChanged() {
+    final len = widget.textCtrl.text.length;
+    if (len != _charCount) setState(() => _charCount = len);
+  }
+
+  @override
+  void dispose() {
+    widget.textCtrl.removeListener(_onTextChanged);
+    super.dispose();
+  }
+
+  Color get _borderColor {
+    if (_charCount > _kMaxChars) return Colors.red;
+    if (_charCount > _kWarnChars) return Colors.orange;
+    return Colors.grey.shade400;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isOver = _charCount > _kMaxChars;
+    final isWarn = !isOver && _charCount > _kWarnChars;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextField(
-            controller: sourceCtrl,
+            controller: widget.sourceCtrl,
             decoration: const InputDecoration(
               labelText: '레코드 ID (비워두면 자동 생성)',
               border: OutlineInputBorder(),
@@ -401,22 +438,101 @@ class _TextTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+
+          // 안내 박스
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(children: [
+              Icon(Icons.info_outline, size: 14, color: Colors.blue.shade600),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '권장: 3,000자 이하  ·  최대: 8,000자\n'
+                  '너무 긴 텍스트는 AI가 중요 내용을 놓칠 수 있습니다.',
+                  style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+                ),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 8),
+
+          // 텍스트 입력
           TextField(
-            controller: textCtrl,
+            controller: widget.textCtrl,
             maxLines: 7,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: '구술 텍스트 붙여넣기',
-              border: OutlineInputBorder(),
               alignLabelWithHint: true,
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                    color: _borderColor,
+                    width: (isOver || isWarn) ? 1.5 : 1.0),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(
+                    color: _borderColor,
+                    width: (isOver || isWarn) ? 1.8 : 1.5),
+              ),
             ),
           ),
+          const SizedBox(height: 6),
+
+          // 글자 수 카운터 + 경고
+          Row(
+            children: [
+              Text(
+                '$_charCount / $_kMaxChars 자',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isOver
+                      ? Colors.red
+                      : isWarn
+                          ? Colors.orange
+                          : Colors.grey.shade600,
+                  fontWeight: (isOver || isWarn)
+                      ? FontWeight.w600
+                      : FontWeight.normal,
+                ),
+              ),
+              if (isOver) ...[
+                const SizedBox(width: 8),
+                const Icon(Icons.warning_amber, size: 14, color: Colors.red),
+                const SizedBox(width: 4),
+                const Expanded(
+                  child: Text(
+                    '최대 길이 초과 — 8,000자까지만 AI에 전달됩니다',
+                    style: TextStyle(fontSize: 11, color: Colors.red),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ] else if (isWarn) ...[
+                const SizedBox(width: 8),
+                const Icon(Icons.info_outline,
+                    size: 14, color: Colors.orange),
+                const SizedBox(width: 4),
+                const Expanded(
+                  child: Text(
+                    '긴 텍스트 — AI 분석 품질이 저하될 수 있습니다',
+                    style: TextStyle(fontSize: 11, color: Colors.orange),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ],
+          ),
           const SizedBox(height: 10),
+
           Align(
             alignment: Alignment.centerRight,
             child: ElevatedButton.icon(
               icon: const Icon(Icons.add, size: 16),
               label: const Text('목록에 추가'),
-              onPressed: onAdd,
+              onPressed: widget.onAdd,
             ),
           ),
         ],
@@ -543,11 +659,34 @@ class _FileTab extends StatelessWidget {
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold),
                                 overflow: TextOverflow.ellipsis),
-                            if (ef.isOk)
-                              Text('${ef.text!.length}자 추출됨',
-                                  style: const TextStyle(
-                                      fontSize: 11, color: Colors.grey))
-                            else if (ef.error != null)
+                            if (ef.isOk) ...[
+                              Text(
+                                '${ef.text!.length}자 추출됨',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: ef.text!.length > _kMaxChars
+                                      ? Colors.red
+                                      : ef.text!.length > _kWarnChars
+                                          ? Colors.orange
+                                          : Colors.grey,
+                                  fontWeight: ef.text!.length > _kWarnChars
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              if (ef.text!.length > _kMaxChars)
+                                const Text(
+                                  '최대 길이 초과 — 8,000자까지만 AI에 전달됩니다',
+                                  style: TextStyle(
+                                      fontSize: 10, color: Colors.red),
+                                )
+                              else if (ef.text!.length > _kWarnChars)
+                                const Text(
+                                  '긴 텍스트 — AI 품질이 저하될 수 있습니다',
+                                  style: TextStyle(
+                                      fontSize: 10, color: Colors.orange),
+                                ),
+                            ] else if (ef.error != null)
                               Text('오류: ${ef.error}',
                                   style: const TextStyle(
                                       fontSize: 11, color: Colors.red)),
