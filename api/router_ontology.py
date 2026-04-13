@@ -448,10 +448,11 @@ def archive_version(version_id: str):
 
 _TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 
-_TEMPLATES: dict[str, tuple[str, str]] = {
-    "json":           ("ontology_template.json",           "ontology_template.json"),
-    "csv_classes":    ("ontology_classes_template.csv",    "ontology_classes_template.csv"),
-    "csv_predicates": ("ontology_predicates_template.csv", "ontology_predicates_template.csv"),
+# (filename, download_name, media_type)
+_TEMPLATES: dict[str, tuple[str, str, str]] = {
+    "json":           ("ontology_template.json",           "ontology_template.json",           "application/json"),
+    "csv_classes":    ("ontology_classes_template.csv",    "ontology_classes_template.csv",    "text/csv; charset=utf-8-sig"),
+    "csv_predicates": ("ontology_predicates_template.csv", "ontology_predicates_template.csv", "text/csv; charset=utf-8-sig"),
 }
 
 
@@ -466,7 +467,7 @@ def download_template(template_name: str):
             detail=f"템플릿 없음: {template_name}. 사용 가능: {list(_TEMPLATES.keys())}",
         )
 
-    filename, download_name = _TEMPLATES[template_name]
+    filename, download_name, media_type = _TEMPLATES[template_name]
     path = _TEMPLATES_DIR / filename
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"템플릿 파일 없음: {path}")
@@ -474,7 +475,7 @@ def download_template(template_name: str):
     return FileResponse(
         path=str(path),
         filename=download_name,
-        media_type="application/octet-stream",
+        media_type=media_type,
     )
 
 

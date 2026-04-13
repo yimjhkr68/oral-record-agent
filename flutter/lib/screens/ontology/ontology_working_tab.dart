@@ -894,6 +894,26 @@ class _InputMethodBottomSheetState
                       onChanged: (v) => setState(() => _baseVersionId = v),
                     ),
                   ),
+                  if (_baseVersionId != null && _baseVersionId!.isNotEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 13, color: AppColors.secondary),
+                          SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              '합집합 방식: 기존 버전의 클래스·속성을 유지하면서 '
+                              '새 구술기록의 내용을 추가로 반영합니다.',
+                              style: TextStyle(
+                                  fontSize: 11, color: AppColors.secondary),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 8),
                 ],
                 SizedBox(
