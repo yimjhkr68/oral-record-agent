@@ -11,11 +11,20 @@ String _aiErrorMessage(Object e) {
   if (e is DioException && e.type == DioExceptionType.connectionTimeout) {
     return '서버에 연결할 수 없습니다. 서버 설정을 확인해주세요.';
   }
+  if (e is DioException && e.response?.statusCode == 409) {
+    final detail = e.response?.data?['detail'] ?? '버전 ID가 이미 존재합니다.';
+    return '충돌: $detail';
+  }
   if (e is DioException && e.response?.statusCode == 422) {
-    return 'AI 응답 파싱 실패. 다시 시도해주세요.';
+    final detail = e.response?.data?['detail'] ?? 'AI 응답 파싱 실패';
+    return 'AI 응답 오류: $detail';
   }
   if (e is DioException && e.response?.statusCode == 502) {
     return 'AI API 호출 실패. API 키 또는 네트워크를 확인해주세요.';
+  }
+  if (e is DioException && e.response?.statusCode != null) {
+    final detail = e.response?.data?['detail'] ?? e.message ?? '';
+    return '오류 ${e.response!.statusCode}: $detail';
   }
   return e.toString();
 }

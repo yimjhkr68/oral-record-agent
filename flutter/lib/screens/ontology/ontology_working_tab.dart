@@ -510,7 +510,11 @@ class _WorkingListHeader extends ConsumerWidget {
 
   void _showError(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 8),
+      ),
     );
   }
 }

@@ -85,13 +85,14 @@ def merge_drafts(body: MergeRequest):
         return get_manager().merge_drafts(
             body.version_ids, body.new_version_id, body.description
         )
-    except ValueError as e:
-        raise HTTPException(status_code=409, detail=str(e))
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
-        # AI 응답 파싱 실패
-        raise HTTPException(status_code=422, detail=str(e))
+        # 버전 ID 중복 → 409, AI 응답 파싱 실패 → 422
+        msg = str(e)
+        if "already exists" in msg or "이미 존재" in msg:
+            raise HTTPException(status_code=409, detail=msg)
+        raise HTTPException(status_code=422, detail=msg)
     except RuntimeError as e:
         # AI API 호출 실패 (크레딧 부족, 네트워크 오류 등)
         raise HTTPException(status_code=502, detail=str(e))
