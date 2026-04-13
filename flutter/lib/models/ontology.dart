@@ -1,5 +1,67 @@
 import 'published_ontology.dart';
 
+// ── 표준 매핑 모델 ──────────────────────────────────────────────────────────────
+
+class MappingSuggestion {
+  final String uri;
+  final String label;
+  final int priority;
+  final double confidence;
+
+  const MappingSuggestion({
+    required this.uri,
+    required this.label,
+    required this.priority,
+    this.confidence = 0.0,
+  });
+
+  factory MappingSuggestion.fromJson(Map<String, dynamic> json) =>
+      MappingSuggestion(
+        uri: json['uri'] ?? '',
+        label: json['label'] ?? '',
+        priority: json['priority'] ?? 99,
+        confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
+      );
+}
+
+class MappingItem {
+  final String name;
+  final String labelKo;
+  final String color;
+  final String currentTag;
+  final List<MappingSuggestion> suggestions;
+  final bool isConfirmed;
+
+  const MappingItem({
+    required this.name,
+    required this.labelKo,
+    required this.currentTag,
+    required this.suggestions,
+    required this.isConfirmed,
+    this.color = '#888888',
+  });
+
+  factory MappingItem.fromJson(Map<String, dynamic> json) => MappingItem(
+        name: json['name'] ?? '',
+        labelKo: json['label_ko'] ?? '',
+        color: json['color'] ?? '#888888',
+        currentTag: json['current_tag'] ?? '',
+        suggestions: (json['suggestions'] as List? ?? [])
+            .map((s) => MappingSuggestion.fromJson(s as Map<String, dynamic>))
+            .toList(),
+        isConfirmed: json['is_confirmed'] ?? false,
+      );
+
+  MappingItem copyWith({String? currentTag, bool? isConfirmed}) => MappingItem(
+        name: name,
+        labelKo: labelKo,
+        color: color,
+        currentTag: currentTag ?? this.currentTag,
+        suggestions: suggestions,
+        isConfirmed: isConfirmed ?? this.isConfirmed,
+      );
+}
+
 enum OntologyStatus { draft, confirmed, archived }
 
 class OntologyClass {
