@@ -183,6 +183,87 @@ def export_ontologies(body: ExportRequest):
     )
 
 
+@router.post("/import", status_code=201)
+async def import_ontology(
+    file:        UploadFile = File(...),
+    version_id:  str = "",
+    import_mode: str = "new",      # "new" 만 지원 (향후 merge 확장 가능)
+    csv_type:    str = "classes",  # "classes" | "predicates" (CSV 전용)
+):
+    """JSON / CSV 파일 → 새 Draft 생성.
+
+    - JSON: 내보내기 포맷(export_type=ontologies) 또는 단일 버전 JSON
+    - CSV 클래스: name, label_ko, color, description, examples 헤더
+    - CSV 속성:   name, domain, range_, description 헤더
+    """
+    import json as _json
+    from ontology.ontology_importer import OntologyImporter
+
+    filename = (file.filename or "").lower()
+    content_bytes = await file.read()
+
+    try:
+        content_text = content_bytes.decode("utf-8-sig")  # BOM 자동 제거
+    except UnicodeDecodeError:
+        content_text = content_bytes.decode("euc-kr", errors="replace")
+
+    importer = OntologyImporter()
+    manager  = get_manager()
+
+    try:
+        if filename.endswith(".json"):
+            try:
+                data = _json.loads(content_text)
+            except _json.JSONDecodeError as e:
+                raise HTTPException(status_code=400,
+                                    detail=f"JSON 파싱 오류: {e}")
+            version = importer.from_json(data, version_id=version_id)
+
+        elif filename.endswith(".csv"):
+            if csv_type not in ("classes", "predicates"):
+                raise HTTPException(
+                    status_code=400,
+                    detail="csv_type 은 'classes' 또는 'predicates' 이어야 합니다.",
+                )
+            version = importer.from_csv(content_text,
+                                        csv_type=csv_type,
+                                        version_id=version_id)
+        else:
+            raise HTTPException(status_code=400,
+                                detail="지원 형식: .json, .csv")
+
+        # version_id 중복 시 suffix 추가
+        if version.version_id in [v.version_id for v in manager.list_all()]:
+            version.version_id = OntologyImporter._generate_id(
+                version.version_id
+            )
+
+        # 빈 임포트 거부
+        if not version.classes and not version.predicates:
+            raise HTTPException(
+                status_code=422,
+                detail="임포트할 클래스/속성이 없습니다. 파일 형식을 확인하세요.",
+            )
+
+        # 매니저에 등록 (캐시 + 파일 저장)
+        manager._cache[version.version_id] = version
+        manager._store.save_draft(version)
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"임포트 실패: {e}")
+
+    return {
+        "version_id":      version.version_id,
+        "classes_count":   len(version.classes),
+        "predicates_count": len(version.predicates),
+        "description":     version.description,
+    }
+
+
 @router.get("/{version_id}/mappings")
 def get_mappings(version_id: str):
     """클래스·속성별 표준 매핑 추천 + 현재 저장값 + 확정 여부 반환."""

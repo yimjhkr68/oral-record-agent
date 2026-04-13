@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -77,6 +78,39 @@ class _WorkingListHeader extends ConsumerWidget {
             children: [
               Text('작업 중 Draft', style: AppTypography.heading2),
               const Spacer(),
+              // 임포트 버튼
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.upload_file_outlined,
+                    size: 18, color: AppColors.textMuted),
+                tooltip: '온톨로지 임포트',
+                onSelected: (v) => _showImportDialog(context, ref, v),
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    value: 'json',
+                    child: Row(children: [
+                      Icon(Icons.data_object, size: 16),
+                      SizedBox(width: 8),
+                      Text('JSON 임포트'),
+                    ]),
+                  ),
+                  PopupMenuItem(
+                    value: 'csv_classes',
+                    child: Row(children: [
+                      Icon(Icons.table_chart_outlined, size: 16),
+                      SizedBox(width: 8),
+                      Text('CSV 임포트 (클래스)'),
+                    ]),
+                  ),
+                  PopupMenuItem(
+                    value: 'csv_predicates',
+                    child: Row(children: [
+                      Icon(Icons.table_chart_outlined, size: 16),
+                      SizedBox(width: 8),
+                      Text('CSV 임포트 (속성)'),
+                    ]),
+                  ),
+                ],
+              ),
               IconButton(
                 icon: const Icon(Icons.refresh, size: 18,
                     color: AppColors.textMuted),
@@ -317,6 +351,85 @@ class _WorkingListHeader extends ConsumerWidget {
 
     if (result == null) {
       _showError(context, ref.read(ontologyProvider).error ?? '종합 실패');
+    }
+  }
+
+  Future<void> _showImportDialog(
+      BuildContext context, WidgetRef ref, String type) async {
+    // 1. 파일 선택
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: type == 'json' ? ['json'] : ['csv'],
+      withData: true, // 웹/데스크톱에서 bytes 직접 획득
+    );
+    if (result == null || !context.mounted) return;
+
+    final pf = result.files.first;
+    final bytes = pf.bytes;
+    if (bytes == null) {
+      _showError(context, '파일을 읽을 수 없습니다.');
+      return;
+    }
+
+    // 2. 버전 ID 입력 다이얼로그
+    final versionIdCtrl = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(type == 'json' ? 'JSON 임포트' : 'CSV 임포트'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text('파일: ${pf.name}',
+              style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: versionIdCtrl,
+            decoration: const InputDecoration(
+              labelText: '새 버전 ID (비워두면 자동 생성)',
+              hintText: '예: v2.0-imported',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+        ]),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('취소')),
+          ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('임포트')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    // 3. API 호출 (multipart/form-data)
+    try {
+      final csvType = type == 'csv_classes' ? 'classes' : 'predicates';
+      final formData = FormData.fromMap({
+        'file':        MultipartFile.fromBytes(bytes, filename: pf.name),
+        'version_id':  versionIdCtrl.text.trim(),
+        'import_mode': 'new',
+        'csv_type':    csvType,
+      });
+
+      final res = await ref
+          .read(apiClientProvider)
+          .postFormData('/api/ontologies/import', formData);
+
+      if (!context.mounted) return;
+      final vid = res.data['version_id'] ?? '';
+      final cls = res.data['classes_count'] ?? 0;
+      final prd = res.data['predicates_count'] ?? 0;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('임포트 완료 — $vid (클래스 $cls개, 속성 $prd개)'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      ref.read(ontologyProvider.notifier).loadVersions();
+    } catch (e) {
+      if (context.mounted) _showError(context, '임포트 실패: $e');
     }
   }
 
