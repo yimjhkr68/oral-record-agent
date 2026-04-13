@@ -88,6 +88,7 @@ class _MappingCardState extends State<MappingCard> {
     return AppColors.textMuted;
   }
 
+
   void _selectSuggestion(String uri) {
     setState(() {
       _selectedUri = uri;
@@ -353,7 +354,7 @@ class _RadioDot extends StatelessWidget {
   }
 }
 
-// ── 추천 후보 행 (라디오 + URI + confidence 바) ───────────────────────────────
+// ── 추천 후보 행 (라디오 + 온톨로지 배지 + URI + confidence 바) ──────────────
 
 class _SuggestionRow extends StatelessWidget {
   final MappingSuggestion suggestion;
@@ -368,8 +369,23 @@ class _SuggestionRow extends StatelessWidget {
     required this.onSelect,
   });
 
+  static Color _ontoColor(String onto) => switch (onto) {
+    'cidoc'  => const Color(0xFF1565C0),
+    'rico'   => const Color(0xFF880E4F),
+    'dc'     => const Color(0xFF2E7D32),
+    'lrmoo'  => const Color(0xFF6A1B9A),
+    'foaf'   => const Color(0xFFEF6C00),
+    'schema' => const Color(0xFF00838F),
+    _        => AppColors.textMuted,
+  };
+
   @override
   Widget build(BuildContext context) {
+    final ontoColor = _ontoColor(suggestion.onto);
+    final ontoLabel = suggestion.ontoLabel.isNotEmpty
+        ? suggestion.ontoLabel
+        : suggestion.onto;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: InkWell(
@@ -391,24 +407,51 @@ class _SuggestionRow extends StatelessWidget {
             _RadioDot(selected: isSelected),
             const SizedBox(width: 8),
 
-            // URI + 레이블
+            // 온톨로지 배지 + URI + 레이블
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    suggestion.uri,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                      color: AppColors.textPrimary,
+                  Row(children: [
+                    if (ontoLabel.isNotEmpty) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: ontoColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                              color: ontoColor.withValues(alpha: 0.4)),
+                        ),
+                        child: Text(
+                          ontoLabel,
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: ontoColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
+                    Expanded(
+                      child: Text(
+                        suggestion.uri,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  Text(
-                    suggestion.label,
-                    style: AppTypography.caption
-                        .copyWith(color: AppColors.textMuted),
-                  ),
+                  ]),
+                  if (suggestion.label.isNotEmpty)
+                    Text(
+                      suggestion.label,
+                      style: AppTypography.caption
+                          .copyWith(color: AppColors.textMuted),
+                    ),
                 ],
               ),
             ),

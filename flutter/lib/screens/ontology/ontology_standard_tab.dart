@@ -399,29 +399,70 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
   }
 
   Future<void> _applyAll() async {
-    final updated = _classItems.map((item) {
+    // 매핑 데이터가 없으면 먼저 로드
+    if (_classItems.isEmpty && _predItems.isEmpty) await _loadMappings();
+
+    int lowConfidenceCount = 0;
+
+    // ── 클래스 처리 ────────────────────────────────────────────────────────────
+    final updatedClasses = _classItems.map((item) {
       if (item.suggestions.isNotEmpty) {
-        return item.copyWith(
-            currentTag: item.suggestions.first.uri, isConfirmed: false);
+        final best = item.suggestions.reduce(
+            (a, b) => a.confidence >= b.confidence ? a : b);
+        if (best.confidence < 0.5) lowConfidenceCount++;
+        return item.copyWith(currentTag: best.uri, isConfirmed: false);
       }
       return item;
     }).toList();
-    setState(() => _classItems = updated);
+    setState(() => _classItems = updatedClasses);
 
-    final patches = updated
+    final classPatches = updatedClasses
         .where((item) => item.currentTag.isNotEmpty)
         .map((item) => {
               'name': item.name,
               'tag': item.currentTag,
-              'confirmed': item.isConfirmed,
+              'confirmed': false,
             })
         .toList();
-    if (patches.isEmpty) return;
+
+    // ── 속성 처리 ────────────────────────────────────────────────────────────
+    final updatedPreds = _predItems.map((item) {
+      if (item.suggestions.isNotEmpty) {
+        final best = item.suggestions.reduce(
+            (a, b) => a.confidence >= b.confidence ? a : b);
+        if (best.confidence < 0.5) lowConfidenceCount++;
+        return item.copyWith(currentTag: best.uri, isConfirmed: false);
+      }
+      return item;
+    }).toList();
+    setState(() => _predItems = updatedPreds);
+
+    final predPatches = updatedPreds
+        .where((item) => item.currentTag.isNotEmpty)
+        .map((item) => {
+              'name': item.name,
+              'tag': item.currentTag,
+              'confirmed': false,
+            })
+        .toList();
+
+    if (classPatches.isEmpty && predPatches.isEmpty) return;
 
     try {
-      await _api.saveMappings(v.versionId, classes: patches);
+      if (classPatches.isNotEmpty) {
+        await _api.saveMappings(v.versionId, classes: classPatches);
+      }
+      if (predPatches.isNotEmpty) {
+        await _api.saveMappings(v.versionId, predicates: predPatches);
+      }
       ref.read(ontologyProvider.notifier).loadVersions();
-      if (mounted) _snack('${patches.length}개 클래스에 1순위 추천 매핑 적용 완료');
+      if (mounted) {
+        final total = classPatches.length + predPatches.length;
+        final msg = lowConfidenceCount > 0
+            ? '전체 자동 적용 완료: $total개 항목 (낮은 신뢰도 $lowConfidenceCount개 포함)'
+            : '전체 자동 적용 완료: $total개 항목에 추천값 적용됨';
+        _snack(msg);
+      }
     } catch (_) {
       if (mounted) _snack('적용 실패', isError: true);
     }
@@ -663,7 +704,7 @@ class _MappingEditorState extends ConsumerState<_MappingEditor>
       child: Row(
         children: [
           Text(
-            'CIDOC-CRM · FOAF · Dublin Core · Schema.org',
+            'CIDOC-CRM · RiC-O · Dublin Core · LRMoo · FOAF · Schema.org',
             style: AppTypography.caption,
           ),
           const Spacer(),

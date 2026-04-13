@@ -269,7 +269,9 @@ async def import_ontology(
 @router.get("/{version_id}/mappings")
 def get_mappings(version_id: str):
     """클래스·속성별 표준 매핑 추천 + 현재 저장값 + 확정 여부 반환."""
-    from ontology.standard_mappings import get_class_suggestions, get_predicate_suggestions
+    from ontology.standard_mappings import (
+        get_class_suggestions_full, get_predicate_suggestions_full,
+    )
 
     try:
         v = get_manager().get(version_id)
@@ -282,7 +284,7 @@ def get_mappings(version_id: str):
             "label_ko":     c.label_ko,
             "color":        c.color,
             "current_tag":  c.standard_tag,
-            "suggestions":  get_class_suggestions(c.name),
+            "suggestions":  get_class_suggestions_full(c.name, max_total=3),
             "is_confirmed": c.mapping_confirmed,
         }
         for c in v.classes
@@ -292,7 +294,7 @@ def get_mappings(version_id: str):
             "name":         p.name,
             "label_ko":     p.name,  # predicate에는 label_ko 없음 — name으로 대체
             "current_tag":  p.standard_tag,
-            "suggestions":  get_predicate_suggestions(p.name),
+            "suggestions":  get_predicate_suggestions_full(p.name),
             "is_confirmed": p.mapping_confirmed,
         }
         for p in v.predicates

@@ -5,13 +5,17 @@ import 'published_ontology.dart';
 class MappingSuggestion {
   final String uri;
   final String label;
+  final String onto;       // 온톨로지 키 (e.g. "cidoc", "rico", "dc", "lrmoo", "foaf", "schema")
+  final String ontoLabel;  // 온톨로지 표시명 (e.g. "CIDOC-CRM", "RiC-O")
   final int priority;
   final double confidence;
 
   const MappingSuggestion({
     required this.uri,
     required this.label,
-    required this.priority,
+    this.onto = '',
+    this.ontoLabel = '',
+    this.priority = 99,
     this.confidence = 0.0,
   });
 
@@ -19,6 +23,8 @@ class MappingSuggestion {
       MappingSuggestion(
         uri: json['uri'] ?? '',
         label: json['label'] ?? '',
+        onto: json['onto'] ?? '',
+        ontoLabel: json['onto_label'] ?? '',
         priority: json['priority'] ?? 99,
         confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
       );
