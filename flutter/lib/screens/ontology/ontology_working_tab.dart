@@ -509,11 +509,24 @@ class _WorkingListHeader extends ConsumerWidget {
   }
 
   void _showError(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 8),
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(children: [
+          Icon(Icons.error_outline, color: Colors.red, size: 20),
+          SizedBox(width: 8),
+          Text('오류', style: TextStyle(fontSize: 16)),
+        ]),
+        content: SelectableText(
+          msg,
+          style: const TextStyle(fontSize: 13, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('닫기'),
+          ),
+        ],
       ),
     );
   }
@@ -534,7 +547,7 @@ class _WorkingVersionList extends ConsumerWidget {
         .toList();
 
     if (drafts.isEmpty) {
-      return EmptyState(
+      return const EmptyState(
         icon: Icons.note_add_outlined,
         title: '작업 중인 Draft 없음',
         description: '[새 버전] 또는\n[구술기록으로 생성]을 눌러 시작하세요.',
