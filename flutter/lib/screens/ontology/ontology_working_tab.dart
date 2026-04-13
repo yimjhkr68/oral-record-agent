@@ -863,7 +863,9 @@ class _InputMethodBottomSheetState
                   pickedFileName: _pickedFileName,
                   extractedText: _extractedText,
                   extracting: _extracting,
+                  isGenerating: _loading,
                   onPickFile: _pickFile,
+                  onGenerate: canGenerate ? _generate : null,
                 ),
                 _StoredRecordsTab(
                   records: _storedRecords,
@@ -933,27 +935,29 @@ class _InputMethodBottomSheetState
                     ),
                   const SizedBox(height: 8),
                 ],
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: _loading
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.auto_awesome, size: 18),
-                    label: Text(
-                        _loading ? 'AI 분석 중... (최대 2분)' : 'AI 초안 생성'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor:
-                          Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
+                // 파일 탭(index==1)은 탭 내부에 버튼이 있으므로 여기서는 숨김
+                if (_tabCtrl.index != 1)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      icon: _loading
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.auto_awesome, size: 18),
+                      label: Text(
+                          _loading ? 'AI 분석 중... (최대 2분)' : 'AI 초안 생성'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor:
+                            Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: canGenerate ? _generate : null,
                     ),
-                    onPressed: canGenerate ? _generate : null,
                   ),
-                ),
               ],
             ),
           ),
@@ -1046,33 +1050,43 @@ class _FileTab extends StatelessWidget {
   final String? pickedFileName;
   final String? extractedText;
   final bool extracting;
+  final bool isGenerating;
   final VoidCallback onPickFile;
+  final VoidCallback? onGenerate;
 
   const _FileTab({
     required this.pickedFileName,
     required this.extractedText,
     required this.extracting,
+    required this.isGenerating,
     required this.onPickFile,
+    required this.onGenerate,
   });
 
   @override
   Widget build(BuildContext context) {
+    final canGenerate = extractedText != null && !extracting && !isGenerating;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 1. 파일 선택 버튼
           const Text('파일 선택 (txt / pdf / docx)',
-              style:
-                  TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           const SizedBox(height: 8),
           Row(children: [
             ElevatedButton.icon(
-              icon: const Icon(Icons.upload_file, size: 18),
-              label: const Text('파일 선택'),
-              onPressed: extracting ? null : onPickFile,
+              icon: extracting
+                  ? const SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.upload_file, size: 18),
+              label: Text(extracting ? '텍스트 추출 중...' : '파일 선택'),
+              onPressed: extracting || isGenerating ? null : onPickFile,
             ),
-            if (pickedFileName != null) ...[
+            if (pickedFileName != null && !extracting) ...[
               const SizedBox(width: 12),
               Expanded(
                 child: Text(pickedFileName!,
@@ -1082,16 +1096,30 @@ class _FileTab extends StatelessWidget {
             ],
           ]),
           const SizedBox(height: 12),
-          if (extracting)
-            const Row(children: [
-              SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2)),
-              SizedBox(width: 10),
-              Text('텍스트 추출 중...', style: TextStyle(fontSize: 13)),
-            ])
-          else if (extractedText != null) ...[
+
+          // 2. [AI 추출 실행] 버튼 — 파일 추출 완료 후 활성
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: isGenerating
+                  ? const SizedBox(
+                      width: 16, height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.auto_awesome, size: 18),
+              label: Text(isGenerating ? 'AI 분석 중... (최대 2분)' : 'AI 초안 생성'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: canGenerate ? onGenerate : null,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 3. 업로드/추출 완료 메시지
+          if (extractedText != null && !extracting) ...[
             Row(children: [
               const Icon(Icons.check_circle, color: Colors.green, size: 16),
               const SizedBox(width: 6),
@@ -1099,6 +1127,8 @@ class _FileTab extends StatelessWidget {
                   style: const TextStyle(fontSize: 13, color: Colors.green)),
             ]),
             const SizedBox(height: 8),
+
+            // 4. 추출 텍스트 미리보기
             Expanded(
               child: Container(
                 padding: const EdgeInsets.all(10),
@@ -1117,7 +1147,7 @@ class _FileTab extends StatelessWidget {
                 ),
               ),
             ),
-          ] else
+          ] else if (!extracting)
             const Expanded(
               child: Center(
                 child: Column(
@@ -1127,8 +1157,7 @@ class _FileTab extends StatelessWidget {
                         size: 48, color: Colors.grey),
                     SizedBox(height: 8),
                     Text('파일을 선택하면 텍스트를 자동 추출합니다.',
-                        style:
-                            TextStyle(color: Colors.grey, fontSize: 13)),
+                        style: TextStyle(color: Colors.grey, fontSize: 13)),
                   ],
                 ),
               ),
