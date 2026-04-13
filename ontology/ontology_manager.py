@@ -109,6 +109,8 @@ MERGE_SYSTEM_PROMPT = """당신은 구술기록 아카이브 온톨로지 전문
 2. 독자 클래스 보존: 한쪽에만 있는 클래스는 합집합으로 포함
 3. 구술 도메인 부적합 클래스 제거: 구술기록과 무관한 지나치게 구체적 클래스 제거
 4. 속성(predicate) 도메인/범위 재정의: 통합된 클래스 기준으로 재설정
+5. standard_tag 보존: 입력 클래스/속성에 standard_tag 값이 있으면 반드시 그대로 유지하세요.
+   standard_tag 를 임의로 변경하거나 비워두지 마세요.
 
 반드시 다음 JSON 형식으로만 응답하세요:
 {
@@ -119,11 +121,12 @@ MERGE_SYSTEM_PROMPT = """당신은 구술기록 아카이브 온톨로지 전문
   },
   "classes": [
     {"name": "영문PascalCase", "label_ko": "한국어", "color": "#hex",
-     "description": "정의", "examples": [], "merge_note": "처리내역"}
+     "description": "정의", "examples": [], "standard_tag": "기존값_그대로",
+     "merge_note": "처리내역"}
   ],
   "predicates": [
     {"name": "속성명", "domain": [], "range_": [], "description": "설명",
-     "merge_note": "처리내역"}
+     "standard_tag": "기존값_그대로", "merge_note": "처리내역"}
   ]
 }"""
 
@@ -568,10 +571,28 @@ class OntologyManager:
         all_classes    = [c for d in drafts for c in d.classes]
         all_predicates = [p for d in drafts for p in d.predicates]
 
+        # 2-b. 기존 standard_tag 맵 수집 (AI 종합 후 복원용)
+        existing_tags: dict[str, str] = {}
+        for d in drafts:
+            for c in d.classes:
+                if c.standard_tag:
+                    existing_tags[c.name.lower()] = c.standard_tag
+            for p in d.predicates:
+                if p.standard_tag:
+                    existing_tags[p.name.lower()] = p.standard_tag
+
         # 3. AI 종합
         merged_classes, merged_predicates = self._ai_merge(
             all_classes, all_predicates, version_ids
         )
+
+        # 3-b. AI 가 standard_tag 를 빈 값으로 반환하면 기존 값 복원
+        for c in merged_classes:
+            if not c.standard_tag:
+                c.standard_tag = existing_tags.get(c.name.lower(), '')
+        for p in merged_predicates:
+            if not p.standard_tag:
+                p.standard_tag = existing_tags.get(p.name.lower(), '')
 
         # 4. 새 Draft 생성
         new_version = OntologyVersion(

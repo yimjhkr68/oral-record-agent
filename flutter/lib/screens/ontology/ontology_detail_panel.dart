@@ -508,7 +508,8 @@ class _ClassCard extends ConsumerWidget {
                     .toList(),
               ),
             ],
-            if (cls.standardTag.isNotEmpty) ...[
+            // 매핑 칩은 확정/아카이브 탭(isDraft=false)에서만 표시
+            if (!isDraft && cls.standardTag.isNotEmpty) ...[
               const SizedBox(height: 6),
               Wrap(
                 spacing: 4,
@@ -525,7 +526,7 @@ class _ClassCard extends ConsumerWidget {
                     )).toList(),
               ),
             ],
-            if (cls.mappings.isNotEmpty) ...[
+            if (!isDraft && cls.mappings.isNotEmpty) ...[
               const SizedBox(height: 6),
               Wrap(
                 spacing: 4,
@@ -696,7 +697,8 @@ class _PredicateCard extends ConsumerWidget {
               const SizedBox(height: 4),
               Text(pred.description, style: AppTypography.body),
             ],
-            if (pred.standardTag.isNotEmpty) ...[
+            // 매핑 칩은 확정/아카이브 탭(isDraft=false)에서만 표시
+            if (!isDraft && pred.standardTag.isNotEmpty) ...[
               const SizedBox(height: 6),
               Wrap(
                 spacing: 4,
