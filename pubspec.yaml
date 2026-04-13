@@ -1,0 +1,84 @@
+name: oral_record_agent
+description: A Flutter app for oral record management with PDCA-based subagents.
+publish_to: 'none'
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Hive 로컬 데이터베이스
+  hive: ^2.1.0
+  hive_flutter: ^1.1.0
+  
+  # UUID 생성 라이브러리
+  uuid: ^4.0.0
+  
+  # Riverpod 상태 관리 (Phase 4에서 사용)
+  flutter_riverpod: ^2.4.0
+  riverpod: ^2.4.0
+  
+  # 라우팅 라이브러리
+  go_router: ^13.0.0
+
+  # HTTP 클라이언트 (Claude API 호출)
+  http: ^1.2.0
+
+  # Windows 로컬 경로 (Documents 폴더)
+  path_provider: ^2.1.3
+
+  # 파일 선택 다이얼로그 (Windows 네이티브)
+  file_picker: ^8.1.2
+
+  # .env 파일 로딩
+  flutter_dotenv: ^5.1.0
+
+  # ZIP/DOCX 파싱 (파일 내용 추출 폴백용)
+  archive: ^3.4.0
+
+  # 마이크 녹음 (Windows/macOS/Linux/iOS/Android)
+  record: ^5.0.0
+
+  # 차트 라이브러리
+  fl_chart: ^0.70.2
+
+  # Google Fonts (Noto Sans KR)
+  google_fonts: ^6.1.0
+
+  # 비밀번호 bcrypt 해시
+  bcrypt: ^1.1.3
+
+  # 파일 드래그앤드롭 (Windows 데스크탑)
+  desktop_drop: ^0.4.4
+
+  # OS 기본 앱으로 파일/폴더 열기
+  url_launcher: ^6.2.0
+
+  # 파일 경로 처리 (basename, basenameWithoutExtension)
+  path: ^1.9.0
+
+  # SHA-256 해시 (중복 파일 감지)
+  crypto: ^3.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Hive 코드 생성 (TypeAdapter)
+  hive_generator: ^2.0.0
+
+  # 코드 생성 도구
+  build_runner: ^2.3.0
+
+  # 로컬 CORS 프록시 서버 (bin/proxy_server.dart)
+  shelf: ^1.4.0
+
+  # 정적 분석 린트
+  flutter_lints: ^3.0.0
+dependency_overrides:
+  record_linux: ^1.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
